@@ -1,52 +1,41 @@
 ---
-bio: My research interests include distributed robotics, mobile computing and programmable
+bio: Mark research interests include distributed robotics, mobile computing and programmable
   matter.
 education:
   courses:
-  - course: PhD in Artificial Intelligence
-    institution: Stanford University
+  - course: MS in Analytics
+    institution: Northwestern University McCormick School of Engineering
+    year: 2015
+  - course: PhD in Experimental Psychology
+    institution: DePaul University
+    year: 2014
+  - course: MA in Experimental Psychology
+    institution: DePaul University
     year: 2012
-  - course: MEng in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
+  - course: BA in Psychology
+    institution: Miami University
     year: 2009
-  - course: BSc in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2008
 email: ""
-highlight_name: false
+highlight_name: true
 interests:
-- Artificial Intelligence
-- Computational Linguistics
-- Information Retrieval
-organizations:
-- name: Stanford University
-  url: https://www.stanford.edu/
-role: Professor of Artificial Intelligence
+- Machine Learning
+- Forecasting
+- Causal Inference
+- Experimentation 
+
+role: Data Scientist
+location: Portland, OR
 social:
-- icon: envelope
-  icon_pack: fas
-  link: /#contact
 - display:
     header: true
-  icon: twitter
-  icon_pack: fab
-  label: Follow me on Twitter
-  link: https://twitter.com/GeorgeCushen
-- icon: graduation-cap
-  icon_pack: fas
-  link: https://scholar.google.co.uk/citations?user=sIwtMXoAAAAJ
 - icon: github
   icon_pack: fab
-  link: https://github.com/gcushen
+  link: https://github.com/thecodeforest
 - icon: linkedin
   icon_pack: fab
-  link: https://www.linkedin.com/
+  link: https://www.linkedin.com/in/markleboeuf/
 superuser: true
-title: Nelson Bighetti
+title: Mark LeBoeuf
 ---
 
-Nelson Bighetti is a professor of artificial intelligence at the Stanford AI Lab. His research interests include distributed robotics, mobile computing and programmable matter. He leads the Robotic Neurobiology group, which develops self-reconfiguring robots, systems of self-organizing robots, and mobile sensor networks.
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed neque elit, tristique placerat feugiat ac, facilisis vitae arcu. Proin eget egestas augue. Praesent ut sem nec arcu pellentesque aliquet. Duis dapibus diam vel metus tempus vulputate.
-
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "media/demo_resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
+I love asking big questions and answering them with data. My background is in Psychology and Statistics, and it’s been a blast seeing how these fields have co-evolved over the years. I currently work as a data scientist, and I started this blog as a way to document a few of the more interesting topics I’ve encountered throughout my journeys. The goal is to abstract away some of the technical bits in an attempt to give you (the reader) the ability to implement while learning. I’m always interested in connecting with fellow data-scientists/whisperers/magicians/analysts, so feel free to PM me on linkedin!
