@@ -1,0 +1,3562 @@
+<!DOCTYPE html><html lang="en-us" >
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  
+  
+  
+    <meta name="generator" content="Wowchemy 5.1.0 for Hugo" />
+  
+
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+  
+  
+
+  <meta name="author" content="Mark LeBoeuf" />
+
+  
+  
+  
+    
+  
+  <meta name="description" content="This is a summary. Add some text here man." />
+
+  
+  <link rel="alternate" hreflang="en-us" href="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/" />
+
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+
+  
+  
+  
+    <meta name="theme-color" content="#1565c0" />
+  
+
+  
+  
+
+  
+  
+  
+  
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" integrity="sha256-FMvZuGapsJLjouA6k7Eo2lusoAX9i0ShlWFG6qt7SLc=" crossorigin="anonymous">
+
+    
+    
+
+    
+    
+    
+      
+    
+    
+      
+      
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/tomorrow-night-eighties.min.css" crossorigin="anonymous" title="hl-light" media="print" onload="this.media='all'">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/tomorrow-night-eighties.min.css" crossorigin="anonymous" title="hl-dark" media="print" onload="this.media='all'" disabled>
+      
+    
+
+    
+    
+    
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" integrity="sha512-1xoFisiGdy9nvho8EgXuXvnpR5GAMSjFwp40gSRE3NwdUdIMIKuPa7bqoUhLD0O/5tPNhteAsE5XyyMi5reQVA==" crossorigin="anonymous" media="print" onload="this.media='all'">
+    
+
+    
+
+    
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+        
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+  
+
+  
+  
+  
+    
+      
+      <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap" media="print" onload="this.media='all'">
+    
+  
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="/css/wowchemy.9a66e344a68eb664b392d406a3f80726.css" />
+
+  
+
+
+
+  
+
+  
+
+  
+
+
+
+
+  
+  
+  
+
+  
+
+  
+    <link rel="manifest" href="/index.webmanifest" />
+  
+
+  <link rel="icon" type="image/png" href="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_32x32_fill_lanczos_center_2.png" />
+  <link rel="apple-touch-icon" type="image/png" href="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_180x180_fill_lanczos_center_2.png" />
+
+  <link rel="canonical" href="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/" />
+
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+  
+  
+  <meta property="twitter:card" content="summary" />
+  
+  <meta property="og:site_name" content="Code Forest" />
+  <meta property="og:url" content="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/" />
+  <meta property="og:title" content="Scalable Time-Series Forecasting in Python | Code Forest" />
+  <meta property="og:description" content="This is a summary. Add some text here man." /><meta property="og:image" content="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" />
+    <meta property="twitter:image" content="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" /><meta property="og:locale" content="en-us" />
+  
+    
+      <meta
+        property="article:published_time"
+        content="2021-03-29T21:13:14-05:00"
+      />
+    
+    <meta property="article:modified_time" content="2021-03-29T21:13:14-05:00">
+  
+
+  
+
+
+    
+
+
+
+
+
+
+  
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/"
+  },
+  "headline": "Scalable Time-Series Forecasting in Python",
+  
+  "datePublished": "2021-03-29T21:13:14-05:00",
+  "dateModified": "2021-03-29T21:13:14-05:00",
+  
+  "author": {
+    "@type": "Person",
+    "name": "Mark LeBoeuf"
+  },
+  
+  "publisher": {
+    "@type": "Organization",
+    "name": "Code Forest",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "/media/icon_huc737709a4be44af6221d1cabfe197959_22580_192x192_fill_lanczos_center_2.png"
+    }
+  },
+  "description": "This is a summary. Add some text here man."
+}
+</script>
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+
+  <title>Scalable Time-Series Forecasting in Python | Code Forest</title>
+</head>
+
+
+<body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" class="page-wrapper   " data-wc-page-id="b80014d95722605d7f4bfae86202f384" >
+
+  
+  
+  
+  
+  
+  
+  
+  
+  <script src="/js/wowchemy-init.min.226a9011996d125bf3fe4a5f22353a49.js"></script>
+
+  
+
+
+<aside class="search-modal" id="search">
+  <div class="container">
+    <section class="search-header">
+
+      <div class="row no-gutters justify-content-between mb-3">
+        <div class="col-6">
+          <h1>Search</h1>
+        </div>
+        <div class="col-6 col-search-close">
+          <a class="js-search" href="#" aria-label="Close"><i class="fas fa-times-circle text-muted" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <div id="search-box">
+        
+        <input name="q" id="search-query" placeholder="Search..." autocapitalize="off"
+        autocomplete="off" autocorrect="off" spellcheck="false" type="search" class="form-control"
+        aria-label="Search...">
+        
+      </div>
+
+      
+      
+
+      
+
+    </section>
+    <section class="section-search-results">
+
+      <div id="search-hits">
+        
+      </div>
+
+    </section>
+  </div>
+</aside>
+
+
+
+  <div class="page-header">
+    
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light compensate-for-scrollbar" id="navbar-main">
+  <div class="container-xl">
+
+    
+    <div class="d-none d-lg-inline-flex">
+      <a class="navbar-brand" href="/">Code Forest</a>
+    </div>
+    
+
+    
+    <button type="button" class="navbar-toggler" data-toggle="collapse"
+            data-target="#navbar-content" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span><i class="fas fa-bars"></i></span>
+    </button>
+    
+
+    
+    <div class="navbar-brand-mobile-wrapper d-inline-flex d-lg-none">
+      <a class="navbar-brand" href="/">Code Forest</a>
+    </div>
+    
+
+    
+    
+    <div class="navbar-collapse main-menu-item collapse justify-content-start" id="navbar-content">
+
+      
+      <ul class="navbar-nav d-md-inline-flex">
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+
+        
+        
+        
+        
+
+        
+          
+            
+            
+          
+          
+            
+            
+            
+              
+            
+            
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="/#posts"><span>Posts</span></a>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+
+        
+        
+        
+        
+
+        
+          
+            
+            
+          
+          
+            
+            
+            
+              
+            
+            
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="/#about"><span>About</span></a>
+        </li>
+
+        
+        
+
+      
+
+        
+      </ul>
+    </div>
+
+    <ul class="nav-icons navbar-nav flex-row ml-auto d-flex pl-md-2">
+
+      
+      
+        
+          
+          <li class="nav-item d-none d-lg-inline-flex">
+            <a class="nav-link" href="/"  aria-label="">
+              <i class="fas fa-" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+
+      
+      
+      <li class="nav-item">
+        <a class="nav-link js-search" href="#" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></a>
+      </li>
+      
+
+      
+      
+      <li class="nav-item dropdown theme-dropdown">
+        <a href="#" class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-label="Display preferences">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+        </a>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item js-set-theme-light">
+            <span>Light</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-dark">
+            <span>Dark</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-auto">
+            <span>Automatic</span>
+          </a>
+        </div>
+      </li>
+      
+
+      
+      
+
+    </ul>
+
+  </div>
+</nav>
+
+
+  </div>
+
+  <div class="page-body">
+    <article class="article">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+  
+<div class="article-container pt-3">
+  <h1>Scalable Time-Series Forecasting in Python</h1>
+
+  
+
+  
+    
+
+
+<div class="article-metadata">
+
+  
+  
+
+  
+  <span class="article-date">
+    
+    
+      
+    
+    Mar 29, 2021
+  </span>
+  
+
+  
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    31 min read
+  </span>
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <span class="middot-divider"></span>
+  <span class="article-categories">
+    <i class="fas fa-folder mr-1"></i><a href="/category/pyspark/">Pyspark</a>, <a href="/category/time-series-forecasting/">Time Series Forecasting</a>, <a href="/category/prophet/">Prophet</a></span>
+  
+
+</div>
+
+    
+
+
+
+
+
+  
+</div>
+
+
+
+  <div class="article-container">
+
+    <div class="article-style">
+      
+
+
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p>Forecasting at scale is a challenge faced by many businesses. Whether trying to predict daily demand for thousands of products or the number of people to staff across many stores, the task of generating forecasts in parallel is a common task for improving efficiencies within a business. Accordingly, the goal of this post is to outline an approach to creating many forecasts in a short period with Pyspark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level forecasts via the Prophet package. Note that we will not cover how to implement in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a workflow for quickly generating many time-series forecasts.</p>
+</div>
+<div id="getting-started" class="section level3">
+<h3>Getting Started</h3>
+<p>The data we’ll be using was originally furnished by Walmart and represents weekly demand for products at the store-department level. All code for this post is stored in the <a href="">Codeforest Repository</a>, while the original data is stored <a href="">here</a>. Before diving into the details, let’s briefly review talk through the key modules and files.</p>
+<p><img src="/post/2021-03-28-pyspark-forecasting/images/project_tree.png" width="700" height="400" />
+* <strong>conf.json</strong> - here is where we define things like our grouping variables, our outcome variable, or if we want to log transform our outcome variable. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
+<img src="/post/2021-03-28-pyspark-forecasting/images/config_file.png" width="700" height="400" />
+* <strong>pyspark_fcast.py</strong> - Our main module – that is, where the actual forecasting gets done. We’ll cover this in detail below.</p>
+<ul>
+<li><strong>fcast_data_frame.py</strong> - a helper class responsible for common pre-forecasting data transformations. These include filling in missing values, replacing negative values with zeros, filtering time-series with only a few observations, etc. We’ll cover several of these methods below, but I’d recommend cloning the repository if you’d like to access all methods.</li>
+</ul>
+<p>To follow along with this tutorial, you’ll also need to be able to import the following packages.</p>
+<pre class="python"><code>import argparse
+import json
+import logging
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import List
+
+import numpy as np
+import pandas as pd
+
+from fbprophet import Prophet # Using fbprophet==0.7.1 &amp; pystan==2.18.0
+from pyspark.sql import SparkSession # Using pyspark==3.0.1
+from pyspark.sql.functions import lit
+from pyspark.sql.types import (DateType, FloatType, IntegerType, StructField,
+                               StructType)
+                               
+from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
+<p>Assuming the above imports have been successful, let’s have a look at the first few rows in our data.
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#egamultfoy .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#egamultfoy .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#egamultfoy .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#egamultfoy .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#egamultfoy .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#egamultfoy .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#egamultfoy .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#egamultfoy .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#egamultfoy .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#egamultfoy .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#egamultfoy .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#egamultfoy .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#egamultfoy .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#egamultfoy .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#egamultfoy .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#egamultfoy .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#egamultfoy .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#egamultfoy .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#egamultfoy .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#egamultfoy .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#egamultfoy .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#egamultfoy .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#egamultfoy .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#egamultfoy .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#egamultfoy .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#egamultfoy .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#egamultfoy .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#egamultfoy .gt_left {
+  text-align: left;
+}
+
+#egamultfoy .gt_center {
+  text-align: center;
+}
+
+#egamultfoy .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#egamultfoy .gt_font_normal {
+  font-weight: normal;
+}
+
+#egamultfoy .gt_font_bold {
+  font-weight: bold;
+}
+
+#egamultfoy .gt_font_italic {
+  font-style: italic;
+}
+
+#egamultfoy .gt_super {
+  font-size: 65%;
+}
+
+#egamultfoy .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="egamultfoy" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style><strong>Sample Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">store</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">dept</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">date</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-05</td>
+      <td class="gt_row gt_center">24924</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-12</td>
+      <td class="gt_row gt_center">46039</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-19</td>
+      <td class="gt_row gt_center">41596</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-26</td>
+      <td class="gt_row gt_center">19404</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-05</td>
+      <td class="gt_row gt_center">21828</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+Let’s also discuss the process of passing in the forecasting parameters in addition to documenting which parameters we’ve selected. We’ll use the following command: <code>python3 pyspark_fcast.py --forecast-config-file 'config/conf.json'</code>. Here we are passing in the location of our configuration file and extracting the parameters. Don’t worry if the individual parameters don’t make sense now. I’ll explain each in greater detail below.</p>
+<pre class="python"><code>args = read_args()
+
+with open(args.forecast_config_file) as f:
+    config = json.load(f)
+
+log_input_params(config=config)
+
+input_data_path = config[&quot;input_data_path&quot;]
+fcast_params = config[&quot;fcast_parameters&quot;]
+group_fields = fcast_params[&quot;group_fields&quot;]
+date_field = fcast_params[&quot;date_field&quot;]
+yvar_field = fcast_params[&quot;yvar_field&quot;]
+ts_frequency = fcast_params[&quot;ts_frequency&quot;]
+fcast_floor = fcast_params[&quot;forecast_floor&quot;]
+fcast_cap = fcast_params[&quot;forecast_cap&quot;]
+min_obs_threshold = fcast_params[&#39;min_obs_count&#39;]</code></pre>
+<p>Note the usage of the two helper functions: <em>read_args</em> and <em>log_input_params</em>.</p>
+<pre class="python"><code>def read_args() -&gt; argparse.Namespace:
+    &quot;&quot;&quot;Read Forecasting arguments 
+
+    Returns:
+        argparse.Namespace: argparse Namespace
+    &quot;&quot;&quot;
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&quot;--forecast-config-file&quot;, type=str)
+    return parser.parse_args()</code></pre>
+<p><em>read_args</em> takes the arguments in our configuration file, which are then converted into a dictionary. Next, we document which parameters we’ve passed to our module with <em>log_input_params</em>.</p>
+<pre class="python"><code>logging.basicConfig(
+    format=&quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&quot;,
+    level=logging.INFO,
+    filename=&quot;run_{start_time}.log&quot;.format(
+        start_time=datetime.now().strftime(&quot;%Y-%m-%d %H-%M-%S&quot;)
+    ),
+)
+
+def log_input_params(config: dict) -&gt; None:
+    &quot;&quot;&quot;Logs all parameters in configuration file
+
+    Args:
+        config (dict): Configuration parameters for forecast and data
+    &quot;&quot;&quot;
+    params = pd.json_normalize(config).transpose()
+    [
+        logging.info(&quot;input params:&quot; + x[0] + &quot;-&quot; + str(x[1]))
+        for x in zip(params.index, params.iloc[:, 0])
+    ]
+    return None</code></pre>
+<p>There are several benefits to documenting these inputs. First, we can validate that the correct parameters have been passed to our forecasting process. Having a record facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save a lot of time as your project matures.</p>
+<p>Now we that we have our parameters and have set up logging, we’ll read in the data stored <a href="https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv">here</a> and execute some basic field formatting with <em>clean_names</em>.</p>
+<pre class="python"><code>def clean_names(df: pd.DataFrame) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Applies the following transformations to column names:
+        - Removes camel case
+        - Replaces any double underscore with single underscore
+        - Removes spaces in the middle of a string name
+        - Replaces periods with underscores
+
+    Args:
+        df (pd.DataFrame): Dataframe with untransformed column names
+
+    Returns:
+        pd.DataFrame: Dataframe with transformed column names
+    &quot;&quot;&quot;
+    cols = df.columns
+    cols = [re.sub(r&quot;(?&lt;!^)(?=[A-Z])&quot;, &quot;_&quot;, x).lower() for x in cols]
+    cols = [re.sub(r&quot;_{2,}&quot;, &quot;_&quot;, x) for x in cols]
+    cols = [re.sub(r&quot;\s&quot;, &quot;&quot;, x) for x in cols]
+    cols = [re.sub(r&quot;\.&quot;, &quot;_&quot;, x) for x in cols]
+    df.columns = cols
+    return df
+
+sales_df = pd.read_csv(input_data_path)
+sales_df = clean_names(sales_df)</code></pre>
+<p>If you don’t have a <em>clean_names</em>-type function as part of your team’s codebase, I’d highly recommend creating one. It’s a function that I use frequently when reading data from various sources and encourages a standardized way of formatting field names.</p>
+<p>Now that we have our data, we’ll do some pre-forecasting data cleaning. The main steps are outlined below:</p>
+<p><strong>Filter groups with limited observations</strong> - It’s a good idea to put predictions against items where you have some historical data. While the space of <a href="https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/">cold-start forecasting</a> is very interesting, it is outside the scope of this post. Thus, we are putting a minimum number of data points in place for something to be considered. This is also a good idea because some forecasting algorithms will not fit a model against a time series with fewer than N observations.</p>
+<p><strong>Replace negative values with zero</strong> - I’m assuming a negative value represents a returned product. Our goal is to forecast <strong>demand</strong> not <strong>demand - returns</strong>. This is an assumption that would need to be validated with domain knowledge.</p>
+<p><strong>Pad missing values</strong> - This is an important but easy to overlook step for one simple reason: Missing values in time-series data are not usually flagged as “missing”. For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I’ve provied a brief example below to illustrate what this looks like from a data perspective.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#kasmpplzul .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#kasmpplzul .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#kasmpplzul .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#kasmpplzul .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#kasmpplzul .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#kasmpplzul .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#kasmpplzul .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#kasmpplzul .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#kasmpplzul .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#kasmpplzul .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#kasmpplzul .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#kasmpplzul .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#kasmpplzul .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#kasmpplzul .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kasmpplzul .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kasmpplzul .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#kasmpplzul .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#kasmpplzul .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kasmpplzul .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#kasmpplzul .gt_left {
+  text-align: left;
+}
+
+#kasmpplzul .gt_center {
+  text-align: center;
+}
+
+#kasmpplzul .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#kasmpplzul .gt_font_normal {
+  font-weight: normal;
+}
+
+#kasmpplzul .gt_font_bold {
+  font-weight: bold;
+}
+
+#kasmpplzul .gt_font_italic {
+  font-style: italic;
+}
+
+#kasmpplzul .gt_super {
+  font-size: 65%;
+}
+
+#kasmpplzul .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="kasmpplzul" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style><strong>Incomplete Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">store</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">dept</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">date</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-05</td>
+      <td class="gt_row gt_center">24924</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-19</td>
+      <td class="gt_row gt_center">41596</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-26</td>
+      <td class="gt_row gt_center">19404</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-19</td>
+      <td class="gt_row gt_center">22137</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-26</td>
+      <td class="gt_row gt_center">26229</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#moirnnfdnv .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#moirnnfdnv .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#moirnnfdnv .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#moirnnfdnv .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#moirnnfdnv .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#moirnnfdnv .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#moirnnfdnv .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#moirnnfdnv .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#moirnnfdnv .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#moirnnfdnv .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#moirnnfdnv .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#moirnnfdnv .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#moirnnfdnv .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#moirnnfdnv .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moirnnfdnv .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moirnnfdnv .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#moirnnfdnv .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#moirnnfdnv .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#moirnnfdnv .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#moirnnfdnv .gt_left {
+  text-align: left;
+}
+
+#moirnnfdnv .gt_center {
+  text-align: center;
+}
+
+#moirnnfdnv .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#moirnnfdnv .gt_font_normal {
+  font-weight: normal;
+}
+
+#moirnnfdnv .gt_font_bold {
+  font-weight: bold;
+}
+
+#moirnnfdnv .gt_font_italic {
+  font-style: italic;
+}
+
+#moirnnfdnv .gt_super {
+  font-size: 65%;
+}
+
+#moirnnfdnv .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="moirnnfdnv" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+    <col style="width:155px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style><strong>Padded Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">store</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">dept</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">date</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-05</td>
+      <td class="gt_row gt_center">24924</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">2010-02-12</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-19</td>
+      <td class="gt_row gt_center">41596</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-26</td>
+      <td class="gt_row gt_center">19404</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">2010-03-05</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">2010-03-12</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-19</td>
+      <td class="gt_row gt_center">22137</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-26</td>
+      <td class="gt_row gt_center">26229</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>We’ll go back and fill or “interpolate” those missing values in the <code>weekly_sales</code> field in a later step.</p>
+<p><strong>Filter groups with long ‘streaks’ of missing observations</strong> - Building on the previous example, let’s say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won’t capture the overall trend, seasonality, or potential holiday/event effects that help improve our forecasting accuracy. I will initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, I’ll set a limit of four weeks, which says “if any time-series has more than four consecutive dates missing, exclude from the final forecasting step”.</p>
+<p><strong>Interpolate missing values</strong> - Fills in missing data with “reasonable” values. We’ll use the overall mean of each series, which is a very simple and easy to understand technique.</p>
+<p><strong>Add forecasting bounds</strong> - This function is specific to the Prophet API and is not required to generate a forecast. However, in a context where you cannot individually inspect the quality of each forecast, adding in some “guardrails” can prevent errant predictions that erode trust with your end stakeholders. adds a “floor” and “cap” field for each group, indicating that forecast cannot go above or below these bounds. For example, if a minimum value in a time-series in 10 and the max is 100, a floor of 0.5 and a cap of 1.5 would allow a forecast no higher than 150 and no lower than 5.</p>
+<p><strong>Log transform outcome variable</strong> - Log transforming our outcome variable is an effective approach to reduce the influence of outliers on our forecats. The other approach is to use a box-cox transformation (see <a href="">here</a> for more details), but I often start with a log-transformation because it does require me to keep track of the transformation parameters, which is something you’ll need to do with a box-cox transformation.</p>
+<p>Below we’ll implement all of these data-cleaning steps via the <code>FcastDataFrame</code> class, which I often use to prepare a clean grouped time-series data prior to generating forecasts.</p>
+<pre class="python"><code>class FcastDataFrame:
+    &quot;&quot;&quot;Use for pre-processing data prior to forecasting&quot;&quot;&quot;
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        group_fields: List[str],
+        date_field: str,
+        yvar_field: str,
+        ts_frequency: str,
+    ):
+        &quot;&quot;&quot;
+        Args:
+            df (pd.DataFrame): dataframe with to be forecasted data
+            group_fields (List[str]): grouping fields. These are often re
+                represented by attributes of each unit 
+                (e.g., store id, product id, etc.).
+            date_field (str): date field
+            yvar_field (str): outcome (&quot;y&quot;) field
+            ts_frequency (str): granularity of the data. For example, 
+                data that is recorded on a weekly basis, every Friday will 
+                be &quot;W-FRI&quot;. Note that sub-day level (e.g, hourly, minute) 
+                data is not supported. 
+        &quot;&quot;&quot;
+        self.df = df
+        self.group_fields = group_fields
+        self.date_field = date_field
+        self.yvar_field = yvar_field
+        self.ts_frequency = ts_frequency
+        
+fcast_df = FcastDataFrame(
+        df=sales_df,
+        group_fields=group_fields,
+        date_field=date_field,
+        yvar_field=yvar_field,
+        ts_frequency=ts_frequency,
+    )        </code></pre>
+<p>While we won’t cover all methods in this class, I’ll</p>
+<pre class="python"><code>    def filter_groups_min_obs(self, min_obs_threshold):
+        &quot;&quot;&quot;[summary]
+
+        Args:
+            min_obs_threshold ([type]): [description]
+        &quot;&quot;&quot;
+        n_unique_groups = self.df[self.group_fields].drop_duplicates().shape[0]
+        min_obs_filter_df = (
+            self.df.groupby(self.group_fields)[self.yvar_field]
+            .count()
+            .reset_index()
+            .rename(columns={self.yvar_field: &quot;obs_count&quot;})
+            .query(f&quot;obs_count &gt; {str(min_obs_threshold)}&quot;)
+            .drop(columns=&quot;obs_count&quot;)
+        )
+        n_remaining_groups = min_obs_filter_df.shape[0]
+        df = pd.merge(self.df, min_obs_filter_df, how=&quot;inner&quot;, on=self.group_fields)
+        self.df = df
+        logger.info(&quot;N groups dropped: {}&quot;.format(n_unique_groups - n_remaining_groups))</code></pre>
+<p>Below we’ll apply the filtering step as well as several others that will likely improve the quality of our forecasts.</p>
+<pre class="python"><code># filter out groups with less than min number of observations
+fcast_df.filter_groups_min_obs(min_obs_threshold=min_obs_threshold)  
+# replace any negative value with a zero
+fcast_df.replace_negative_value_with_zero()
+# replace missing dates between start and end of time-series by group
+fcast_df.pad_missing_values()
+# filter groups with consecutive missing streak longer than 4
+fcast_df.filter_groups_max_missing_streak(max_streak=4)
+# fill in missing values based on linear interpolation
+fcast_df.fill_missing_values(method=&quot;interpolate&quot;)
+# add upper and lower bounds for forecasting
+fcast_df.add_forecast_bounds(
+    floor_multiplier=fcast_floor, 
+    cap_multiplier=fcast_cap
+)
+# log transform outcome, floor, and cap values
+fcast_df.log_transform_values(yvar_field, &quot;floor_value&quot;, &quot;cap_value&quot;)
+# return transformed data
+fcast_df_trans = fcast_df.return_transformed_df()</code></pre>
+<p>Now we are ready to do some forecasting. In the next section, I’ll lay out how we go from</p>
+</div>
+<div id="pyspark-forecasting" class="section level3">
+<h3><a id="forecasting_section"></a> Pyspark Forecasting</h3>
+<p>First, we have to translate the field names to those that Prophet understands. For example, any variable needs to be named <code>ds</code> and our outcome variable <code>y</code>. We’ll use the <em>prep_for_prophet</em> function to make the transition.</p>
+<pre class="python"><code>def prep_for_prophet(
+    df: pd.DataFrame, yvar_field: str, date_field: str, group_fields: List[str]
+) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Renames key field names to be compatible with Prophet Forecasting API
+
+    Args:
+        df (pd.DataFrame): Contains data that will be used to generate forecasting
+        yvar_field (str): outcome (&quot;y&quot;) field name
+        date_field (str): date field name
+        group_fields (List[str]): grouping fields. These are often
+                represented by attributes of each unit
+                (e.g., store id, product id, etc.).
+
+    Returns:
+        pd.DataFrame: Data with compatible field names
+    &quot;&quot;&quot;
+    fields = df.columns.tolist()
+    cap_value_index = [
+        index 
+        for index, value in enumerate([&quot;cap_value&quot; in x for x in fields]) 
+        if value
+    ]
+    floor_value_index = [
+        index
+        for index, value in enumerate([&quot;floor_value&quot; in x for x in fields])
+        if value
+    ]
+    if cap_value_index and floor_value_index:
+        df = df.rename(
+            columns={
+                fields[cap_value_index[0]]: &quot;cap&quot;,
+                fields[floor_value_index[0]]: &quot;floor&quot;,
+            }
+        )
+        group_fields = group_fields + [&quot;cap&quot;, &quot;floor&quot;]
+    df = df[group_fields + [date_field] + [yvar_field]]
+    df = df.rename(columns={date_field: &quot;ds&quot;, yvar_field: &quot;y&quot;})
+    df[&quot;ds&quot;] = pd.to_datetime(df[&quot;ds&quot;])
+    return df
+    
+fcast_df_prophet_input = prep_for_prophet(
+        df=fcast_df_trans,
+        yvar_field=&quot;weekly_sales_prep_log1p&quot;,
+        date_field=date_field,
+        group_fields=group_fields,
+    )    </code></pre>
+<p>Before diving into Pyspark, let’s quickly review to make sure the dataset is in the intended format.
+- add snippet and put in github and then read in :)</p>
+<p>Additionally, we haven’t discussed what the “cap” and “floor” fields represent, so briefly cover that is well. These fields represent something.</p>
+<p>The first step is to create a Spark Session and indicate where our Java version is located. Note this step will vary depending on the environment that you are running.</p>
+<pre class="python"><code>os.environ[&quot;JAVA_HOME&quot;] = config[&quot;java_home&quot;]
+
+SPARK = (
+        SparkSession.builder.master(&quot;local[4]&quot;)
+        .appName(config[&quot;app_name&quot;])
+        .config(&quot;spark.sql.execution.arrow.pyspark.enabled&quot;, &quot;true&quot;)
+        .getOrCreate()
+    )</code></pre>
+<p>Next we’ll define the schema (or format) of our input and output data. The <code>fcast_df_prophet_input</code> object is what our input will look like, so we can start by defining that first.</p>
+<pre class="python"><code>INPUT_SCHEMA = StructType(
+        [
+            StructField(&quot;store&quot;, IntegerType(), True),
+            StructField(&quot;dept&quot;, IntegerType(), True),
+            StructField(&quot;cap&quot;, FloatType(), True),
+            StructField(&quot;floor&quot;, FloatType(), True),
+            StructField(&quot;ds&quot;, DateType(), True),
+            StructField(&quot;y&quot;, FloatType(), True),
+        ]
+    )
+    
+OUTPUT_SCHEMA = StructType(
+        [
+            StructField(&quot;ds&quot;, DateType(), True),
+            StructField(&quot;store&quot;, IntegerType(), True),
+            StructField(&quot;dept&quot;, IntegerType(), True),
+            StructField(&quot;yhat_lower&quot;, FloatType(), True),
+            StructField(&quot;yhat_upper&quot;, FloatType(), True),
+            StructField(&quot;yhat&quot;, FloatType(), True),
+        ]
+)    </code></pre>
+<p>If that all goes smoothly, you have correctly configured your spark environment. It is time to define what the output of forecasting process should be. Prophet provides many fields. However, I am primarily interested in three: the forecast (yhat), and the upper/lower bounds (yhat_upper/yhat_lower) of a 95% prediction interval.</p>
+<p>Seems reasonable. Now let’s translate our pandas dataframe into a spark dataframe and pass in the schema we defined above.</p>
+<pre class="python"><code>fcast_spark_prophet_input = SPARK.createDataFrame(
+        fcast_df_prophet_input, schema=INPUT_SCHEMA
+)</code></pre>
+<p>The function below does the actual forecasting and we’ll spend a bit time unpacking what’s happening here.</p>
+<pre class="python"><code>def run_forecast(keys, df):
+    &quot;&quot;&quot;Generate time-series forecast 
+
+    Args:
+        keys: Grouping keys
+        df: Spark Dataframe 
+    &quot;&quot;&quot;
+    fields = [&quot;ds&quot;, &quot;store&quot;, &quot;dept&quot;, &quot;yhat_lower&quot;, &quot;yhat_upper&quot;,&quot;yhat&quot;]
+    store, dept = keys
+    cap = df[&quot;cap&quot;][0]
+    floor = df[&quot;floor&quot;][0]
+    model = Prophet(
+        interval_width=0.95,
+        growth=&quot;logistic&quot;,
+        yearly_seasonality=True,
+        seasonality_mode=&quot;additive&quot;,
+    )
+    model.add_country_holidays(country_name=&quot;US&quot;)
+    model.fit(df)
+    future_df = model.make_future_dataframe(
+        periods=13, freq=&quot;W-FRI&quot;, include_history=False
+    )
+    future_df[&quot;cap&quot;] = cap
+    future_df[&quot;floor&quot;] = floor
+    results_df = model.predict(future_df)
+    results_df[&quot;store&quot;] = store
+    results_df[&quot;dept&quot;] = dept
+    results_df = results_df[fields]
+    return results_df</code></pre>
+<p>Let’s start discussin the model. In plain English, we want a forecast with 95% prediction interval, with yearly seasonality. Logistic growth indicates that we expect the growth of our time-series to reach a “saturation point” on both the upper and lower side. The “additive” part captures our belief about how we believe the time-series will evolve over time. Specifically, we assume that <check documentation here>.
+One aspect that confuses people (or at least confused me) when starting out is that the fact that you can pass in these “tuning parameters” and options as part of the input dataframe. You can then extract these for each group by referencing the field (e.g., <code>df['cap'][0])</code>) and pass them into the fit function.
+Another aspect that tends to trip people up is that when you call <code>model.make_future_dataframe</code>, you must have the same fields and inputs as the data you fit the model against. Thus, we had the <code>cap</code> and <code>floor</code> values to our future dataframe. The same rule would apply if you were using external regressors (e.g., upcoming sales or advertising events that you know will affect sales).</p>
+<p>We can put it all together with the following.</p>
+<pre class="python"><code>fcast_df_prophet_output = (
+        fcast_spark_prophet_input.groupBy(group_fields)
+        .applyInPandas(func=run_forecast, schema=OUTPUT_SCHEMA)
+        .withColumn(&quot;part&quot;, lit(&quot;forecast&quot;))
+        .withColumn(&quot;fcast_date&quot;, lit(datetime.now().strftime(&quot;%Y-%m-%d&quot;)))
+        .toPandas()
+    )</code></pre>
+<p>We should now have a 13-week ahead forecast for all store-department combinations.
+The last step is to combine our forecasts with the historical data. However, our forecasting and prediction interval fields were log-transformed prior to fitting our model. Thus, we’ll need to invert this transformation to get back to our original scale. Note that <code>np.log1p</code> and <code>np.expm1</code> are inverses of one another, and elegantly deal with zero values by adding/subtracting a value of “1” in to avoid taking the log of zero, which is undefined and will make your code go 💥</p>
+<pre class="python"><code>fcast_df_prophet_output = fcast_df_prophet_output.apply(
+        lambda x: round(np.expm1(x)) if &quot;yhat&quot; in x.name else x
+    )</code></pre>
+<p>Perfect. Now we’ll bind our input dataframe with our output dataframe so we have a complete dataset and then write it out to the root directory of our project.</p>
+<pre class="python"><code>def bind_actuals_and_forecast(
+    actuals_df: pd.DataFrame,
+    forecast_df: pd.DataFrame,
+    yvar_field: str,
+    group_fields: List[str],
+    date_field: str,
+    exp_yvar_field: bool = True,
+) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;[summary]
+
+    Args:
+        actuals_df (pd.DataFrame): [description]
+        forecast_df (pd.DataFrame): [description]
+        yvar_field (str): [description]
+        group_fields (List[str]): [description]
+        date_field (str): [description]
+        exp_yvar_field (bool, optional): [description]. Defaults to True.
+
+    Returns:
+        pd.DataFrame: [description]
+    &quot;&quot;&quot;
+    # prep actuals
+    actuals_df[&quot;part&quot;] = &quot;actuals&quot;
+    actuals_df = actuals_df.rename(columns={&quot;y&quot;: yvar_field})
+    if exp_yvar_field:
+        actuals_df[yvar_field] = actuals_df[yvar_field].apply(lambda x: np.expm1(x))
+    if any([&quot;cap&quot; in x for x in actuals_df.columns]):
+        del actuals_df[&quot;cap&quot;]
+        del actuals_df[&quot;floor&quot;]
+    # prep forecast
+    forecast_df = forecast_df.rename(
+        columns={
+            &quot;yhat&quot;: yvar_field,
+            &quot;yhat_lower&quot;: f&quot;{yvar_field}_lb&quot;,
+            &quot;yhat_upper&quot;: f&quot;{yvar_field}_ub&quot;,
+        }
+    )
+    bound_df = pd.concat([actuals_df, forecast_df])
+    bound_df = bound_df.rename(columns={&quot;ds&quot;: date_field}).sort_values(
+        group_fields + [date_field]
+    )
+    return bound_df
+
+df_forecast = bind_actuals_and_forecast(
+        actuals_df=fcast_df_prophet_input,
+        forecast_df=fcast_df_prophet_output,
+        yvar_field=yvar_field,
+        group_fields=group_fields,
+        date_field=date_field,
+)
+
+df_forecast.to_csv(Path.cwd() / &quot;sales_data_forecast.csv&quot;, index=False)</code></pre>
+<p>We’ll transition back to the world of R for some quick quality-assurance work. Let’s read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to just do a quick sanity check. In short, “do the forecasts look reasonable for a few randomly sampled grouped?” We’ll read the raw output from github. Let’s start by examining the first and last five rows for a single Store-Dept combination.</p>
+<pre class="r"><code>library(tidyverse)
+library(timetk)
+library(lubridate)
+library(gt)
+
+fcast_df_url = &quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/sales_data_forecast.csv&quot;
+
+fcast_df = read_csv(fcast_df_url)</code></pre>
+<pre class="r"><code>df_store_dept_sample &lt;- fcast_df %&gt;% 
+  filter(store == 1, dept == 1) %&gt;% 
+  mutate(date = as_date(date))</code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#kjlawyujzx .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#kjlawyujzx .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#kjlawyujzx .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#kjlawyujzx .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#kjlawyujzx .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#kjlawyujzx .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#kjlawyujzx .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#kjlawyujzx .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#kjlawyujzx .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#kjlawyujzx .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#kjlawyujzx .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#kjlawyujzx .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#kjlawyujzx .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#kjlawyujzx .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kjlawyujzx .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#kjlawyujzx .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#kjlawyujzx .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#kjlawyujzx .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#kjlawyujzx .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#kjlawyujzx .gt_left {
+  text-align: left;
+}
+
+#kjlawyujzx .gt_center {
+  text-align: center;
+}
+
+#kjlawyujzx .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#kjlawyujzx .gt_font_normal {
+  font-weight: normal;
+}
+
+#kjlawyujzx .gt_font_bold {
+  font-weight: bold;
+}
+
+#kjlawyujzx .gt_font_italic {
+  font-style: italic;
+}
+
+#kjlawyujzx .gt_super {
+  font-size: 65%;
+}
+
+#kjlawyujzx .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="kjlawyujzx" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="8" class="gt_heading gt_title gt_font_normal" style><strong>Top 5 Rows of Forecasting Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="8" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">store</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">dept</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">date</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">part</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales_lb</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales_ub</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">fcast_date</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-05</td>
+      <td class="gt_row gt_center">24924</td>
+      <td class="gt_row gt_center">actuals</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-12</td>
+      <td class="gt_row gt_center">46039</td>
+      <td class="gt_row gt_center">actuals</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-19</td>
+      <td class="gt_row gt_center">41596</td>
+      <td class="gt_row gt_center">actuals</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-02-26</td>
+      <td class="gt_row gt_center">19404</td>
+      <td class="gt_row gt_center">actuals</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2010-03-05</td>
+      <td class="gt_row gt_center">21828</td>
+      <td class="gt_row gt_center">actuals</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#vqoondoukn .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#vqoondoukn .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#vqoondoukn .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#vqoondoukn .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#vqoondoukn .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#vqoondoukn .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#vqoondoukn .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#vqoondoukn .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#vqoondoukn .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#vqoondoukn .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#vqoondoukn .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#vqoondoukn .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#vqoondoukn .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#vqoondoukn .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#vqoondoukn .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#vqoondoukn .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#vqoondoukn .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#vqoondoukn .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#vqoondoukn .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#vqoondoukn .gt_left {
+  text-align: left;
+}
+
+#vqoondoukn .gt_center {
+  text-align: center;
+}
+
+#vqoondoukn .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#vqoondoukn .gt_font_normal {
+  font-weight: normal;
+}
+
+#vqoondoukn .gt_font_bold {
+  font-weight: bold;
+}
+
+#vqoondoukn .gt_font_italic {
+  font-style: italic;
+}
+
+#vqoondoukn .gt_super {
+  font-size: 65%;
+}
+
+#vqoondoukn .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="vqoondoukn" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+    <col style="width:75px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="8" class="gt_heading gt_title gt_font_normal" style><strong>Bottom 5 Rows of Forecasting Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="8" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">store</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">dept</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">date</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">part</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales_lb</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">weekly_sales_ub</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">fcast_date</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2012-12-28</td>
+      <td class="gt_row gt_center">30948</td>
+      <td class="gt_row gt_center">forecast</td>
+      <td class="gt_row gt_center">21883</td>
+      <td class="gt_row gt_center">42839</td>
+      <td class="gt_row gt_center">2021-04-05</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2013-01-04</td>
+      <td class="gt_row gt_center">21138</td>
+      <td class="gt_row gt_center">forecast</td>
+      <td class="gt_row gt_center">14793</td>
+      <td class="gt_row gt_center">30024</td>
+      <td class="gt_row gt_center">2021-04-05</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2013-01-11</td>
+      <td class="gt_row gt_center">16149</td>
+      <td class="gt_row gt_center">forecast</td>
+      <td class="gt_row gt_center">11384</td>
+      <td class="gt_row gt_center">22832</td>
+      <td class="gt_row gt_center">2021-04-05</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2013-01-18</td>
+      <td class="gt_row gt_center">15553</td>
+      <td class="gt_row gt_center">forecast</td>
+      <td class="gt_row gt_center">10712</td>
+      <td class="gt_row gt_center">21662</td>
+      <td class="gt_row gt_center">2021-04-05</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">1</td>
+      <td class="gt_row gt_center">2013-01-25</td>
+      <td class="gt_row gt_center">18954</td>
+      <td class="gt_row gt_center">forecast</td>
+      <td class="gt_row gt_center">13475</td>
+      <td class="gt_row gt_center">27282</td>
+      <td class="gt_row gt_center">2021-04-05</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>Let’s select sample a few forecasts and plot them out.</p>
+<pre class="r"><code>set.seed(2021)
+fcast_df %&gt;% 
+  filter(store &lt; 3,
+         dept %in% c(df %&gt;% distinct(dept) %&gt;% sample_n(2) %&gt;% pull())
+         ) %&gt;% 
+  mutate(store_id = paste(store, dept, sep=&#39;_&#39;)) %&gt;% 
+  select(date, store_id, contains(&#39;weekly&#39;)) %&gt;% 
+  pivot_longer(contains(&#39;weekly&#39;)) %&gt;%  
+  mutate(name = str_to_title(str_replace_all(name, &#39;_&#39;, &#39; &#39;))) %&gt;% 
+  ggplot(aes(date, value, color = name)) + 
+  geom_line(size = 1.5, alpha = 0.8) + 
+  facet_grid(store_id ~ ., scales = &#39;free&#39;) + 
+  theme_bw() + 
+  scale_y_continuous(labels = scales::comma_format()) + 
+  labs(x = &#39;Date&#39;,
+       y = &#39;Weekly Sales&#39;,
+       color = NULL,
+       title = &#39;Sample Forecasts&#39;
+       ) + 
+  theme(legend.position = &quot;top&quot;,
+        legend.text = element_text(size = 12),
+        strip.text.y = element_text(size = 12),
+        plot.title = element_text(size = 14)
+        )</code></pre>
+<p><img src="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-24-1.png" width="1152" /></p>
+<p>Overall, the forecasts seem reasonable.</p>
+</div>
+<div id="next-steps" class="section level3">
+<h3>Next Steps</h3>
+<p>Now you have what I would consider to be a functioning prototype working in a sandbox of local environment, the next step naturally be to transition it to a cloud environment where the workflow could be scheduled and monitored.
+Additionally, if the goal was to improve model performance, a natural first place to start is by incorporating additional data sources. For example, in the current example, some of the hisot. Continuing with this theme, another place to look would be at historicla pricing information for the products. For most common consumer products, demand varies as a function of price. Thus, knowing when sales happened in the past – and their affect on consumer demand – would be useful for anticipating how future consumption would respond to upcoming sales. While many tutorials will focus a lot on hyperparameter tuning, I’ve found you are going make the biggest gains by asking yourself what factors external to your time-series .
+Until next time, happy forecasting.</p>
+</div>
+
+    </div>
+
+    
+
+
+
+
+
+
+<div class="article-tags">
+  
+  <a class="badge badge-light" href="/tag/pyspark/">Pyspark</a>
+  
+  <a class="badge badge-light" href="/tag/time-series-forecasting/">Time Series Forecasting</a>
+  
+  <a class="badge badge-light" href="/tag/prophet/">Prophet</a>
+  
+</div>
+
+
+
+<div class="share-box" aria-hidden="true">
+  <ul class="share">
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://twitter.com/intent/tweet?url=/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/&amp;text=Scalable%20Time-Series%20Forecasting%20in%20Python" target="_blank" rel="noopener" class="share-btn-twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.facebook.com/sharer.php?u=/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/&amp;t=Scalable%20Time-Series%20Forecasting%20in%20Python" target="_blank" rel="noopener" class="share-btn-facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="mailto:?subject=Scalable%20Time-Series%20Forecasting%20in%20Python&amp;body=/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/" target="_blank" rel="noopener" class="share-btn-email">
+          <i class="fas fa-envelope"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.linkedin.com/shareArticle?url=/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/&amp;title=Scalable%20Time-Series%20Forecasting%20in%20Python" target="_blank" rel="noopener" class="share-btn-linkedin">
+          <i class="fab fa-linkedin-in"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="whatsapp://send?text=Scalable%20Time-Series%20Forecasting%20in%20Python%20/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://service.weibo.com/share/share.php?url=/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/&amp;title=Scalable%20Time-Series%20Forecasting%20in%20Python" target="_blank" rel="noopener" class="share-btn-weibo">
+          <i class="fab fa-weibo"></i>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+  
+  
+    
+  
+  
+  
+  <div class="media author-card content-widget-hr">
+    
+      
+      <img class="avatar mr-3 avatar-circle" src="/author/mark-leboeuf/avatar_hu95484a0837f0832a1e8242074628a955_46074_270x270_fill_q75_lanczos_center.jpg" alt="Mark LeBoeuf">
+    
+
+    <div class="media-body">
+      <h5 class="card-title">Mark LeBoeuf</h5>
+      <h6 class="card-subtitle">Data Scientist</h6>
+      
+      <ul class="network-icon" aria-hidden="true">
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="/" >
+        <i class="fas fa-"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://github.com/thecodeforest" target="_blank" rel="noopener">
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://www.linkedin.com/in/markleboeuf/" target="_blank" rel="noopener">
+        <i class="fab fa-linkedin"></i>
+      </a>
+    </li>
+  
+</ul>
+
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+  </div>
+</article>
+  </div>
+
+  <div class="page-footer">
+    
+    
+    <div class="container">
+      <footer class="site-footer">
+
+  
+
+  
+  <p class="powered-by">
+    
+    
+      
+      <a href="/terms/"></a>
+    
+  </p>
+  
+
+  <p class="powered-by">
+    Mark LeBoeuf
+  </p>
+
+  
+  
+
+
+
+
+
+
+  <p class="powered-by">
+    
+    
+    
+      
+      
+      
+      
+      
+      
+      Published with <a href="https://wowchemy.com/?utm_campaign=poweredby" target="_blank" rel="noopener">Wowchemy</a> — the free, <a href="https://github.com/wowchemy/wowchemy-hugo-modules" target="_blank" rel="noopener">open source</a> website builder that empowers creators.
+    
+  </p>
+</footer>
+
+    </div>
+    
+  </div>
+
+  
+<div id="modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cite</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre><code class="tex hljs"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-primary my-1 js-copy-cite" href="#" target="_blank">
+          <i class="fas fa-copy"></i> Copy
+        </a>
+        <a class="btn btn-outline-primary my-1 js-download-cite" href="#" target="_blank">
+          <i class="fas fa-download"></i> Download
+        </a>
+        <div id="modal-error"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      
+
+    
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/instant.page/5.1.0/instantpage.min.js" integrity="sha512-1+qUtKoh9XZW7j+6LhRMAyOrgSQKenQ4mluTR+cvxXjP1Z54RxZuzstR/H9kgPXQsVB8IW7DMDFUJpzLjvhGSQ==" crossorigin="anonymous"></script>
+
+      
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js" integrity="sha256-CBrpuqrMhXwcLLUd5tvQ4euBHCdh7wGlDfNz8vbu/iI=" crossorigin="anonymous"></script>
+      
+
+      
+      
+
+      
+
+      
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/highlight.min.js" integrity="sha512-TDKKr+IvoqZnPzc3l35hdjpHD0m+b2EC2SrLEgKDRWpxf2rFCxemkgvJ5kfU48ip+Y+m2XVKyOCD85ybtlZDmw==" crossorigin="anonymous"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/r.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/python.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/latex.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/sql.min.js"></script>
+        
+      
+
+    
+
+    
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+    
+
+    
+    
+
+    
+    
+    
+      
+      <script id="search-hit-fuse-template" type="text/x-template">
+        <div class="search-hit" id="summary-{{key}}">
+          <div class="search-hit-content">
+            <div class="search-hit-name">
+              <a href="{{relpermalink}}">{{title}}</a>
+              <div class="article-metadata search-hit-type">{{type}}</div>
+              <p class="search-hit-description">{{snippet}}</p>
+            </div>
+          </div>
+        </div>
+      </script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.2.1/fuse.min.js" integrity="sha256-VzgmKYmhsGNNN4Ph1kMW+BjoYJM2jV5i4IlFoeZA9XI=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
+      
+    
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    <script src="/js/bootstrap.bundle.min.6aed84840afc03ab4d5750157f69c120.js"></script>
+
+    
+    
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+      
+      
+    
+    
+    <script src="/en/js/wowchemy.min.b61a8f62b6e5c0cd322c8158c5b5dfb6.js"></script>
+
+    
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+
+
+
+</body>
+</html>

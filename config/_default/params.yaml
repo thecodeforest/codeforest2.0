@@ -79,6 +79,8 @@ highlight_languages:
   - r
   - python
   - latex
+  - sql
+highlight_style: "tomorrow-night-eighties"  
 math: false
 diagram: false
 privacy_pack: false

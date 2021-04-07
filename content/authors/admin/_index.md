@@ -1,6 +1,4 @@
 ---
-bio: Mark research interests include distributed robotics, mobile computing and programmable
-  matter.
 education:
   courses:
   - course: MS in Analytics

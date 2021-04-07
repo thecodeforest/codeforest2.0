@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Beta Distribution | Code Forest</title>
+    <link>/tag/beta-distribution/</link>
+      <atom:link href="/tag/beta-distribution/index.xml" rel="self" type="application/rss+xml" />
+    <description>Beta Distribution</description>
+    <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Mon, 15 Mar 2021 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <title>Beta Distribution</title>
+      <link>/tag/beta-distribution/</link>
+    </image>
+    
+    <item>
+      <title>Causal Inference Part 1</title>
+      <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
+      <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
+      <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
+      <description>
+
+
+&lt;p&gt;BING BONG!!!
+Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y.&lt;/p&gt;
+&lt;p&gt;Inputs, Interventions (T), and Outputs. What is the causal relationship between these three variables?&lt;/p&gt;
+&lt;p&gt;X is what you know about the person. X -&amp;gt; T (treatment plan -&amp;gt; binary (treatment 1, treatment 2))&lt;/p&gt;
+&lt;p&gt;Challenge is you only observe one outcome. And you must impute the other outcome. And this is the crux of the counterfactual.&lt;/p&gt;
+&lt;p&gt;Conditional Average Treatment Effect (For someone with a specific age, there is a big difference between the two treatments). What you want to predict.&lt;/p&gt;
+&lt;p&gt;Average treatment effect (does not condition on any variable) (On average, this intervention is a good intervention)&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Choosing a Fantasy Football Quarterback</title>
+      <link>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
+      <pubDate>Sun, 10 Sep 2017 21:13:14 -0500</pubDate>
+      <guid>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
+      <description>
+
+
+&lt;p&gt;&lt;img src=&#34;/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;Understanding a new concept is all about connecting it with something you already know. I don’t know much, but I do know Fantasy Football. Thus, when I come across new concepts, I often think to myself, “How can I use this information to beat my friend Steve in Fantasy Football”? This very question was the impetus for putting these words and figures together in a post, which will introduce the idea of using the Beta Distribution to determine your weekly starter. I’ll explain this approach in the context of my 2015 Fantasy Football season.&lt;/p&gt;
+&lt;p&gt;At the outset of that season, I drafted two quarterbacks: Joe Flacco and Marcus Mariota (it was a rough draft). Flacco had been in the NFL for a few years, while Mariota was still a rookie yet to play a game. I was also considering a separate rookie, Jameis Winston, who was available to pick up anytime during the season off the waiver wire. Throughout the season, I was faced with the following questions:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Who do I make the starting QB?&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;If one QB is performing poorly, when is the right time to make the switch (e.g., Flacco -&amp;gt; Mariota; Flacco -&amp;gt; Winston; Mariota -&amp;gt; Winston)?&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This question is faced by NFL coaches and fantasy owners alike. If your QB has a few bad weeks, should you continue with them into the next week, replace them with the 2nd string QB, or sign a free agent to your team mid-season?&lt;/p&gt;
+&lt;p&gt;Before getting into the technical details, let’s first define what “Success” looks like for a Fantasy Football QB. Success can be defined in one word: Consistency. A QB that throws three touchdowns (TDs) every game for the first six games of the season (18 total) is better than a QB who throws five TDs for the first three games and then one TD during the next three games, despite having thrown the same number of TDs. Simply put - you want consistent, reliable performance every week. It doesn’t matter if you win by one point or 50 points – a win is a win. Thus, I evaluate my QB’s performance on the following criteria: A “Successful” performance is defined as &lt;strong&gt;3 or more touchdowns AND/OR 300 or more yards&lt;/strong&gt; for a given week. Touchdowns and passing yards are the two primary sources of QB fantasy points, and a +3TD|300yard weekly statline should cement a QB amongst that week’s top performers. Failing to meet either of these criteria was defined as an “Unsuccessful” performance. Note that this label could also factor in interceptions, pass completions, and fumble, but we’ll keep it simple and just focus on passing yards and passing touchdowns.&lt;/p&gt;
+&lt;p&gt;Having defined the evaluation criteria, the data generating process was modeled via the beta distribution. Recall that the beta distribution defines a distribution of probabilities, and we’re interested in the probability of our QB having a Successful week. There are several years of performance history on Joe Flacco, so we can provide a reasonably informed estimate of his weekly probabilty for achieving success (i.e., our prior). In contrast, there is no NFL game history on Mariota or Winston, so we’ll assign each a uniform or uninformative prior. Our estimate of the Success parameter for Winston and Mariota will change rapidly as we acquire in-season data because our posterior is determined entirely from the data. We could create a more informed-–and stronger-–prior by assigning Mariota and Winston the historic first-year league average for all rookie QBs entering the NFL but we’ll keep it simple. A uniform prior means that all probabilities from 0-1 are equally likely.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;collecting-qb-data&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Collecting QB Data&lt;/h3&gt;
+&lt;p&gt;We’ll use the &lt;code&gt;nflgame&lt;/code&gt; python package to gather QB data. We’ll pull 2013-2014 weekly performance data for Joe Flacco to calculate our prior, as well as the 2015 data for all three players. During the season we’ll update our priors to determine which QB we should play for a given week. That is, as we acquire results over the season, updates will be made to obtain a better, more reliable estimate of the “success” parameter for each QB.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import nflgame
+import pandas as pd
+
+game_years = range(2013, 2016)
+game_weeks = range(1, 17)
+qbs = (&amp;quot;Joe Flacco&amp;quot;, 
+       &amp;quot;Marcus Mariota&amp;quot;,
+       &amp;quot;Jameis Winston&amp;quot;)
+       
+def get_passing_data(year, week, players, qbs):
+    qb_list = list()
+    for p in players.passing():
+        player = &amp;quot; &amp;quot;.join(str(p.player).split(&amp;quot; &amp;quot;)[:2]) 
+        if player in qbs:
+            qb_list.append([year, week, player, p.passing_tds, p.passing_yds])
+    return qb_list
+    
+quarterback_data = pd.DataFrame()
+for year in game_years:
+    print &amp;quot;Retrieving Player Data for {year}&amp;quot;.format(year = year)
+    for week in game_weeks:
+        games = nflgame.games(year, week)
+        players = nflgame.combine_game_stats(games)
+        temp_qb_stats = get_passing_data(year, week, players, qbs)
+        quarterback_data = quarterback_data.append(pd.DataFrame(temp_qb_stats))
+        
+quarterback_data.columns = [&amp;quot;year&amp;quot;, &amp;quot;week&amp;quot;, &amp;quot;player&amp;quot;, &amp;quot;touchdowns&amp;quot;, &amp;quot;passing_yds&amp;quot;]
+quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,13 @@
+{"input_data_path": "data/input",
+ "output_data_dir": "data/output",
+ "java_home": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
+ "app_name": "pyspark_forecasting_tutorial",
+ "fcast_parameters": {"group_fields": ["store", "dept"],
+                      "date_field": "date",
+                      "yvar_field": "weekly_sales",
+                      "log_transform_yvar": "True",
+                      "ts_frequency": "W-FRI",
+                      "forecast_floor": 0,
+                      "forecast_cap": 1.5
+}
+}
