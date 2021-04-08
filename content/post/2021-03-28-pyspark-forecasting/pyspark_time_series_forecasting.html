@@ -1,31 +1,34 @@
 ---
 title: "Scalable Time-Series Forecasting in Python"
 date: '2021-03-29T21:13:14-05:00'
-summary: Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via Pyspark.
+summary: Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark.
 tags:
-- Pyspark
-- Time Series Forecasting
+- PySpark
+- Time-Series Forecasting
 - Prophet
+- Python
 categories:
-- Pyspark
-- Time Series Forecasting
+- PySpark
+- Time-Series Forecasting
 - Prophet
+- Python
 ---
 
 
 
+<p><img src="/post/2021-03-28-pyspark-forecasting/images/header_image.png" width="700" height="600" /></p>
 <div id="overview" class="section level3">
 <h3>Overview</h3>
-<p>Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via Pyspark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel.</p>
+<p>Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel.</p>
 </div>
 <div id="getting-started" class="section level3">
 <h3>Getting Started</h3>
-<p>We’ll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the <a href="https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting">Codeforest Repository</a>. Before diving into the details, let’s briefly review the key modules and files.</p>
-<p><img src="/post/2021-03-28-pyspark-forecasting/images/project_tree.png" width="700" height="400" />
-<strong>conf.json</strong> - A configuration file that defines various parameters for our job, including grouping variables, our outcome variable, or if we want to log transform the outcome variable. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
+<p>We’ll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the <a href="https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast">Codeforest Repository</a>. Before diving into the details, let’s briefly review the key modules and files.</p>
+<p><img src="/post/2021-03-28-pyspark-forecasting/images/project_tree.png" width="300" height="75" />
+<strong>conf.json</strong> - A configuration file that defines various parameters for our job. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
 <img src="/post/2021-03-28-pyspark-forecasting/images/config_file.png" width="700" height="400" />
 <strong>pyspark_fcast.py</strong> - Our main module, or where the forecasting gets done. We’ll cover this in detail below.</p>
-<p><strong>fcast_data_frame.py</strong> - A class responsible for common pre-forecasting data transformations. These include filling in missing values, replacing negative values with zeros, or filtering time-series with only a few observations. We’ll cover several of these methods below, but I’d recommend visiting <a href="">here</a> if you’d like to access all methods.</p>
+<p><strong>fcast_data_frame.py</strong> - A class responsible for common pre-forecasting data transformations. These include filling in missing values, filtering time-series with only a few observations, or log transforming our outcome variable. Visit <a href="https://github.com/thecodeforest/codeforest2.0/blob/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast/fcast_helpers/fcast_data_frame.py">here</a> for access to all methods.</p>
 <p>You’ll also need to import the following packages to follow along with the tutorial.</p>
 <pre class="python"><code>import argparse
 import json
@@ -39,19 +42,19 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from fbprophet import Prophet # Using fbprophet==0.7.1 &amp; pystan==2.18.0
-from pyspark.sql import SparkSession # Using pyspark==3.0.1
+from fbprophet import Prophet # fbprophet==0.7.1 &amp; pystan==2.18.0
+from pyspark.sql import SparkSession # pyspark==3.0.1
 from pyspark.sql.functions import lit
 from pyspark.sql.types import (DateType, FloatType, IntegerType, StructField,
                                StructType)
                                
 from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
-<p>Assuming the above imports were successful, we’ll peak at a few rows in our data.
+<p>Assuming the imports were successful, we’ll peak at a few rows in our data to get a feel for the format.
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#yowaonfyrz .gt_table {
+#ygghhxcffs .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -76,7 +79,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_heading {
+#ygghhxcffs .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -88,7 +91,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_title {
+#ygghhxcffs .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -98,7 +101,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-bottom-width: 0;
 }
 
-#yowaonfyrz .gt_subtitle {
+#ygghhxcffs .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -108,13 +111,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-top-width: 0;
 }
 
-#yowaonfyrz .gt_bottom_border {
+#ygghhxcffs .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_col_headings {
+#ygghhxcffs .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -129,7 +132,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_col_heading {
+#ygghhxcffs .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -149,7 +152,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   overflow-x: hidden;
 }
 
-#yowaonfyrz .gt_column_spanner_outer {
+#ygghhxcffs .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -161,15 +164,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   padding-right: 4px;
 }
 
-#yowaonfyrz .gt_column_spanner_outer:first-child {
+#ygghhxcffs .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#yowaonfyrz .gt_column_spanner_outer:last-child {
+#ygghhxcffs .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#yowaonfyrz .gt_column_spanner {
+#ygghhxcffs .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -181,7 +184,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   width: 100%;
 }
 
-#yowaonfyrz .gt_group_heading {
+#ygghhxcffs .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -203,7 +206,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   vertical-align: middle;
 }
 
-#yowaonfyrz .gt_empty_group_heading {
+#ygghhxcffs .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -218,15 +221,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   vertical-align: middle;
 }
 
-#yowaonfyrz .gt_from_md > :first-child {
+#ygghhxcffs .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#yowaonfyrz .gt_from_md > :last-child {
+#ygghhxcffs .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#yowaonfyrz .gt_row {
+#ygghhxcffs .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -245,7 +248,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   overflow-x: hidden;
 }
 
-#yowaonfyrz .gt_stub {
+#ygghhxcffs .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -257,7 +260,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   padding-left: 12px;
 }
 
-#yowaonfyrz .gt_summary_row {
+#ygghhxcffs .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -267,7 +270,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   padding-right: 5px;
 }
 
-#yowaonfyrz .gt_first_summary_row {
+#ygghhxcffs .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -277,7 +280,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_grand_summary_row {
+#ygghhxcffs .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -287,7 +290,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   padding-right: 5px;
 }
 
-#yowaonfyrz .gt_first_grand_summary_row {
+#ygghhxcffs .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -297,11 +300,11 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_striped {
+#ygghhxcffs .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#yowaonfyrz .gt_table_body {
+#ygghhxcffs .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -310,7 +313,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_footnotes {
+#ygghhxcffs .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -324,13 +327,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_footnote {
+#ygghhxcffs .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#yowaonfyrz .gt_sourcenotes {
+#ygghhxcffs .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -344,46 +347,46 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#yowaonfyrz .gt_sourcenote {
+#ygghhxcffs .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#yowaonfyrz .gt_left {
+#ygghhxcffs .gt_left {
   text-align: left;
 }
 
-#yowaonfyrz .gt_center {
+#ygghhxcffs .gt_center {
   text-align: center;
 }
 
-#yowaonfyrz .gt_right {
+#ygghhxcffs .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#yowaonfyrz .gt_font_normal {
+#ygghhxcffs .gt_font_normal {
   font-weight: normal;
 }
 
-#yowaonfyrz .gt_font_bold {
+#ygghhxcffs .gt_font_bold {
   font-weight: bold;
 }
 
-#yowaonfyrz .gt_font_italic {
+#ygghhxcffs .gt_font_italic {
   font-style: italic;
 }
 
-#yowaonfyrz .gt_super {
+#ygghhxcffs .gt_super {
   font-size: 65%;
 }
 
-#yowaonfyrz .gt_footnote_marks {
+#ygghhxcffs .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="yowaonfyrz" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="ygghhxcffs" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:155px;"/>
     <col style="width:155px;"/>
@@ -441,7 +444,9 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame</code></pre>
   
   
 </table></div>
-Let’s now discuss the process of passing in the forecasting parameters and documenting which parameters we’ve chosen. We’ll use the following command to generate all the forecasts: <code>python3 pyspark_fcast.py --forecast-config-file 'config/conf.json'</code>. Here we are passing in the location of our configuration file and extracting the parameters. Don’t worry if the individual parameters don’t make sense now. I’ll explain each in greater detail below.</p>
+Let’s now discuss the process of passing and documenting the forecasting parameters. We’ll execute the following from the command line to generate our forecasts:<br />
+<code>python3 pyspark_fcast.py --forecast-config-file 'config/conf.json'</code><br />
+Here we are passing in the location of our configuration file and extracting the parameters. Don’t worry if the individual parameters don’t make sense now. I’ll explain each in greater detail below.</p>
 <pre class="python"><code>args = read_args()
 
 with open(args.forecast_config_file) as f:
@@ -494,8 +499,8 @@ def log_input_params(config: dict) -&gt; None:
         for x in zip(params.index, params.iloc[:, 0])
     ]
     return None</code></pre>
-<p>There are several benefits to documenting our inputs. First, we can validate if the correct parameters have been passed to our forecasting process. Having a record of these values facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save a lot of time as your project matures.</p>
-<p>Now we that we have our parameters and have set up logging, we’ll read in the data stored <a href="https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv">here</a> and execute some basic field formatting with <em>clean_names</em>.</p>
+<p>There are several benefits to documenting our inputs. First, we can validate if the correct parameters have been passed to our forecasting process. Having a record of these values facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save you time as your project matures.</p>
+<p>We have our parameters and have set up logging. Next, we’ll read in the data stored <a href="https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv">here</a> and execute some basic field formatting with <em>clean_names</em>.</p>
 <pre class="python"><code>def clean_names(df: pd.DataFrame) -&gt; pd.DataFrame:
     &quot;&quot;&quot;Applies the following transformations to column names:
         - Removes camel case
@@ -520,14 +525,14 @@ def log_input_params(config: dict) -&gt; None:
 sales_df = clean_names(sales_df)</code></pre>
 <p>If you don’t have a <em>clean_names</em>-type function as part of your codebase, I’d highly recommend creating one. It’s a function that I use frequently when reading data from various sources and encourages a standardized way of formatting field names.</p>
 <p>Now that we have our data, we’ll do some pre-forecasting data cleaning. The main steps are outlined below:</p>
-<p><strong>Filter groups with limited observations</strong> - It’s a good idea to put predictions against items where you have some historical data. While the space of <a href="https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/">cold-start forecasting</a> is very interesting, it is outside the scope of this post. Thus, we are putting a minimum number of data points in place for something to be considered. This is also a good idea because some forecasting algorithms will not fit a model against a few observations, causing your program to crash.</p>
+<p><strong>Filter groups with limited observations</strong> - It’s a good idea to put predictions against items where you have some historical data. While the space of <a href="https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/">cold-start forecasting</a> is very interesting, it is outside the scope of this post. Thus, we are putting a minimum threshold on the number of data points per group. This is also a good idea because some forecasting algorithms will not fit a model against a few observations, causing your program to crash.</p>
 <p><strong>Replace negative values with zero</strong> - I’m assuming a negative value represents a returned product. Our goal is to forecast <strong>demand</strong> not <strong>demand - returns</strong>. This is an assumption that would need to be validated with domain knowledge.</p>
-<p><strong>Pad missing values</strong> - This is an important but easy to overlook step for one simple reason: Missing values in time-series data are not usually flagged as “missing”. For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I’ve provied a brief example below to illustrate what this looks like from a data perspective.</p>
+<p><strong>Pad missing values</strong> - Accounting for missing data is an easy step to overlook for one simple reason: Missing values in time-series data are not usually flagged as “missing”. For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I’ve provided a brief example below to illustrate what this looks like from a data perspective.</p>
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#loxrrbxeef .gt_table {
+#gpdwgiewva .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -552,7 +557,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_heading {
+#gpdwgiewva .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -564,7 +569,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_title {
+#gpdwgiewva .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -574,7 +579,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-bottom-width: 0;
 }
 
-#loxrrbxeef .gt_subtitle {
+#gpdwgiewva .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -584,13 +589,13 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-width: 0;
 }
 
-#loxrrbxeef .gt_bottom_border {
+#gpdwgiewva .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_col_headings {
+#gpdwgiewva .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -605,7 +610,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_col_heading {
+#gpdwgiewva .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -625,7 +630,7 @@ sales_df = clean_names(sales_df)</code></pre>
   overflow-x: hidden;
 }
 
-#loxrrbxeef .gt_column_spanner_outer {
+#gpdwgiewva .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -637,15 +642,15 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 4px;
 }
 
-#loxrrbxeef .gt_column_spanner_outer:first-child {
+#gpdwgiewva .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#loxrrbxeef .gt_column_spanner_outer:last-child {
+#gpdwgiewva .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#loxrrbxeef .gt_column_spanner {
+#gpdwgiewva .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -657,7 +662,7 @@ sales_df = clean_names(sales_df)</code></pre>
   width: 100%;
 }
 
-#loxrrbxeef .gt_group_heading {
+#gpdwgiewva .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -679,7 +684,7 @@ sales_df = clean_names(sales_df)</code></pre>
   vertical-align: middle;
 }
 
-#loxrrbxeef .gt_empty_group_heading {
+#gpdwgiewva .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -694,15 +699,15 @@ sales_df = clean_names(sales_df)</code></pre>
   vertical-align: middle;
 }
 
-#loxrrbxeef .gt_from_md > :first-child {
+#gpdwgiewva .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#loxrrbxeef .gt_from_md > :last-child {
+#gpdwgiewva .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#loxrrbxeef .gt_row {
+#gpdwgiewva .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -721,7 +726,7 @@ sales_df = clean_names(sales_df)</code></pre>
   overflow-x: hidden;
 }
 
-#loxrrbxeef .gt_stub {
+#gpdwgiewva .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -733,7 +738,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-left: 12px;
 }
 
-#loxrrbxeef .gt_summary_row {
+#gpdwgiewva .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -743,7 +748,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 5px;
 }
 
-#loxrrbxeef .gt_first_summary_row {
+#gpdwgiewva .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -753,7 +758,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_grand_summary_row {
+#gpdwgiewva .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -763,7 +768,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 5px;
 }
 
-#loxrrbxeef .gt_first_grand_summary_row {
+#gpdwgiewva .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -773,11 +778,11 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_striped {
+#gpdwgiewva .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#loxrrbxeef .gt_table_body {
+#gpdwgiewva .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -786,7 +791,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_footnotes {
+#gpdwgiewva .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -800,13 +805,13 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_footnote {
+#gpdwgiewva .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#loxrrbxeef .gt_sourcenotes {
+#gpdwgiewva .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -820,46 +825,46 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#loxrrbxeef .gt_sourcenote {
+#gpdwgiewva .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#loxrrbxeef .gt_left {
+#gpdwgiewva .gt_left {
   text-align: left;
 }
 
-#loxrrbxeef .gt_center {
+#gpdwgiewva .gt_center {
   text-align: center;
 }
 
-#loxrrbxeef .gt_right {
+#gpdwgiewva .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#loxrrbxeef .gt_font_normal {
+#gpdwgiewva .gt_font_normal {
   font-weight: normal;
 }
 
-#loxrrbxeef .gt_font_bold {
+#gpdwgiewva .gt_font_bold {
   font-weight: bold;
 }
 
-#loxrrbxeef .gt_font_italic {
+#gpdwgiewva .gt_font_italic {
   font-style: italic;
 }
 
-#loxrrbxeef .gt_super {
+#gpdwgiewva .gt_super {
   font-size: 65%;
 }
 
-#loxrrbxeef .gt_footnote_marks {
+#gpdwgiewva .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="loxrrbxeef" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="gpdwgiewva" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:155px;"/>
     <col style="width:155px;"/>
@@ -921,7 +926,7 @@ sales_df = clean_names(sales_df)</code></pre>
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#bnyvklppaf .gt_table {
+#mfjkkazozs .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -946,7 +951,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_heading {
+#mfjkkazozs .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -958,7 +963,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_title {
+#mfjkkazozs .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -968,7 +973,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-bottom-width: 0;
 }
 
-#bnyvklppaf .gt_subtitle {
+#mfjkkazozs .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -978,13 +983,13 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-width: 0;
 }
 
-#bnyvklppaf .gt_bottom_border {
+#mfjkkazozs .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_col_headings {
+#mfjkkazozs .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -999,7 +1004,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_col_heading {
+#mfjkkazozs .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1019,7 +1024,7 @@ sales_df = clean_names(sales_df)</code></pre>
   overflow-x: hidden;
 }
 
-#bnyvklppaf .gt_column_spanner_outer {
+#mfjkkazozs .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1031,15 +1036,15 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 4px;
 }
 
-#bnyvklppaf .gt_column_spanner_outer:first-child {
+#mfjkkazozs .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#bnyvklppaf .gt_column_spanner_outer:last-child {
+#mfjkkazozs .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#bnyvklppaf .gt_column_spanner {
+#mfjkkazozs .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1051,7 +1056,7 @@ sales_df = clean_names(sales_df)</code></pre>
   width: 100%;
 }
 
-#bnyvklppaf .gt_group_heading {
+#mfjkkazozs .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1073,7 +1078,7 @@ sales_df = clean_names(sales_df)</code></pre>
   vertical-align: middle;
 }
 
-#bnyvklppaf .gt_empty_group_heading {
+#mfjkkazozs .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1088,15 +1093,15 @@ sales_df = clean_names(sales_df)</code></pre>
   vertical-align: middle;
 }
 
-#bnyvklppaf .gt_from_md > :first-child {
+#mfjkkazozs .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#bnyvklppaf .gt_from_md > :last-child {
+#mfjkkazozs .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#bnyvklppaf .gt_row {
+#mfjkkazozs .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1115,7 +1120,7 @@ sales_df = clean_names(sales_df)</code></pre>
   overflow-x: hidden;
 }
 
-#bnyvklppaf .gt_stub {
+#mfjkkazozs .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1127,7 +1132,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-left: 12px;
 }
 
-#bnyvklppaf .gt_summary_row {
+#mfjkkazozs .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1137,7 +1142,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 5px;
 }
 
-#bnyvklppaf .gt_first_summary_row {
+#mfjkkazozs .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1147,7 +1152,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_grand_summary_row {
+#mfjkkazozs .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1157,7 +1162,7 @@ sales_df = clean_names(sales_df)</code></pre>
   padding-right: 5px;
 }
 
-#bnyvklppaf .gt_first_grand_summary_row {
+#mfjkkazozs .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1167,11 +1172,11 @@ sales_df = clean_names(sales_df)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_striped {
+#mfjkkazozs .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#bnyvklppaf .gt_table_body {
+#mfjkkazozs .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1180,7 +1185,7 @@ sales_df = clean_names(sales_df)</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_footnotes {
+#mfjkkazozs .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1194,13 +1199,13 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_footnote {
+#mfjkkazozs .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#bnyvklppaf .gt_sourcenotes {
+#mfjkkazozs .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1214,46 +1219,46 @@ sales_df = clean_names(sales_df)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#bnyvklppaf .gt_sourcenote {
+#mfjkkazozs .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#bnyvklppaf .gt_left {
+#mfjkkazozs .gt_left {
   text-align: left;
 }
 
-#bnyvklppaf .gt_center {
+#mfjkkazozs .gt_center {
   text-align: center;
 }
 
-#bnyvklppaf .gt_right {
+#mfjkkazozs .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#bnyvklppaf .gt_font_normal {
+#mfjkkazozs .gt_font_normal {
   font-weight: normal;
 }
 
-#bnyvklppaf .gt_font_bold {
+#mfjkkazozs .gt_font_bold {
   font-weight: bold;
 }
 
-#bnyvklppaf .gt_font_italic {
+#mfjkkazozs .gt_font_italic {
   font-style: italic;
 }
 
-#bnyvklppaf .gt_super {
+#mfjkkazozs .gt_super {
   font-size: 65%;
 }
 
-#bnyvklppaf .gt_footnote_marks {
+#mfjkkazozs .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="bnyvklppaf" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="mfjkkazozs" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:155px;"/>
     <col style="width:155px;"/>
@@ -1330,11 +1335,11 @@ sales_df = clean_names(sales_df)</code></pre>
   
 </table></div>
 <p>We’ll go back and fill or “interpolate” those missing values in the <code>weekly_sales</code> field in a later step.</p>
-<p><strong>Filter groups with long ‘streaks’ of missing observations</strong> - Building on the previous example, let’s say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won’t capture the overall trend, seasonality, or potential holiday/event effects that help to explain variation in our outcome variable. I’ll often initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, we’ll set a limit of four weeks (i.e., “if any time-series has more than four consecutive dates missing, exclude from the final forecasting step”).</p>
+<p><strong>Filter groups with long ‘streaks’ of missing observations</strong> - Building on the previous example, let’s say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won’t capture the overall trend, seasonality, or potential holiday/event effects that help to explain variation in our outcome variable. I’ll often initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, we’ll set a limit of four weeks (i.e., if any time-series has more than four consecutive dates missing, exclude from the final forecasting step).</p>
 <p><strong>Interpolate missing values</strong> - Fills in missing data with “reasonable” values. We’ll use the overall mean of each series, which is a very simple and easy to understand technique. There are better approaches that account for seasonality or local trends. However, the goal here isn’t to generate the best forecast but instead to create a good starting point from which to iterate.</p>
-<p><strong>Add forecasting bounds</strong> - This function is specific to the Prophet API and is not required to generate a forecast. However, when you cannot inspect the quality of each forecast, adding in some “guardrails” can prevent errant predictions that erode trust with your end stakeholders. This is what the <code>floor</code> and <code>cap</code> fields do by providing bounds that a forecast cannot go above or below. For example, if the minimum value in a time-series is 10 and the max is 100, a floor of 0.5 and a cap of 1.5 ensures any forecasted value is not more than 150 (100 * 1.5) and less than 5 (10 * 0.5). Again, these decisions are often driven by domain knowledge of the forecaster. We’ll go a bit deeper on this field below as well.</p>
-<p><strong>Log transform outcome variable</strong> - Log transforming our outcome variable is an effective approach to reduce the influence of outliers and stabilize variance in our time-series that increases over time. A separate approach is to use a box-cox transformation (see <a href="https://otexts.com/fpp2/transformations.html">here</a> for more details), which can yield better results than a simple log-transformation. However, I often start with a log-transformation because it does require us to keep track of the transformation parameters, which is something you’ll need to do with a box-cox transformation. Are we seeing a theme here? Start simple.</p>
-<p>Whew - that was a lot of information, but we can finally implement all of these data-cleaning steps via the <code>FcastDataFrame</code> class. I often use classes like these – inspired by the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html">sklearn.pipeline class</a> – to prepare and clean grouped time-series data prior to generating forecasts.</p>
+<p><strong>Add forecasting bounds</strong> - This function is specific to the Prophet API and is not required to generate a forecast via PySpark. However, when you cannot inspect the quality of each forecast, adding in some “guardrails” can prevent errant predictions that erode trust with your stakeholders. The <code>floor</code> and <code>cap</code> fields provide bounds that a forecast cannot go above or below. For example, if the minimum value in a time-series is 10 and the maximum is 100, a floor of 0.5 and a cap of 1.5 ensures all forecasted values are not above 150 (100 * 1.5) or less than 5 (10 * 0.5). Again, these decisions are often driven by domain knowledge of the forecaster. We’ll go a bit deeper on this field below as well.</p>
+<p><strong>Log transform outcome variable</strong> - Log transforming our outcome variable is an effective approach to reduce the influence of outliers and stabilize variance that increases over time. A separate approach is to use a box-cox transformation (see <a href="https://otexts.com/fpp2/transformations.html">here</a> for more details), which can yield better results than a log-transformation. However, I often start with a log-transformation because it does require us to keep track of the transformation parameters, which is something you’ll need to do with a box-cox transformation. Are we seeing a theme here? Start simple.</p>
+<p>Whew - that was a lot of information, but we can finally implement all of these data-cleaning steps via the <code>FcastDataFrame</code> class. The format was inspired by the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html">sklearn.pipeline class</a> to prepare and clean grouped time-series data prior to generating forecasts.</p>
 <pre class="python"><code>class FcastDataFrame:
     &quot;&quot;&quot;Use for pre-processing data prior to forecasting&quot;&quot;&quot;
     def __init__(
@@ -1393,7 +1398,7 @@ fcast_df = FcastDataFrame(
         df = pd.merge(self.df, min_obs_filter_df, how=&quot;inner&quot;, on=self.group_fields)
         self.df = df
         logger.info(&quot;N groups dropped: {}&quot;.format(n_unique_groups - n_remaining_groups))</code></pre>
-<p>Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing Data Frame with the updated Data Frame. This pattern is applied at each step until we are satisfied with the changes. Let’s apply these filtering and cleaning steps below.</p>
+<p>Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing DataFrame with the updated DataFrame. This pattern is applied at each step until we are satisfied with the changes. Let’s apply these filtering and cleaning steps below.</p>
 <pre class="python"><code># filter out groups with less than min number of observations
 fcast_df.filter_groups_min_obs(min_obs_threshold=min_obs_threshold)  
 # replace any negative value with a zero
@@ -1498,7 +1503,7 @@ OUTPUT_SCHEMA = StructType(
 <pre class="python"><code>fcast_spark_prophet_input = SPARK.createDataFrame(
         fcast_df_prophet_input, schema=INPUT_SCHEMA
 )</code></pre>
-<p>The function below does the actual forecasting and we’ll spend a bit time unpacking what’s happening here.</p>
+<p>The function below does the actual forecasting and we’ll spend some time unpacking what’s happening here.</p>
 <pre class="python"><code>def run_forecast(keys, df):
     &quot;&quot;&quot;Generate time-series forecast 
 
@@ -1528,12 +1533,12 @@ OUTPUT_SCHEMA = StructType(
     results_df[&quot;dept&quot;] = dept
     results_df = results_df[fields]
     return results_df</code></pre>
-<p>Let’s start by discussing the Prophet model, which automates the selection of of many forecasting settings, like seasonlity, determined during the model fitting process. Below is a brief summary of some of the key settings:</p>
-<p><strong>interval_width</strong> - Interval width quantifies uncertainty in our forecast. Wider intervals indicate greater uncertainty. Here, we are indicating that we only want the actual values to fall outside of our interval ~5% of the time. By default, Prophet is set to 80%, which is less conservative than our setting here. Providing a measure of uncertainty is perhaps even more important than the forecast itself, as it allows a business to hedge against the risk of being wrong. For example, image a product has a high margin and a low inventory holding cost. In this instance, you would want to plan to a high percentile, as you rarely want to stock out of this product.</p>
-<p><strong>yearly_seasonality</strong> - Setting this to <code>True</code> indicates my belief that there is week-over-week variation that repeats itself over the course of a year. For example, sales for items like sandals or sunscreen are likely higher in Summer weeks and lower in the Winter weeks. There are two other seasonality options not included above - <code>daily</code> and <code>hourly</code>. Daily captures hourly changes within a day, while hourly captures minute-by-minute changes within an hour. Given that we are forecast at the week level, we can ignore these two settings as our data is not at this level of granularity.</p>
-<p><strong>growth</strong> - Growth is a way to capture our beliefs about if the thing you are forecasting will reach a “saturation” point across your prediction horizon (see <a href="https://facebook.github.io/prophet/docs/saturating_forecasts.html">here</a> for official documentation). For example, as certain markets mature, businesses do not continually add customers at the same rate as in the past and will eventually reach a saturation point (i.e., the total addressable market has been acquired). This is typically used for “long-range” forecasting on the scale of several years. Our forecasting horizon is much shorter at only 13 weeks. However, I like to codify what I consider to be reasonable amount of growth, via the “cap” parameter, as well as contraction, via the “floor” parameter, in my forecasts.</p>
+<p>Let’s start by discussing the Prophet model, which automates the selection of many forecasting settings, like seasonality, determined during the model fitting process. Below is a brief summary of some of the key settings:</p>
+<p><strong>interval_width</strong> - Interval width quantifies uncertainty in our forecast. Wider intervals indicate greater uncertainty. Here, we are indicating that the actual values should fall outside of the interval ~5% of the time. By default, Prophet is set to 80%, which is less conservative than our setting here. Providing a measure of uncertainty is perhaps even more important than the forecast itself, as it allows a business to hedge against the risk of being wrong. For example, imagine a product has a high margin and a low inventory holding cost. In this instance, you would want to plan to a high percentile, as you rarely want to stock out of this product.</p>
+<p><strong>yearly_seasonality</strong> - Setting this to <code>True</code> indicates my belief that there is week-over-week variation that repeats itself over the course of a year. For example, sales for items like sandals or sunscreen are likely higher in Summer weeks and lower in the Winter weeks. There are two other seasonality options not included above - <code>daily</code> and <code>hourly</code>. Daily captures hourly changes within a day, while hourly captures minute-by-minute changes within an hour. Our data is at the week level, so we can ignore these two settings.</p>
+<p><strong>growth</strong> - Growth is a way to encode our beliefs regarding if a forecast should reach a “saturation” point across your prediction horizon (see <a href="https://facebook.github.io/prophet/docs/saturating_forecasts.html">here</a> for official documentation). For example, customer acquisition slows as a market matures and will eventually reach a saturation point (i.e., the total addressable market has been acquired). This is typically used for “long-range” forecasting on the scale of several years. Our forecasting horizon is much shorter at only 13 weeks. However, I like to codify what I consider to be reasonable amount of growth, via the “cap” parameter, as well as contraction, via the “floor” parameter, in my forecasts, especially when I cannot inspect each result.</p>
 <p><strong>seasonality_mode</strong> - I’ve selected “additive” for this parameter based on my belief that the magnitude of seasonal changes do not vary across time. Recall that our outcome variable has already been log-transformed, thus we are actually using an additive decomposition of the log-transformed values.</p>
-<p><strong>add_country_holidays</strong> - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a <code>lower_window</code> and <code>upper_window</code> to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Actual sales on the actual holiday date may not actually be that high, unless of course you are doing some last minute shopping. By extending the <code>lower_window</code> parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter.</p>
+<p><strong>add_country_holidays</strong> - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a <code>lower_window</code> and <code>upper_window</code> to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Sales on the holiday date may not be that high, unless you are doing some last minute shopping. By extending the <code>lower_window</code> parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter.</p>
 <p>Now that we are familiar with how the model is being tuned, let’s generate the forecasts. This may take a few minutes depending on how many threads you are using. I am using four, and it took about 20 minutes to complete.</p>
 <pre class="python"><code>fcast_df_prophet_output = (
         fcast_spark_prophet_input.groupBy(group_fields)
@@ -1554,22 +1559,26 @@ The last step is to combine our forecasts with the historical data. However, our
     yvar_field: str,
     group_fields: List[str],
     date_field: str,
-    exp_yvar_field: bool = True,
+    exp_yvar_field: bool = False,
 ) -&gt; pd.DataFrame:
-    &quot;&quot;&quot;[summary]
+    &quot;&quot;&quot;Binds historical and Prophet forecasting data together
+       into a single DataFrame.
 
     Args:
-        actuals_df (pd.DataFrame): [description]
-        forecast_df (pd.DataFrame): [description]
-        yvar_field (str): [description]
-        group_fields (List[str]): [description]
-        date_field (str): [description]
-        exp_yvar_field (bool, optional): [description]. Defaults to True.
+        actuals_df (pd.DataFrame): Historical data
+        forecast_df (pd.DataFrame): Prophet Forecast data
+        yvar_field (str): outcome variable
+        group_fields (List[str]): grouping fields. These are often
+                represented by attributes of each unit
+                (e.g., store id, product id, etc.)
+        date_field (str): date field
+        exp_yvar_field (bool, optional): Flags if the outcome variable
+        was log transformed. If set to True, the transformation is inverted
+        back to the original scale. Defaults to False
 
     Returns:
-        pd.DataFrame: [description]
+        pd.DataFrame: Complete dataset with original field names and scales
     &quot;&quot;&quot;
-    # prep actuals
     actuals_df[&quot;part&quot;] = &quot;actuals&quot;
     actuals_df = actuals_df.rename(columns={&quot;y&quot;: yvar_field})
     if exp_yvar_field:
@@ -1596,10 +1605,14 @@ The last step is to combine our forecasts with the historical data. However, our
         yvar_field=yvar_field,
         group_fields=group_fields,
         date_field=date_field,
+        exp_yvar_field=True
 )
 
 df_forecast.to_csv(Path.cwd() / &quot;sales_data_forecast.csv&quot;, index=False)</code></pre>
-<p>We’ll transition back to the world of R for some quick quality-assurance work. Let’s read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to do a quick sanity check (i.e., “do the forecasts look reasonable for a few randomly sampled grouped?”) We’ll read the raw output from github. Let’s start by examining the first and last five rows for a single Store-Dept combination.</p>
+</div>
+<div id="quality-assurance" class="section level3">
+<h3>Quality Assurance</h3>
+<p>We’ll transition back to the world of R for some quick quality-assurance work. Let’s read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to do a quick sanity check (i.e., “do the forecasts look reasonable for a few randomly sampled grouped?”). The raw output is stored in <a href="https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/sales_data_forecast.csv">Github</a>. Let’s start by examining the first and last five rows for a single Store-Dept combination.</p>
 <pre class="r"><code>library(tidyverse)
 library(timetk)
 library(lubridate)
@@ -1613,7 +1626,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#mwumrnjhjb .gt_table {
+#xmnncrhndc .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -1638,7 +1651,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_heading {
+#xmnncrhndc .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1650,7 +1663,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_title {
+#xmnncrhndc .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1660,7 +1673,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-bottom-width: 0;
 }
 
-#mwumrnjhjb .gt_subtitle {
+#xmnncrhndc .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1670,13 +1683,13 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-width: 0;
 }
 
-#mwumrnjhjb .gt_bottom_border {
+#xmnncrhndc .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_col_headings {
+#xmnncrhndc .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1691,7 +1704,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_col_heading {
+#xmnncrhndc .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1711,7 +1724,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   overflow-x: hidden;
 }
 
-#mwumrnjhjb .gt_column_spanner_outer {
+#xmnncrhndc .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1723,15 +1736,15 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 4px;
 }
 
-#mwumrnjhjb .gt_column_spanner_outer:first-child {
+#xmnncrhndc .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#mwumrnjhjb .gt_column_spanner_outer:last-child {
+#xmnncrhndc .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#mwumrnjhjb .gt_column_spanner {
+#xmnncrhndc .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1743,7 +1756,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   width: 100%;
 }
 
-#mwumrnjhjb .gt_group_heading {
+#xmnncrhndc .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1765,7 +1778,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   vertical-align: middle;
 }
 
-#mwumrnjhjb .gt_empty_group_heading {
+#xmnncrhndc .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1780,15 +1793,15 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   vertical-align: middle;
 }
 
-#mwumrnjhjb .gt_from_md > :first-child {
+#xmnncrhndc .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#mwumrnjhjb .gt_from_md > :last-child {
+#xmnncrhndc .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#mwumrnjhjb .gt_row {
+#xmnncrhndc .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1807,7 +1820,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   overflow-x: hidden;
 }
 
-#mwumrnjhjb .gt_stub {
+#xmnncrhndc .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1819,7 +1832,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-left: 12px;
 }
 
-#mwumrnjhjb .gt_summary_row {
+#xmnncrhndc .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1829,7 +1842,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 5px;
 }
 
-#mwumrnjhjb .gt_first_summary_row {
+#xmnncrhndc .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1839,7 +1852,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_grand_summary_row {
+#xmnncrhndc .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1849,7 +1862,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 5px;
 }
 
-#mwumrnjhjb .gt_first_grand_summary_row {
+#xmnncrhndc .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1859,11 +1872,11 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_striped {
+#xmnncrhndc .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#mwumrnjhjb .gt_table_body {
+#xmnncrhndc .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1872,7 +1885,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_footnotes {
+#xmnncrhndc .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1886,13 +1899,13 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_footnote {
+#xmnncrhndc .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#mwumrnjhjb .gt_sourcenotes {
+#xmnncrhndc .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1906,46 +1919,46 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mwumrnjhjb .gt_sourcenote {
+#xmnncrhndc .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#mwumrnjhjb .gt_left {
+#xmnncrhndc .gt_left {
   text-align: left;
 }
 
-#mwumrnjhjb .gt_center {
+#xmnncrhndc .gt_center {
   text-align: center;
 }
 
-#mwumrnjhjb .gt_right {
+#xmnncrhndc .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#mwumrnjhjb .gt_font_normal {
+#xmnncrhndc .gt_font_normal {
   font-weight: normal;
 }
 
-#mwumrnjhjb .gt_font_bold {
+#xmnncrhndc .gt_font_bold {
   font-weight: bold;
 }
 
-#mwumrnjhjb .gt_font_italic {
+#xmnncrhndc .gt_font_italic {
   font-style: italic;
 }
 
-#mwumrnjhjb .gt_super {
+#xmnncrhndc .gt_super {
   font-size: 65%;
 }
 
-#mwumrnjhjb .gt_footnote_marks {
+#xmnncrhndc .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="mwumrnjhjb" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="xmnncrhndc" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:75px;"/>
     <col style="width:75px;"/>
@@ -2035,7 +2048,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#aikkwnqgbh .gt_table {
+#zlosqjsctg .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -2060,7 +2073,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_heading {
+#zlosqjsctg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2072,7 +2085,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_title {
+#zlosqjsctg .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2082,7 +2095,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-bottom-width: 0;
 }
 
-#aikkwnqgbh .gt_subtitle {
+#zlosqjsctg .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2092,13 +2105,13 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-width: 0;
 }
 
-#aikkwnqgbh .gt_bottom_border {
+#zlosqjsctg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_col_headings {
+#zlosqjsctg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2113,7 +2126,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_col_heading {
+#zlosqjsctg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2133,7 +2146,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   overflow-x: hidden;
 }
 
-#aikkwnqgbh .gt_column_spanner_outer {
+#zlosqjsctg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2145,15 +2158,15 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 4px;
 }
 
-#aikkwnqgbh .gt_column_spanner_outer:first-child {
+#zlosqjsctg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#aikkwnqgbh .gt_column_spanner_outer:last-child {
+#zlosqjsctg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#aikkwnqgbh .gt_column_spanner {
+#zlosqjsctg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2165,7 +2178,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   width: 100%;
 }
 
-#aikkwnqgbh .gt_group_heading {
+#zlosqjsctg .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2187,7 +2200,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   vertical-align: middle;
 }
 
-#aikkwnqgbh .gt_empty_group_heading {
+#zlosqjsctg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2202,15 +2215,15 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   vertical-align: middle;
 }
 
-#aikkwnqgbh .gt_from_md > :first-child {
+#zlosqjsctg .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#aikkwnqgbh .gt_from_md > :last-child {
+#zlosqjsctg .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#aikkwnqgbh .gt_row {
+#zlosqjsctg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2229,7 +2242,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   overflow-x: hidden;
 }
 
-#aikkwnqgbh .gt_stub {
+#zlosqjsctg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2241,7 +2254,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-left: 12px;
 }
 
-#aikkwnqgbh .gt_summary_row {
+#zlosqjsctg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2251,7 +2264,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 5px;
 }
 
-#aikkwnqgbh .gt_first_summary_row {
+#zlosqjsctg .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2261,7 +2274,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_grand_summary_row {
+#zlosqjsctg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2271,7 +2284,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   padding-right: 5px;
 }
 
-#aikkwnqgbh .gt_first_grand_summary_row {
+#zlosqjsctg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2281,11 +2294,11 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_striped {
+#zlosqjsctg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#aikkwnqgbh .gt_table_body {
+#zlosqjsctg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2294,7 +2307,7 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_footnotes {
+#zlosqjsctg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2308,13 +2321,13 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_footnote {
+#zlosqjsctg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#aikkwnqgbh .gt_sourcenotes {
+#zlosqjsctg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2328,46 +2341,46 @@ fcast_df = read_csv(fcast_df_url)</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#aikkwnqgbh .gt_sourcenote {
+#zlosqjsctg .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#aikkwnqgbh .gt_left {
+#zlosqjsctg .gt_left {
   text-align: left;
 }
 
-#aikkwnqgbh .gt_center {
+#zlosqjsctg .gt_center {
   text-align: center;
 }
 
-#aikkwnqgbh .gt_right {
+#zlosqjsctg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#aikkwnqgbh .gt_font_normal {
+#zlosqjsctg .gt_font_normal {
   font-weight: normal;
 }
 
-#aikkwnqgbh .gt_font_bold {
+#zlosqjsctg .gt_font_bold {
   font-weight: bold;
 }
 
-#aikkwnqgbh .gt_font_italic {
+#zlosqjsctg .gt_font_italic {
   font-style: italic;
 }
 
-#aikkwnqgbh .gt_super {
+#zlosqjsctg .gt_super {
   font-size: 65%;
 }
 
-#aikkwnqgbh .gt_footnote_marks {
+#zlosqjsctg .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="aikkwnqgbh" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="zlosqjsctg" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:75px;"/>
     <col style="width:75px;"/>
@@ -2481,5 +2494,5 @@ fcast_df %&gt;%
         plot.title = element_text(size = 14)
         )</code></pre>
 <p><img src="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-27-1.png" width="1152" /></p>
-<p>Overall, the forecasts effectively capture changes in the trend and seasonal variation. A more formal approach to this problem is to do some back-testing by holding out some historical data and generating forecasts against it. However, this is great starting point from which to build more advanced models and incorporate exteranl variables that could further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!</p>
+<p>Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!</p>
 </div>

@@ -1,15 +1,17 @@
 ---
 title: "Scalable Time-Series Forecasting in Python"
 date: '2021-03-29T21:13:14-05:00'
-summary: Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via Pyspark.
+summary: Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark.
 tags:
-- Pyspark
-- Time Series Forecasting
+- PySpark
+- Time-Series Forecasting
 - Prophet
+- Python
 categories:
-- Pyspark
-- Time Series Forecasting
+- PySpark
+- Time-Series Forecasting
 - Prophet
+- Python
 ---
 
 ```{r setup, include=FALSE}
@@ -18,20 +20,22 @@ knitr::opts_chunk$set(echo = TRUE)
 # tree -I 'pyspark_sandbox.ipynb|*.csv|venv|*.R|*.pyc|__pycache__|*.Rproj'
 ```
 
-### Overview 
+![](/post/2021-03-28-pyspark-forecasting/images/header_image.png){width=700px height=600px}  
+  
+### Overview
 
-Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via Pyspark. We'll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel. 
+Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark. We'll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel. 
 
 ### Getting Started
 
-We'll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the [Codeforest Repository](https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting). Before diving into the details, let's briefly review the key modules and files. 
+We'll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the [Codeforest Repository](https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast). Before diving into the details, let's briefly review the key modules and files. 
 
-![](/post/2021-03-28-pyspark-forecasting/images/project_tree.png){width=700px height=400px}
- **conf.json** - A configuration file that defines various parameters for our job, including grouping variables, our outcome variable, or if we want to log transform the outcome variable. It's a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
+![](/post/2021-03-28-pyspark-forecasting/images/project_tree.png){width=300px height=75px}
+ **conf.json** - A configuration file that defines various parameters for our job. It's a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
 ![](/post/2021-03-28-pyspark-forecasting/images/config_file.png){width=700px height=400px} 
  **pyspark_fcast.py** - Our main module, or where the forecasting gets done. We'll cover this in detail below. 
  
- **fcast_data_frame.py** - A class responsible for common pre-forecasting data transformations. These include filling in missing values, replacing negative values with zeros, or filtering time-series with only a few observations. We'll cover several of these methods below, but I'd recommend visiting [here]() if you'd like to access all methods.
+ **fcast_data_frame.py** - A class responsible for common pre-forecasting data transformations. These include filling in missing values, filtering time-series with only a few observations, or log transforming our outcome variable. Visit  [here](https://github.com/thecodeforest/codeforest2.0/blob/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast/fcast_helpers/fcast_data_frame.py) for access to all methods. 
  
 You'll also need to import the following packages to follow along with the tutorial. 
 ```{python, eval=FALSE}
@@ -47,8 +51,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from fbprophet import Prophet # Using fbprophet==0.7.1 & pystan==2.18.0
-from pyspark.sql import SparkSession # Using pyspark==3.0.1
+from fbprophet import Prophet # fbprophet==0.7.1 & pystan==2.18.0
+from pyspark.sql import SparkSession # pyspark==3.0.1
 from pyspark.sql.functions import lit
 from pyspark.sql.types import (DateType, FloatType, IntegerType, StructField,
                                StructType)
@@ -56,7 +60,7 @@ from pyspark.sql.types import (DateType, FloatType, IntegerType, StructField,
 from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame
 ```
 
-Assuming the above imports were successful, we'll peak at a few rows in our data. 
+Assuming the imports were successful, we'll peak at a few rows in our data to get a feel for the format. 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(gt)
@@ -78,7 +82,9 @@ df %>%
     ) 
 
 ```
-Let's now discuss the process of passing in the forecasting parameters and documenting which parameters we've chosen. We'll use the following command to generate all the forecasts: `python3 pyspark_fcast.py --forecast-config-file 'config/conf.json'`. Here we are passing in the location of our configuration file and extracting the parameters. Don't worry if the individual parameters don't make sense now. I'll explain each in greater detail below. 
+Let's now discuss the process of passing and documenting the forecasting parameters. We'll execute the following from the command line to generate our forecasts:  
+`python3 pyspark_fcast.py --forecast-config-file 'config/conf.json'`  
+Here we are passing in the location of our configuration file and extracting the parameters. Don't worry if the individual parameters don't make sense now. I'll explain each in greater detail below. 
 
 ```{python, eval=FALSE}
 args = read_args()
@@ -143,9 +149,9 @@ def log_input_params(config: dict) -> None:
     return None
 ```
 
-There are several benefits to documenting our inputs. First, we can validate if the correct parameters have been passed to our forecasting process. Having a record of these values facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save a lot of time as your project matures.
+There are several benefits to documenting our inputs. First, we can validate if the correct parameters have been passed to our forecasting process. Having a record of these values facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save you time as your project matures.
 
-Now we that we have our parameters and have set up logging, we'll read in the data stored  [here](https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv) and execute some basic field formatting with *clean_names*.
+We have our parameters and have set up logging. Next, we'll read in the data stored  [here](https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv) and execute some basic field formatting with *clean_names*.
 
 ```{python, eval=FALSE}
 def clean_names(df: pd.DataFrame) -> pd.DataFrame:
@@ -179,11 +185,11 @@ If you don't have a *clean_names*-type function as part of your codebase, I'd hi
 
 Now that we have our data, we'll do some pre-forecasting data cleaning. The main steps are outlined below: 
 
-**Filter groups with limited observations** - It's a good idea to put predictions against items where you have some historical data. While the space of [cold-start forecasting](https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/) is very interesting, it is outside the scope of this post. Thus, we are putting a minimum number of data points in place for something to be considered. This is also a good idea because some forecasting algorithms will not fit a model against a few observations, causing your program to crash.
+**Filter groups with limited observations** - It's a good idea to put predictions against items where you have some historical data. While the space of [cold-start forecasting](https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/) is very interesting, it is outside the scope of this post. Thus, we are putting a minimum threshold on the number of data points per group. This is also a good idea because some forecasting algorithms will not fit a model against a few observations, causing your program to crash.
 
 **Replace negative values with zero** - I'm assuming a negative value represents a returned product. Our goal is to forecast **demand** not **demand - returns**. This is an assumption that would need to be validated with domain knowledge. 
 
-**Pad missing values** - This is an important but easy to overlook step for one simple reason: Missing values in time-series data are not usually flagged as "missing". For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I've provied a brief example below to illustrate what this looks like from a data perspective.
+**Pad missing values** - Accounting for missing data is an easy step to overlook for one simple reason: Missing values in time-series data are not usually flagged as "missing". For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I've provided a brief example below to illustrate what this looks like from a data perspective.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 incomplete_df <- tibble('store' = c(1, 1, 1, 1, 1),
@@ -221,15 +227,15 @@ incomplete_df %>%
 
 We'll go back and fill or "interpolate"  those missing values in the `weekly_sales` field in a later step. 
 
-**Filter groups with long 'streaks' of missing observations** - Building on the previous example, let's say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won't capture the overall trend, seasonality, or potential holiday/event effects that help to explain variation in our outcome variable. I'll often initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, we'll set a limit of four weeks (i.e., "if any time-series has more than four consecutive dates missing, exclude from the final forecasting step").
+**Filter groups with long 'streaks' of missing observations** - Building on the previous example, let's say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won't capture the overall trend, seasonality, or potential holiday/event effects that help to explain variation in our outcome variable. I'll often initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, we'll set a limit of four weeks (i.e., if any time-series has more than four consecutive dates missing, exclude from the final forecasting step).
 
 **Interpolate missing values** - Fills in missing data with "reasonable" values. We'll use the overall mean of each series, which is a very simple and easy to understand technique. There are better approaches that account for seasonality or local trends. However, the goal here isn't to generate the best forecast but instead to create a good starting point from which to iterate. 
 
-**Add forecasting bounds** - This function is specific to the Prophet API and is not required to generate a forecast. However, when you cannot inspect the quality of each forecast, adding in some "guardrails" can prevent errant predictions that erode trust with your end stakeholders. This is what the `floor` and `cap` fields do by providing bounds that a forecast cannot go above or below. For example, if the minimum value in a time-series is 10 and the max is 100, a floor of 0.5 and a cap of 1.5 ensures any forecasted value is not more than 150 (100 * 1.5) and less than 5 (10 * 0.5). Again, these decisions are often driven by domain knowledge of the forecaster. We'll go a bit deeper on this field below as well.  
+**Add forecasting bounds** - This function is specific to the Prophet API and is not required to generate a forecast via PySpark. However, when you cannot inspect the quality of each forecast, adding in some "guardrails" can prevent errant predictions that erode trust with your stakeholders. The `floor` and `cap` fields provide bounds that a forecast cannot go above or below. For example, if the minimum value in a time-series is 10 and the maximum is 100, a floor of 0.5 and a cap of 1.5 ensures all forecasted values are not above 150 (100 * 1.5) or less than 5 (10 * 0.5). Again, these decisions are often driven by domain knowledge of the forecaster. We'll go a bit deeper on this field below as well.  
 
-**Log transform outcome variable** - Log transforming our outcome variable is an effective approach to reduce the influence of outliers and stabilize variance in our time-series that increases over time. A separate approach is to use a box-cox transformation (see [here](https://otexts.com/fpp2/transformations.html) for more details), which can yield better results than a simple log-transformation. However, I often start with a log-transformation because it does require us to keep track of the transformation parameters, which is something you'll need to do with a box-cox transformation. Are we seeing a theme here? Start simple. 
+**Log transform outcome variable** - Log transforming our outcome variable is an effective approach to reduce the influence of outliers and stabilize variance that increases over time. A separate approach is to use a box-cox transformation (see [here](https://otexts.com/fpp2/transformations.html) for more details), which can yield better results than a log-transformation. However, I often start with a log-transformation because it does require us to keep track of the transformation parameters, which is something you'll need to do with a box-cox transformation. Are we seeing a theme here? Start simple. 
  
-Whew - that was a lot of information, but we can finally implement all of these data-cleaning steps via the `FcastDataFrame` class. I often use classes like these -- inspired by the [sklearn.pipeline class](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html) -- to prepare and clean grouped time-series data prior to generating forecasts. 
+Whew - that was a lot of information, but we can finally implement all of these data-cleaning steps via the `FcastDataFrame` class. The format was inspired by the [sklearn.pipeline class](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html) to prepare and clean grouped time-series data prior to generating forecasts. 
 
 ```{python, eval=FALSE}
 class FcastDataFrame:
@@ -296,7 +302,7 @@ While we won't cover all methods in this class, I'll briefly review one of the m
         logger.info("N groups dropped: {}".format(n_unique_groups - n_remaining_groups))
 ```
 
-Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing Data Frame with the updated Data Frame. This pattern is applied at each step until we are satisfied with the changes. Let's apply these filtering and cleaning steps below. 
+Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing DataFrame with the updated DataFrame. This pattern is applied at each step until we are satisfied with the changes. Let's apply these filtering and cleaning steps below. 
 
 ```{python, eval=FALSE}
 # filter out groups with less than min number of observations
@@ -424,7 +430,7 @@ fcast_spark_prophet_input = SPARK.createDataFrame(
 )
 ```
 
-The function below does the actual forecasting and we'll spend a bit time unpacking what's happening here. 
+The function below does the actual forecasting and we'll spend some time unpacking what's happening here. 
 
 ```{python}
 def run_forecast(keys, df):
@@ -458,17 +464,17 @@ def run_forecast(keys, df):
     return results_df
 ```
 
-Let's start by discussing the Prophet model, which automates the selection of of many forecasting settings, like seasonlity, determined during the model fitting process. Below is a brief summary of some of the key settings: 
+Let's start by discussing the Prophet model, which automates the selection of many forecasting settings, like seasonality, determined during the model fitting process. Below is a brief summary of some of the key settings: 
 
-**interval_width** - Interval width quantifies uncertainty in our forecast. Wider intervals indicate greater uncertainty. Here, we are indicating that we only want the actual values to fall outside of our interval ~5% of the time. By default, Prophet is set to 80%, which is less conservative than our setting here. Providing a measure of uncertainty is perhaps even more important than the forecast itself, as it allows a business to hedge against the risk of being wrong. For example, image a product has a high margin and a low inventory holding cost. In this instance, you would want to plan to a high percentile, as you rarely want to stock out of this product.
+**interval_width** - Interval width quantifies uncertainty in our forecast. Wider intervals indicate greater uncertainty. Here, we are indicating that the actual values should fall outside of the interval ~5% of the time. By default, Prophet is set to 80%, which is less conservative than our setting here. Providing a measure of uncertainty is perhaps even more important than the forecast itself, as it allows a business to hedge against the risk of being wrong. For example, imagine a product has a high margin and a low inventory holding cost. In this instance, you would want to plan to a high percentile, as you rarely want to stock out of this product.
 
-**yearly_seasonality** - Setting this to `True` indicates my belief that there is week-over-week variation that repeats itself over the course of a year. For example, sales for items like sandals or sunscreen are likely higher in Summer weeks and lower in the Winter weeks. There are two other seasonality options not included above - `daily` and `hourly`. Daily captures hourly changes within a day, while hourly captures minute-by-minute changes within an hour. Given that we are forecast at the week level, we can ignore these two settings as our data is not at this level of granularity. 
+**yearly_seasonality** - Setting this to `True` indicates my belief that there is week-over-week variation that repeats itself over the course of a year. For example, sales for items like sandals or sunscreen are likely higher in Summer weeks and lower in the Winter weeks. There are two other seasonality options not included above - `daily` and `hourly`. Daily captures hourly changes within a day, while hourly captures minute-by-minute changes within an hour. Our data is at the week level, so we can ignore these two settings. 
 
-**growth** - Growth is a way to capture our beliefs about if the thing you are forecasting will reach a "saturation" point across your prediction horizon (see [here](https://facebook.github.io/prophet/docs/saturating_forecasts.html) for official documentation). For example, as certain markets mature, businesses do not continually add customers at the same rate as in the past and will eventually reach a saturation point (i.e., the total addressable market has been acquired). This is typically used for "long-range" forecasting on the scale of several years. Our forecasting horizon is much shorter at only 13 weeks. However, I like to codify what I consider to be reasonable amount of growth, via the "cap" parameter, as well as contraction, via the "floor" parameter, in my forecasts.
+**growth** - Growth is a way to encode our beliefs regarding if a forecast should reach a "saturation" point across your prediction horizon (see [here](https://facebook.github.io/prophet/docs/saturating_forecasts.html) for official documentation). For example, customer acquisition slows as a market matures and will eventually reach a saturation point (i.e., the total addressable market has been acquired). This is typically used for "long-range" forecasting on the scale of several years. Our forecasting horizon is much shorter at only 13 weeks. However, I like to codify what I consider to be reasonable amount of growth, via the "cap" parameter, as well as contraction, via the "floor" parameter, in my forecasts, especially when I cannot inspect each result. 
 
 **seasonality_mode** - I've selected "additive" for this parameter based on my belief that the magnitude of seasonal changes do not vary across time. Recall that our outcome variable has already been log-transformed, thus we are actually using an additive decomposition of the log-transformed values.
 
-**add_country_holidays** - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a `lower_window` and `upper_window` to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Actual sales on the actual holiday date may not actually be that high, unless of course you are doing some last minute shopping. By extending the `lower_window` parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter. 
+**add_country_holidays** - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a `lower_window` and `upper_window` to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Sales on the holiday date may not be that high, unless you are doing some last minute shopping. By extending the `lower_window` parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter. 
 
 Now that we are familiar with how the model is being tuned, let's generate the forecasts. This may take a few minutes depending on how many threads you are using. I am using four, and it took about 20 minutes to complete. 
 ```{python, eval=FALSE}
@@ -499,22 +505,26 @@ def bind_actuals_and_forecast(
     yvar_field: str,
     group_fields: List[str],
     date_field: str,
-    exp_yvar_field: bool = True,
+    exp_yvar_field: bool = False,
 ) -> pd.DataFrame:
-    """[summary]
+    """Binds historical and Prophet forecasting data together
+       into a single DataFrame.
 
     Args:
-        actuals_df (pd.DataFrame): [description]
-        forecast_df (pd.DataFrame): [description]
-        yvar_field (str): [description]
-        group_fields (List[str]): [description]
-        date_field (str): [description]
-        exp_yvar_field (bool, optional): [description]. Defaults to True.
+        actuals_df (pd.DataFrame): Historical data
+        forecast_df (pd.DataFrame): Prophet Forecast data
+        yvar_field (str): outcome variable
+        group_fields (List[str]): grouping fields. These are often
+                represented by attributes of each unit
+                (e.g., store id, product id, etc.)
+        date_field (str): date field
+        exp_yvar_field (bool, optional): Flags if the outcome variable
+        was log transformed. If set to True, the transformation is inverted
+        back to the original scale. Defaults to False
 
     Returns:
-        pd.DataFrame: [description]
+        pd.DataFrame: Complete dataset with original field names and scales
     """
-    # prep actuals
     actuals_df["part"] = "actuals"
     actuals_df = actuals_df.rename(columns={"y": yvar_field})
     if exp_yvar_field:
@@ -544,12 +554,15 @@ df_forecast = bind_actuals_and_forecast(
         yvar_field=yvar_field,
         group_fields=group_fields,
         date_field=date_field,
+        exp_yvar_field=True
 )
 
 df_forecast.to_csv(Path.cwd() / "sales_data_forecast.csv", index=False)
 ```
 
-We'll transition back to the world of R for some quick quality-assurance work. Let's read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to  do a quick sanity check (i.e., "do the forecasts look reasonable for a few randomly sampled grouped?") We'll read the raw output from github. Let's start by examining the first and last five rows for a single Store-Dept combination. 
+### Quality Assurance
+
+We'll transition back to the world of R for some quick quality-assurance work. Let's read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to  do a quick sanity check (i.e., "do the forecasts look reasonable for a few randomly sampled grouped?"). The raw output is stored in [Github](https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/sales_data_forecast.csv). Let's start by examining the first and last five rows for a single Store-Dept combination. 
 
 ```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -626,4 +639,4 @@ fcast_df %>%
         )
 ```
 
-Overall, the forecasts effectively capture changes in the trend and seasonal variation. A more formal approach to this problem is to do some back-testing by holding out some historical data and generating forecasts against it. However, this is great starting point from which to build more advanced models and incorporate exteranl variables that could further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting! 
+Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting! 
