@@ -1,0 +1,13 @@
+{"input_data_path": "https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv",
+ "java_home": "/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home",
+ "spark_n_threads": 4,
+ "app_name": "pyspark_forecasting_tutorial",
+ "fcast_parameters": {"group_fields": ["store", "dept"],
+                      "date_field": "date",
+                      "yvar_field": "weekly_sales",
+                      "log_transform_yvar": "True",
+                      "ts_frequency": "W-FRI",
+                      "forecast_floor": 0,
+                      "forecast_cap": 1.5,
+                      "min_obs_count": 13}
+}
