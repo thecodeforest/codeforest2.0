@@ -1,0 +1,1234 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Emperical Bayes | The Code Forest</title>
+    <link>/category/emperical-bayes/</link>
+      <atom:link href="/category/emperical-bayes/index.xml" rel="self" type="application/rss+xml" />
+    <description>Emperical Bayes</description>
+    <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Mon, 26 Aug 2019 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <title>Emperical Bayes</title>
+      <link>/category/emperical-bayes/</link>
+    </image>
+    
+    <item>
+      <title>Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</title>
+      <link>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
+      <pubDate>Mon, 26 Aug 2019 21:13:14 -0500</pubDate>
+      <guid>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
+      <description>
+
+
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;In less than two weeks, Fantasy Football will once again resume for the 2019 NFL season! While I’m looking forward to the impending draft, the start of the season brings back memories of a not-so-distant loss that left me one game shy of the championship. The loss stemmed from a missed field goal, leaving my team two points shy of victory. Of course, a myriad of factors beyond that missed field goal contributed to my fantasy demise, but those two points reinvigorated a question I’ve wondered about for the past few years: Why are kickers drafted in the last round?&lt;/p&gt;
+&lt;p&gt;Prevailing wisdom suggests that your kicker doesn’t matter. Some Fantasy Football leagues don’t even have kickers on the roster, which I think does a disservice to a player who probably doesn’t get invited to the cool team parties yet can decide the fate of a season in a single moment (like mine). As long as they suit up to take the field, the rest is out of your control. However, is it a suboptimal strategy to relegate your choice of kicker to the final round of the draft? Let’s find out!&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;getting-started&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Getting Started&lt;/h3&gt;
+&lt;p&gt;Before loading any data or discussing techniques, we’ll begin by defining our analytical objective. An easy way to get started is by posing a simple question: “How many more points can I expect over a 16-game regular season if I draft the best kicker relative to the worst kicker?” We’ll answer this question in two steps. First, we’ll estimate the &lt;em&gt;True&lt;/em&gt; field goal percentage for each kicker currently active in the NFL (as of 2016), which is analogous to a batting average in baseball or free-throw percentage in basketball. This parameter estimate will be used to compare the skill of one kicker to another. Second, we’ll translate our estimate into actual Fantasy Football points by simulating the outcomes 1000 football seasons for each kicker. Simulation enables us to quantify a realistic point differential between kickers, which is what we (the Fantasy Football team owners) will use to determine if we should try to select the best kicker by drafting in an earlier round.&lt;/p&gt;
+&lt;p&gt;With that question in mind, let’s load all pertinent libraries. The data can be downloaded directly from the 🎋 &lt;a href=&#34;https://github.com/thecodeforest&#34;&gt;the codeforest data repo&lt;/a&gt; 🎄. Note the original data comes from Kaggle and can found &lt;a href=&#34;https://www.kaggle.com/kendallgillies/nflstatistics/version/1?select=Career_Stats_Field_Goal_Kickers.csv&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Modeling 
+library(gamlss)
+
+# Core packages
+library(tidyverse)
+library(janitor)
+
+# Visualization 
+library(ggplot2)
+library(scales)
+library(viridis)
+library(ggridges)
+
+# Tables
+library(gt)
+
+# Global plot theme
+theme_set(theme_minimal())
+
+# Code Forest repo
+data_url &amp;lt;- &amp;quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/fantasy_football_kickers_data/Career_Stats_Field_Goal_Kickers.csv&amp;quot;
+
+# Helper function for visualization
+my_plot_theme = function(){
+  font_family = &amp;quot;Helvetica&amp;quot;
+  font_face = &amp;quot;bold&amp;quot;
+  return(theme(
+    axis.text.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 22, face = font_face, family = font_family),
+    plot.title = element_text(size = 22, face = font_face, family = font_family),
+    
+    legend.position = &amp;quot;top&amp;quot;,
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 16,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 5),
+    legend.key.size = unit(1.5, &amp;#39;lines&amp;#39;)
+  ))
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;There are several columns we won’t be using so we’ll select only the relevant ones.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_raw &amp;lt;- read_csv(data_url) %&amp;gt;% 
+  clean_names() %&amp;gt;% 
+  select(player_id, 
+         name, 
+         year, 
+         games_played, 
+         contains(&amp;#39;made&amp;#39;), 
+         contains(&amp;#39;attempted&amp;#39;),
+         contains(&amp;#39;percentage&amp;#39;),
+         -contains(&amp;#39;extra&amp;#39;), 
+         -longest_fg_made
+         )
+
+glimpse(stats_raw)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Rows: 1,994
+## Columns: 19
+## $ player_id                  &amp;lt;chr&amp;gt; &amp;quot;jeffhall/2500970&amp;quot;, &amp;quot;benagajanian/2508255&amp;quot;…
+## $ name                       &amp;lt;chr&amp;gt; &amp;quot;Hall, Jeff&amp;quot;, &amp;quot;Agajanian, Ben&amp;quot;, &amp;quot;Agajanian…
+## $ year                       &amp;lt;dbl&amp;gt; 2000, 1964, 1962, 1961, 1961, 1960, 1957, …
+## $ games_played               &amp;lt;dbl&amp;gt; 3, 3, 6, 3, 3, 14, 12, 10, 12, 12, 10, 12,…
+## $ f_gs_made                  &amp;lt;chr&amp;gt; &amp;quot;4&amp;quot;, &amp;quot;2&amp;quot;, &amp;quot;5&amp;quot;, &amp;quot;1&amp;quot;, &amp;quot;3&amp;quot;, &amp;quot;13&amp;quot;, &amp;quot;10&amp;quot;, &amp;quot;5&amp;quot;, …
+## $ f_gs_made_20_29_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_30_39_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_40_49_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_50_yards         &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted             &amp;lt;chr&amp;gt; &amp;quot;5&amp;quot;, &amp;quot;4&amp;quot;, &amp;quot;14&amp;quot;, &amp;quot;2&amp;quot;, &amp;quot;9&amp;quot;, &amp;quot;24&amp;quot;, &amp;quot;18&amp;quot;, &amp;quot;13&amp;quot;…
+## $ f_gs_attempted_20_29_yards &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_30_39_yards &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_40_49_yards &amp;lt;chr&amp;gt; &amp;quot;2&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_50_yards    &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ fg_percentage              &amp;lt;chr&amp;gt; &amp;quot;80.0&amp;quot;, &amp;quot;50.0&amp;quot;, &amp;quot;35.7&amp;quot;, &amp;quot;50.0&amp;quot;, &amp;quot;33.3&amp;quot;, &amp;quot;5…
+## $ fg_percentage_20_29_yards  &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…
+## $ fg_percentage_30_39_yards  &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…
+## $ fg_percentage_40_49_yards  &amp;lt;chr&amp;gt; &amp;quot;50.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;…
+## $ fg_percentage_50_yards     &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Like most real-world datasets, this one is a bit messy (e.g., non-values are coded as “–”). I find it helps at the outset of data cleaning to envision what a perfect, pristine dataset should look like once data munging steps are complete. Below is an example of a basic starting point.
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#zpvivrqdou .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#zpvivrqdou .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#zpvivrqdou .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#zpvivrqdou .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#zpvivrqdou .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#zpvivrqdou .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#zpvivrqdou .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#zpvivrqdou .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zpvivrqdou .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zpvivrqdou .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#zpvivrqdou .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#zpvivrqdou .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#zpvivrqdou .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#zpvivrqdou .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zpvivrqdou .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zpvivrqdou .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#zpvivrqdou .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#zpvivrqdou .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#zpvivrqdou .gt_left {
+  text-align: left;
+}
+
+#zpvivrqdou .gt_center {
+  text-align: center;
+}
+
+#zpvivrqdou .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#zpvivrqdou .gt_font_normal {
+  font-weight: normal;
+}
+
+#zpvivrqdou .gt_font_bold {
+  font-weight: bold;
+}
+
+#zpvivrqdou .gt_font_italic {
+  font-style: italic;
+}
+
+#zpvivrqdou .gt_super {
+  font-size: 65%;
+}
+
+#zpvivrqdou .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;zpvivrqdou&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Desired Data Format&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;id&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;n_success&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;n_trials&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;12&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;20&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;24&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;6&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;50&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;60&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;200&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;9&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;11&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;14&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;24&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;61&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;&lt;/p&gt;
+&lt;p&gt;I used generic column names if you’re interested in adopting the techniques described herein to solve a separate problem. At a basic level, each row represents an individual observation, a count of the number of successes (i.e., count how many field goals are made), and finally the number of trials (i.e., count how many field goals are attempted). If you have this setup, the building blocks are in place to get started.&lt;/p&gt;
+&lt;p&gt;However, before going any further, we need to ensure the relationships in the data align with our understanding of the world. One approach is to generate some simple hypotheses that you know to be true. For example, water is wet, the sky is blue, and, in our case, the field goal percentage should decrease as the distance to the goal increases. That is, field goals taken from 50+ yards should be made at a lower rate those taken from 30-35 yards. Let’s verify our hypothesis below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;make_by_dist &amp;lt;-
+  stats_raw %&amp;gt;%
+  select(starts_with(&amp;quot;fg_percentage_&amp;quot;)) %&amp;gt;%
+  mutate_all(as.numeric) %&amp;gt;%
+  gather(key = &amp;quot;dist&amp;quot;, value = &amp;quot;fg_pct&amp;quot;) %&amp;gt;%
+  mutate(
+    dist = str_extract(dist,
+                       pattern = &amp;quot;\\d{2}&amp;quot;
+                       ),
+    dist = if_else(dist == &amp;quot;50&amp;quot;,
+                   paste0(dist, &amp;quot;+&amp;quot;),
+                   paste0(dist,&amp;quot;-&amp;quot;,as.numeric(dist) + 9)
+                   ),
+    fg_pct = fg_pct / 100
+  ) %&amp;gt;%
+  na.omit()&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;make_by_dist %&amp;gt;% 
+  ggplot(aes(fg_pct, dist, fill = dist)) + 
+  geom_density_ridges(
+    aes(point_color = dist, 
+        point_fill = dist, 
+        point_shape = dist),
+        alpha = .2, 
+        point_alpha = 1, 
+        jittered_points = TRUE
+    ) + 
+  scale_point_color_hue(l = 40) +
+  scale_discrete_manual(aesthetics = &amp;quot;point_shape&amp;quot;, 
+                        values = c(21, 22, 23, 24)) + 
+  scale_x_continuous(labels = scales::percent,
+                     breaks = c(0,0.2, 0.4, 0.6, 0.8, 1)
+                     ) + 
+  scale_fill_viridis_d() + 
+  my_plot_theme() + 
+  labs(x = &amp;#39;Field Goal Percentage&amp;#39;,
+       y = &amp;#39;Distance (Yards)&amp;#39;
+       ) + 
+    theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Looks good! Each point represents the field goal percentage for a player-season-distance combination. As the distance increases, the make rate gradually shifts to left, which is exactly what we’d expect. We’ll do a bit more cleaning below before proceeding.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed &amp;lt;- 
+  stats_raw %&amp;gt;%
+  mutate(
+    name = str_remove(name, &amp;quot;,&amp;quot;),
+    first_name = map(name, function(x) str_split(x, &amp;quot; &amp;quot;)[[1]][2]),
+    last_name = map(name, function(x) str_split(x, &amp;quot; &amp;quot;)[[1]][1]),
+    player_id = str_extract(player_id, &amp;quot;\\d+&amp;quot;)
+  ) %&amp;gt;%
+  unite(&amp;quot;name&amp;quot;, c(&amp;quot;first_name&amp;quot;, &amp;quot;last_name&amp;quot;), sep = &amp;quot; &amp;quot;) %&amp;gt;%
+  mutate_at(vars(matches(&amp;quot;attempted|made&amp;quot;)), as.numeric) %&amp;gt;% 
+  replace(., is.na(.), 0) %&amp;gt;% 
+  select(player_id, name, year, games_played, contains(&amp;quot;made&amp;quot;), contains(&amp;quot;attempted&amp;quot;)) %&amp;gt;%
+  rename(
+    fg_made = f_gs_made,
+    fg_attempted = f_gs_attempted
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s view the resulting data for one of the best kickers in modern NFL to familiarize ourselves with the format.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed %&amp;gt;%
+  filter(name == &amp;quot;Justin Tucker&amp;quot;) %&amp;gt;%
+  mutate(fg_pct = fg_made / fg_attempted) %&amp;gt;% 
+  select(name, year, fg_made, fg_attempted)&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#pkjidbziro .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#pkjidbziro .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#pkjidbziro .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#pkjidbziro .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#pkjidbziro .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#pkjidbziro .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#pkjidbziro .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#pkjidbziro .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pkjidbziro .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pkjidbziro .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#pkjidbziro .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#pkjidbziro .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#pkjidbziro .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#pkjidbziro .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pkjidbziro .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pkjidbziro .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#pkjidbziro .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pkjidbziro .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pkjidbziro .gt_left {
+  text-align: left;
+}
+
+#pkjidbziro .gt_center {
+  text-align: center;
+}
+
+#pkjidbziro .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#pkjidbziro .gt_font_normal {
+  font-weight: normal;
+}
+
+#pkjidbziro .gt_font_bold {
+  font-weight: bold;
+}
+
+#pkjidbziro .gt_font_italic {
+  font-style: italic;
+}
+
+#pkjidbziro .gt_super {
+  font-size: 65%;
+}
+
+#pkjidbziro .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;pkjidbziro&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;4&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Justin Tucker Stats&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;4&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;name&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;year&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;fg_made&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;fg_attempted&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2016&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;38&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;39&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2015&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;33&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;40&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2014&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;29&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;34&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;38&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;41&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2012&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;33&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;Just like what we had above! Next, we’ll add a few filters to reduce some of the noise in our data. Any player who has less than 30 field goal attempts and/or has kicked field goals in only one season across their career will be excluded from the analysis. Additionally, we’ll ignore any players with a rookie year before the 1970s. The rationale here is that the NFL made several changes to the location and positioning of the goal during the early 70s, so we want to keep the dynamics of the kicking environment consistent for all players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;min_attempts &amp;lt;- 30
+min_seasons &amp;lt;- 2
+min_decade &amp;lt;- 1970
+
+filter_df &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id) %&amp;gt;% 
+  summarise(n_seasons = n(),
+            n_attempts = sum(fg_attempted),
+            rookie_decade = min(year) %/% 10 * 10
+            ) %&amp;gt;% 
+  filter(n_seasons &amp;gt;= min_seasons,
+         n_attempts &amp;gt;= min_attempts,
+         rookie_decade &amp;gt;= min_decade
+         ) %&amp;gt;% 
+  select(player_id)
+
+stats_processed &amp;lt;- inner_join(stats_processed, filter_df)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next, we’ll add a few features before aggregating the kicking data from a season level to a career level for each player. I’ll cover the rationale of the features shortly in the estimation and inference section below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df_time_stats &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id) %&amp;gt;% 
+  summarise(
+    rookie_decade  = min(year) %/% 10 * 10,
+    last_yr_active = max(year)
+    ) %&amp;gt;% 
+  ungroup() %&amp;gt;% 
+  filter(rookie_decade &amp;gt;= min_decade) %&amp;gt;% 
+  mutate(status = ifelse(last_yr_active == 2016, &amp;#39;active&amp;#39;, &amp;#39;inactive&amp;#39;))
+
+stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We have our time-based features and the last step is to calculate our three key metrics – successes, attempts, and our rate metric.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id, name, rookie_decade, status) %&amp;gt;% 
+  summarise(fg_made = sum(fg_made),
+            fg_attempted = sum(fg_attempted),
+            fg_pct = fg_made / fg_attempted
+            ) %&amp;gt;%
+  ungroup()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Time to move on to the key focus of this post.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;estimation-and-inference&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Estimation and Inference&lt;/h3&gt;
+&lt;p&gt;Let’s now discuss the logic underlying our estimation method as well as the role of the additional features (Note that some of the code below was inspired by the excellent book &lt;a href=&#34;http://varianceexplained.org/r/empirical-bayes-book/&#34;&gt;Introduction to Empirical Bayes: Examples from Baseball Statistics&lt;/a&gt; by David Robinson). To recap, we are estimating a proportion that captures the relationship between successes and attempts. We can model this outcome with the &lt;code&gt;beta distribution&lt;/code&gt;, which is simply a distribution of probabilities ranging from 0 - 1. In our case, it represents the likelihood of a particular field goal percentage for each player, which will fall somewhere between 0.5 and 0.9 depending on the decade(s) the player was active (more on that in second).&lt;/p&gt;
+&lt;p&gt;Below we’ll fit an &lt;em&gt;null model&lt;/em&gt; with no additional parameters when estimating each player’s &lt;code&gt;beta&lt;/code&gt; value. The absence of any inputs means that all players have the same &lt;code&gt;prior&lt;/code&gt;, independent of what decade they played in, whether they’re still active, or how many chances they’ve had to kick a field goal. We’ll then take our prior and update it based on how much information we have about each player, namely the number of field goals they’ve taken and how often they’ve succeeded.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_null &amp;lt;- gamlss(cbind(fg_made, fg_attempted - fg_made) ~ 1,
+  family = BB(mu.link = &amp;quot;identity&amp;quot;),
+  data = stats_agg
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## GAMLSS-RS iteration 1: Global Deviance = 936.6917 
+## GAMLSS-RS iteration 2: Global Deviance = 836.9846 
+## GAMLSS-RS iteration 3: Global Deviance = 828.0258 
+## GAMLSS-RS iteration 4: Global Deviance = 827.9528 
+## GAMLSS-RS iteration 5: Global Deviance = 827.9526&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg_est &amp;lt;- 
+  stats_agg %&amp;gt;% 
+   mutate(
+    mu = fitted(fit_null, &amp;quot;mu&amp;quot;), 
+    sigma = fitted(fit_null, &amp;quot;sigma&amp;quot;), 
+    alpha0 = mu / sigma, 
+    beta0 = (1 - mu) / sigma,
+    alpha1 = alpha0 + fg_made,
+    beta1 = beta0 + fg_attempted - fg_made,
+    estimate = alpha1 / (alpha1 + beta1),
+    raw = fg_made / fg_attempted,
+    low = qbeta(.025, alpha1, beta1),
+    high = qbeta(.975, alpha1, beta1)
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s plot out the estimate for all active players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg_est %&amp;gt;%
+  mutate(name = paste0(name, &amp;quot;: &amp;quot;, fg_made, &amp;quot;|&amp;quot;, fg_attempted),
+         name = fct_reorder(name, estimate)
+         ) %&amp;gt;%
+  filter(status == &amp;quot;active&amp;quot;) %&amp;gt;%
+  ggplot(aes(name, estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = low, ymax = high)) +
+  coord_flip() +
+  geom_point(aes(name, raw), color = &amp;quot;red&amp;quot;, size = 3, alpha = 0.6) +
+  scale_y_continuous(labels = scales::percent_format()) + 
+  my_plot_theme() + 
+  labs(x = NULL,
+       y = &amp;#39;Field Goal Percentage&amp;#39;,
+       title = &amp;#39;Estimated field goal percentage amongst active NFL kickers&amp;#39;,
+       subtitle = &amp;#39;Black dot represents estimate while red dot is actual. Note the bias in our estimates.&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Let’s talk through this figure by comparing the field goal percentage estimates for Adam Vinatieri, who has made 530 of 629 fields goals throughout his career, to Chris Boswell, who has made 50 of 57 field goals. While Vinatieri has a lower actual make rate than Boswell (84.2% vs. 87.7%), we consider him to be a better field goal kicker. The seemingly incongruent finding is based on the fact that we have more evidence for Vinatieri (629 FG attempts vs. 57 FG attempts) than Boswell. It’s like saying, “Chris Boswell is good kicker, maybe better than Vinatieri, but we don’t have enough evidence (yet) to believe he is that much better than an average kicker, a number represented by our prior”. Indeed, if we also consider the width of the credible intervals surrounding these two players, Adam Vinatieri’s interval is considerably smaller than Chris Boswell’s interval.&lt;/p&gt;
+&lt;p&gt;While this is a good way to gain an intuition for what’s happening under the hood, we see an immediate problem – all of our estimates are biased! The actual field goal percentage is above every single estimate. Luckily, there is a solution: we can create conditional estimates of our prior. One way to do this is to create features that explain variability between our players. For example, &lt;a href=&#34;https://fivethirtyeight.com/features/kickers-are-forever/&#34;&gt;field goal percentages have improved dramatically over the past 50 years&lt;/a&gt;. Let’s consider our own data and map out this pattern from the 1970s to the 2010s.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
+  mutate(rookie_decade = as.factor(rookie_decade)) %&amp;gt;%
+  ggplot(aes(rookie_decade, fg_pct, color = rookie_decade)) +
+  geom_boxplot() +
+  geom_jitter() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  my_plot_theme() +
+  scale_color_viridis_d() + 
+  theme(legend.position = &amp;quot;none&amp;quot;) +
+  labs(
+    x = &amp;quot;Decade&amp;quot;,
+    y = &amp;quot;Field Goal Percentage&amp;quot;,
+    title = &amp;#39;Kicker performance has improved over time&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
+The best kicker in 1970s has a lower field goal percentage than the worst kicker in the 2010s. Including the decade of a kicker’s rookie season allows us to create a more informed prior. Thus, if we use the median field goal percentage of all kickers who debuted as rookies in 2010+, our best guess would be about 84%, whereas a kicker who debuted in the 1970s would be somewhere around 64%. This explains why the estimates from our null model were biased.&lt;/p&gt;
+&lt;p&gt;The second factor to consider is the number of field goal attempts per player, because better players have more opportunities to kick field goals. This makes intuitive sense and is captured in the following plot.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
+  ggplot(aes(log2(fg_attempted), fg_pct)) +
+  geom_point(size = 3) +
+  geom_smooth(span = 1) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  my_plot_theme() +
+  labs(
+    x = &amp;quot;Log2(Total Attempts)&amp;quot;,
+    y = &amp;quot;Field Goal percentage&amp;quot;,
+    title = &amp;quot;Better kickers have more opportunities&amp;quot;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Below we’ll use the same model except this time we’ll account for the number of field goal attempts and a player’s rookie decade.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_complete &amp;lt;- 
+  gamlss(cbind(fg_made, fg_attempted - fg_made) ~ log2(fg_attempted) + rookie_decade,
+  family = BB(mu.link = &amp;quot;identity&amp;quot;),
+  data = stats_agg
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## GAMLSS-RS iteration 1: Global Deviance = 918.3071 
+## GAMLSS-RS iteration 2: Global Deviance = 714.8471 
+## GAMLSS-RS iteration 3: Global Deviance = 668.3708 
+## GAMLSS-RS iteration 4: Global Deviance = 668.1839 
+## GAMLSS-RS iteration 5: Global Deviance = 668.1838&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
+Much better! Our estimates do not exhibit the same degree of bias as before. Moreover, the width of our credible intervals shrank across all players. This makes sense, given that we can now condition our prior estimates on inputs that explain variability in the field goal percentage. While there are other factors that might improve our model (e.g., did a player’s team have their home games in a dome?), this is a good starting point for answering our original question.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;from-parameters-to-points&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;From Parameters to Points&lt;/h3&gt;
+&lt;p&gt;We have a model that does a reasonable job of estimating a kicker’s field goal percentage. Now we need to translate that into an estimate of fantasy points. This will take a few steps, but I’ll outline each in turn. First, we need to estimate the average worth (in fantasy points) of each successful field goal. Typically, field goals less-than 40 yards are worth 3 points, 40 - 49 yards are worth 4 points, and 50 or more yards are worth 5 points. We’ll use the 2016 season to come up with a global average. While we could technically account for distances of each player (e.g., some kickers are excellent at a longer distances, others not so much), this approach will give us a “good-enough” answer. Second, we’ll estimate the average number of field goal attempts per season. This can vary widely from one season to the next for a given kicker, as it is contingent upon the offense getting within kicking range. Again, we’ll keep it simple and just average the number of attempts across all players from the 2016 season.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Average points per FG
+pts_per_fg &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  filter(year == 2016) %&amp;gt;% 
+  mutate(pt_3_fgs = (f_gs_made_20_29_yards + f_gs_made_30_39_yards) * 3,
+         pt_4_fgs = f_gs_made_40_49_yards * 4,
+         pt_5_fgs = f_gs_made_50_yards * 5,
+         tot_pts = pt_3_fgs + pt_4_fgs + pt_5_fgs
+  )
+
+pts_per_fg &amp;lt;- round(sum(pts_per_fg$tot_pts) / sum(pts_per_fg$fg_made), 1)
+
+# Average number of attempts
+attempts_per_season &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  filter(year == 2016) %&amp;gt;% 
+  pull(fg_attempted) %&amp;gt;% 
+  mean() %&amp;gt;% 
+  round()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Here comes the fun part. Below we’ll simulate 1000 seasons for each player by randomly generating 1000 values of &lt;code&gt;beta&lt;/code&gt;. This value is based on the posterior estimates, &lt;code&gt;alpha1&lt;/code&gt; and &lt;code&gt;beta1&lt;/code&gt;, produced by our model. The estimates will vary from one simulation to next, though most values will fall somewhere between 0.75 and 0.9. Better players like Justin Tucker will be near the high end of that range while player like Graham Gano will be near the lower end. We’ll then take each estimate and plug it into the &lt;code&gt;binomial distribution&lt;/code&gt; below. Recall that the &lt;code&gt;binomial distribution&lt;/code&gt; is defined by a single parameter, which represents the probability of success. This is exactly what our estimate of &lt;code&gt;beta&lt;/code&gt; represents! Given that all active players had an average of 27 FG attempts in 2016, each of the 1000 simulations will consist of 27 trials (or &lt;code&gt;attempts_per_season&lt;/code&gt;) each with a slightly different probability of success (how likely they are to make a field goal on a given attempt). We’ll lean on the &lt;code&gt;purrr&lt;/code&gt; package to vectorize these operations.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2018)
+n_seasons &amp;lt;- 1000
+
+est_active &amp;lt;- 
+  stats_agg_est %&amp;gt;% 
+  filter(status == &amp;#39;active&amp;#39;)
+
+est_make_pct &amp;lt;- map2(est_active %&amp;gt;% pull(alpha1),
+                     est_active %&amp;gt;% pull(beta1), 
+                     function(x, y) rbeta(n_seasons, x, y)
+                     )
+est_outcomes &amp;lt;- map(est_make_pct, 
+                    function(x) rbinom(n = n_seasons, 
+                                       size = attempts_per_season,
+                                       prob = x
+                                       )
+                    )
+names(est_outcomes) &amp;lt;- est_active$name&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;So much data! Below we’ll plot the distribution of total points accumulated for each player across the 1000 simulated seasons. We’ll create quantiles as a way to see how much overlap there is between players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pt_simulation &amp;lt;- 
+  est_outcomes %&amp;gt;% 
+  tbl_df() %&amp;gt;% 
+  gather() %&amp;gt;% 
+  transmute(name = key,
+            season_pts = value * pts_per_fg
+            ) %&amp;gt;% 
+  group_by(name) %&amp;gt;% 
+  mutate(avg_pts = mean(season_pts)) %&amp;gt;% 
+  ungroup() %&amp;gt;% 
+  mutate(name = fct_reorder(name, avg_pts))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: `tbl_df()` is deprecated as of dplyr 1.0.0.
+## Please use `tibble::as_tibble()` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pt_simulation %&amp;gt;% 
+  ggplot(aes(season_pts, y = name, fill = factor(..quantile..))) + 
+  stat_density_ridges(
+    geom = &amp;quot;density_ridges_gradient&amp;quot;,
+    calc_ecdf = TRUE,
+    quantiles = 4,
+    quantile_lines = TRUE,
+    bandwidth = 2
+  ) +
+  scale_fill_viridis(discrete = TRUE, name = &amp;quot;Point Quartile&amp;quot;, alpha = 0.5) +
+  my_plot_theme() + 
+  scale_x_continuous(breaks = pretty_breaks(n = 7)) + 
+  labs(x = &amp;#39;Total Points Per Simulated Season&amp;#39;,
+       y = NULL,
+       title = &amp;quot;The best kicker is not much better than the worst kicker&amp;quot;,
+       subtitle = &amp;#39;Drafing any kicker is fine&amp;#39;
+       ) + 
+  theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Wait! We went all this way for you to tell me that the status quo is probably right? Yes, I did. But we still haven’t quantified how much better or worse drafting the best or worst kicker is in terms of fantasy points. A simple way is to count the number of seasons where Justin Tucker (the best kicker) scored more points than Andrew Franks (the worst kicker).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;jt_pts &amp;lt;- 
+  pt_simulation %&amp;gt;% 
+  filter(name == &amp;#39;Justin Tucker&amp;#39;) %&amp;gt;% 
+  pull(season_pts) 
+
+af_pts &amp;lt;- 
+pt_simulation %&amp;gt;% 
+  filter(name == &amp;#39;Andrew Franks&amp;#39;) %&amp;gt;% 
+  pull(season_pts)
+
+pct_greater &amp;lt;- sum(jt_pts &amp;gt; af_pts) / n_seasons
+print(str_glue(&amp;#39;PCT greater: {pct_greater * 100}%&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## PCT greater: 77.5%&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Turns out that approximately 77 of every 100 seasons Justin Tucker outscores Andrew Franks. Let’s go one step further and quantify the actual difference.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data.frame(pt_diff = jt_pts - af_pts), aes(pt_diff)) + 
+  geom_histogram(fill = &amp;#39;gray&amp;#39;, color = &amp;#39;black&amp;#39;, bins = 10) + 
+  scale_x_continuous(breaks = pretty_breaks(n = 15)) + 
+  labs(x = &amp;#39;Point Difference over Entire Season&amp;#39;) + 
+  theme_minimal() + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .05), lty = 2) + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .5), lty = 2, color = &amp;#39;red&amp;#39;, size = 2) + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .95), lty = 2) + 
+  my_plot_theme() + 
+  labs(x = &amp;#39;Point Difference&amp;#39;,
+       y = &amp;#39;Count&amp;#39;,
+       title = &amp;#39;The best kicker should score about 10 more points per season compared to the worst&amp;#39;,
+       subtitle = &amp;#39;Estimate based on 27 FG attempts per season with each FG worth 3.5 points&amp;#39;
+       )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
+If we spread this estimate out across 16 regular-season games, it comes out to less than a single point per game.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;conclusion&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+&lt;p&gt;Needless to say, pick your kicker last in Fantasy Football! All kickers in modern-day NFL are really good, so save those late-round picks for positions other than a kicker. Cheers!&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

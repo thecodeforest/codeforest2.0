@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Beta Distribution | Code Forest</title>
+    <title>Beta Distribution | The Code Forest</title>
     <link>/category/beta-distribution/</link>
       <atom:link href="/category/beta-distribution/index.xml" rel="self" type="application/rss+xml" />
     <description>Beta Distribution</description>
@@ -13,20 +13,39 @@
     </image>
     
     <item>
-      <title>Causal Inference Part 1</title>
+      <title>Causal Inference Part 1: Variance Reduction Methods</title>
       <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
       <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
       <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
       <description>
 
 
+&lt;p&gt;Causal -&amp;gt; Cause &amp;amp; Effect.
+Causal Inference -&amp;gt; Draw conclusions between cause &amp;amp; effect
+A -&amp;gt; B
+B -&amp;gt; A
+Z -&amp;gt; A
+Z -&amp;gt; B&lt;/p&gt;
+&lt;p&gt;Causal Inference answers the question “What would happen”? How much more beer would we sell if we buy more google ads?&lt;/p&gt;
+&lt;p&gt;Goal: Infer the effect of one thing on another
+- Effect of treatment on disease
+- Effect of website change on conversion
+- Effect of climate change policy on emissions&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Observational studies are just more convienient.&lt;/li&gt;
+&lt;li&gt;Adjust/control for confounders&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;How do you measure causal effects in observational studies?&lt;/p&gt;
+&lt;div id=&#34;simpsons-paradox&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Simpson’s Paradox&lt;/h3&gt;
 &lt;p&gt;BING BONG!!!
-Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y.&lt;/p&gt;
+Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y. Goal is to explain the structure.&lt;/p&gt;
 &lt;p&gt;Inputs, Interventions (T), and Outputs. What is the causal relationship between these three variables?&lt;/p&gt;
 &lt;p&gt;X is what you know about the person. X -&amp;gt; T (treatment plan -&amp;gt; binary (treatment 1, treatment 2))&lt;/p&gt;
 &lt;p&gt;Challenge is you only observe one outcome. And you must impute the other outcome. And this is the crux of the counterfactual.&lt;/p&gt;
 &lt;p&gt;Conditional Average Treatment Effect (For someone with a specific age, there is a big difference between the two treatments). What you want to predict.&lt;/p&gt;
 &lt;p&gt;Average treatment effect (does not condition on any variable) (On average, this intervention is a good intervention)&lt;/p&gt;
+&lt;/div&gt;
 </description>
     </item>
     

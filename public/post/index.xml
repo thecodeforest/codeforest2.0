@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Posts | Code Forest</title>
+    <title>Posts | The Code Forest</title>
     <link>/post/</link>
       <atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     <description>Posts</description>
@@ -20,21 +20,20 @@
       <description>
 
 
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/header_image.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
-&lt;p&gt;Forecasting at scale is a challenge faced by many businesses. Whether trying to predict daily demand for thousands of products or the number of people to staff across many stores, the task of generating forecasts in parallel is a common task for improving efficiencies within a business. Accordingly, the goal of this post is to outline an approach to creating many forecasts in a short period with Pyspark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level forecasts via the Prophet package. Note that we will not cover how to implement in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a workflow for quickly generating many time-series forecasts.&lt;/p&gt;
+&lt;p&gt;Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;getting-started&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Getting Started&lt;/h3&gt;
-&lt;p&gt;The data we’ll be using was originally furnished by Walmart and represents weekly demand for products at the store-department level. All code for this post is stored in the &lt;a href=&#34;&#34;&gt;Codeforest Repository&lt;/a&gt;, while the original data is stored &lt;a href=&#34;&#34;&gt;here&lt;/a&gt;. Before diving into the details, let’s briefly review talk through the key modules and files.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
-* &lt;strong&gt;conf.json&lt;/strong&gt; - here is where we define things like our grouping variables, our outcome variable, or if we want to log transform our outcome variable. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
+&lt;p&gt;We’ll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast&#34;&gt;Codeforest Repository&lt;/a&gt;. Before diving into the details, let’s briefly review the key modules and files.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;300&#34; height=&#34;75&#34; /&gt;
+&lt;strong&gt;conf.json&lt;/strong&gt; - A configuration file that defines various parameters for our job. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
 &lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/config_file.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
-* &lt;strong&gt;pyspark_fcast.py&lt;/strong&gt; - Our main module – that is, where the actual forecasting gets done. We’ll cover this in detail below.&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;fcast_data_frame.py&lt;/strong&gt; - a helper class responsible for common pre-forecasting data transformations. These include filling in missing values, replacing negative values with zeros, filtering time-series with only a few observations, etc. We’ll cover several of these methods below, but I’d recommend cloning the repository if you’d like to access all methods.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;To follow along with this tutorial, you’ll also need to be able to import the following packages.&lt;/p&gt;
+&lt;strong&gt;pyspark_fcast.py&lt;/strong&gt; - Our main module, or where the forecasting gets done. We’ll cover this in detail below.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;fcast_data_frame.py&lt;/strong&gt; - A class responsible for common pre-forecasting data transformations. These include filling in missing values, filtering time-series with only a few observations, or log transforming our outcome variable. Visit &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/blob/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast/fcast_helpers/fcast_data_frame.py&#34;&gt;here&lt;/a&gt; for access to all methods.&lt;/p&gt;
+&lt;p&gt;You’ll also need to import the following packages to follow along with the tutorial.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import argparse
 import json
 import logging
@@ -47,19 +46,19 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from fbprophet import Prophet # Using fbprophet==0.7.1 &amp;amp; pystan==2.18.0
-from pyspark.sql import SparkSession # Using pyspark==3.0.1
+from fbprophet import Prophet # fbprophet==0.7.1 &amp;amp; pystan==2.18.0
+from pyspark.sql import SparkSession # pyspark==3.0.1
 from pyspark.sql.functions import lit
 from pyspark.sql.types import (DateType, FloatType, IntegerType, StructField,
                                StructType)
                                
 from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Assuming the above imports have been successful, let’s have a look at the first few rows in our data.
+&lt;p&gt;Assuming the imports were successful, we’ll peak at a few rows in our data to get a feel for the format.
 &lt;style&gt;html {
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#egamultfoy .gt_table {
+#ygghhxcffs .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -84,7 +83,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-left-color: #D3D3D3;
 }
 
-#egamultfoy .gt_heading {
+#ygghhxcffs .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -96,7 +95,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#egamultfoy .gt_title {
+#ygghhxcffs .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -106,7 +105,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-bottom-width: 0;
 }
 
-#egamultfoy .gt_subtitle {
+#ygghhxcffs .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -116,13 +115,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-width: 0;
 }
 
-#egamultfoy .gt_bottom_border {
+#ygghhxcffs .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#egamultfoy .gt_col_headings {
+#ygghhxcffs .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -137,7 +136,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#egamultfoy .gt_col_heading {
+#ygghhxcffs .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -157,7 +156,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   overflow-x: hidden;
 }
 
-#egamultfoy .gt_column_spanner_outer {
+#ygghhxcffs .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -169,15 +168,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 4px;
 }
 
-#egamultfoy .gt_column_spanner_outer:first-child {
+#ygghhxcffs .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#egamultfoy .gt_column_spanner_outer:last-child {
+#ygghhxcffs .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#egamultfoy .gt_column_spanner {
+#ygghhxcffs .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -189,7 +188,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   width: 100%;
 }
 
-#egamultfoy .gt_group_heading {
+#ygghhxcffs .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -211,7 +210,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   vertical-align: middle;
 }
 
-#egamultfoy .gt_empty_group_heading {
+#ygghhxcffs .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -226,15 +225,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   vertical-align: middle;
 }
 
-#egamultfoy .gt_from_md &gt; :first-child {
+#ygghhxcffs .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#egamultfoy .gt_from_md &gt; :last-child {
+#ygghhxcffs .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#egamultfoy .gt_row {
+#ygghhxcffs .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -253,7 +252,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   overflow-x: hidden;
 }
 
-#egamultfoy .gt_stub {
+#ygghhxcffs .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -265,7 +264,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-left: 12px;
 }
 
-#egamultfoy .gt_summary_row {
+#ygghhxcffs .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -275,7 +274,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 5px;
 }
 
-#egamultfoy .gt_first_summary_row {
+#ygghhxcffs .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -285,7 +284,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-color: #D3D3D3;
 }
 
-#egamultfoy .gt_grand_summary_row {
+#ygghhxcffs .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -295,7 +294,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 5px;
 }
 
-#egamultfoy .gt_first_grand_summary_row {
+#ygghhxcffs .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -305,11 +304,11 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-color: #D3D3D3;
 }
 
-#egamultfoy .gt_striped {
+#ygghhxcffs .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#egamultfoy .gt_table_body {
+#ygghhxcffs .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -318,7 +317,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-bottom-color: #D3D3D3;
 }
 
-#egamultfoy .gt_footnotes {
+#ygghhxcffs .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -332,13 +331,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#egamultfoy .gt_footnote {
+#ygghhxcffs .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#egamultfoy .gt_sourcenotes {
+#ygghhxcffs .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -352,46 +351,46 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#egamultfoy .gt_sourcenote {
+#ygghhxcffs .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#egamultfoy .gt_left {
+#ygghhxcffs .gt_left {
   text-align: left;
 }
 
-#egamultfoy .gt_center {
+#ygghhxcffs .gt_center {
   text-align: center;
 }
 
-#egamultfoy .gt_right {
+#ygghhxcffs .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#egamultfoy .gt_font_normal {
+#ygghhxcffs .gt_font_normal {
   font-weight: normal;
 }
 
-#egamultfoy .gt_font_bold {
+#ygghhxcffs .gt_font_bold {
   font-weight: bold;
 }
 
-#egamultfoy .gt_font_italic {
+#ygghhxcffs .gt_font_italic {
   font-style: italic;
 }
 
-#egamultfoy .gt_super {
+#ygghhxcffs .gt_super {
   font-size: 65%;
 }
 
-#egamultfoy .gt_footnote_marks {
+#ygghhxcffs .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;egamultfoy&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;ygghhxcffs&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -449,7 +448,9 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   
   
 &lt;/table&gt;&lt;/div&gt;
-Let’s also discuss the process of passing in the forecasting parameters in addition to documenting which parameters we’ve selected. We’ll use the following command: &lt;code&gt;python3 pyspark_fcast.py --forecast-config-file &#39;config/conf.json&#39;&lt;/code&gt;. Here we are passing in the location of our configuration file and extracting the parameters. Don’t worry if the individual parameters don’t make sense now. I’ll explain each in greater detail below.&lt;/p&gt;
+Let’s now discuss the process of passing and documenting the forecasting parameters. We’ll execute the following from the command line to generate our forecasts:&lt;br /&gt;
+&lt;code&gt;python3 pyspark_fcast.py --forecast-config-file &#39;config/conf.json&#39;&lt;/code&gt;&lt;br /&gt;
+Here we are passing in the location of our configuration file and extracting the parameters. Don’t worry if the individual parameters don’t make sense now. I’ll explain each in greater detail below.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;args = read_args()
 
 with open(args.forecast_config_file) as f:
@@ -457,6 +458,7 @@ with open(args.forecast_config_file) as f:
 
 log_input_params(config=config)
 
+# forecasting parameters
 input_data_path = config[&amp;quot;input_data_path&amp;quot;]
 fcast_params = config[&amp;quot;fcast_parameters&amp;quot;]
 group_fields = fcast_params[&amp;quot;group_fields&amp;quot;]
@@ -465,8 +467,12 @@ yvar_field = fcast_params[&amp;quot;yvar_field&amp;quot;]
 ts_frequency = fcast_params[&amp;quot;ts_frequency&amp;quot;]
 fcast_floor = fcast_params[&amp;quot;forecast_floor&amp;quot;]
 fcast_cap = fcast_params[&amp;quot;forecast_cap&amp;quot;]
-min_obs_threshold = fcast_params[&amp;#39;min_obs_count&amp;#39;]&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Note the usage of the two helper functions: &lt;em&gt;read_args&lt;/em&gt; and &lt;em&gt;log_input_params&lt;/em&gt;.&lt;/p&gt;
+min_obs_threshold = fcast_params[&amp;#39;min_obs_count&amp;#39;]
+
+# spark parameters
+spark_n_threads = str(config[&amp;#39;spark_n_threads&amp;#39;])
+java_home = config[&amp;quot;java_home&amp;quot;]&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note the two helper functions: &lt;em&gt;read_args&lt;/em&gt; and &lt;em&gt;log_input_params&lt;/em&gt;.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def read_args() -&amp;gt; argparse.Namespace:
     &amp;quot;&amp;quot;&amp;quot;Read Forecasting arguments 
 
@@ -476,7 +482,7 @@ min_obs_threshold = fcast_params[&amp;#39;min_obs_count&amp;#39;]&lt;/code&gt;&l
     parser = argparse.ArgumentParser()
     parser.add_argument(&amp;quot;--forecast-config-file&amp;quot;, type=str)
     return parser.parse_args()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;em&gt;read_args&lt;/em&gt; takes the arguments in our configuration file, which are then converted into a dictionary. Next, we document which parameters we’ve passed to our module with &lt;em&gt;log_input_params&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;read_args&lt;/em&gt; takes arguments in our configuration file, then we document which parameters we’re using with &lt;em&gt;log_input_params&lt;/em&gt;.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;logging.basicConfig(
     format=&amp;quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&amp;quot;,
     level=logging.INFO,
@@ -497,8 +503,8 @@ def log_input_params(config: dict) -&amp;gt; None:
         for x in zip(params.index, params.iloc[:, 0])
     ]
     return None&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;There are several benefits to documenting these inputs. First, we can validate that the correct parameters have been passed to our forecasting process. Having a record facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save a lot of time as your project matures.&lt;/p&gt;
-&lt;p&gt;Now we that we have our parameters and have set up logging, we’ll read in the data stored &lt;a href=&#34;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv&#34;&gt;here&lt;/a&gt; and execute some basic field formatting with &lt;em&gt;clean_names&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;There are several benefits to documenting our inputs. First, we can validate if the correct parameters have been passed to our forecasting process. Having a record of these values facilitates debugging. Second, it is useful for experimentation. We can try out different parameters to see which combination provides the best results. Logging does not receive a lot of attention in the data science world, but it is incredibly useful and will save you time as your project matures.&lt;/p&gt;
+&lt;p&gt;We have our parameters and have set up logging. Next, we’ll read in the data stored &lt;a href=&#34;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/weekly_sales_data.csv&#34;&gt;here&lt;/a&gt; and execute some basic field formatting with &lt;em&gt;clean_names&lt;/em&gt;.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def clean_names(df: pd.DataFrame) -&amp;gt; pd.DataFrame:
     &amp;quot;&amp;quot;&amp;quot;Applies the following transformations to column names:
         - Removes camel case
@@ -518,20 +524,19 @@ def log_input_params(config: dict) -&amp;gt; None:
     cols = [re.sub(r&amp;quot;\s&amp;quot;, &amp;quot;&amp;quot;, x) for x in cols]
     cols = [re.sub(r&amp;quot;\.&amp;quot;, &amp;quot;_&amp;quot;, x) for x in cols]
     df.columns = cols
-    return df
-
-sales_df = pd.read_csv(input_data_path)
+    return df&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;sales_df = pd.read_csv(input_data_path)
 sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;If you don’t have a &lt;em&gt;clean_names&lt;/em&gt;-type function as part of your team’s codebase, I’d highly recommend creating one. It’s a function that I use frequently when reading data from various sources and encourages a standardized way of formatting field names.&lt;/p&gt;
+&lt;p&gt;If you don’t have a &lt;em&gt;clean_names&lt;/em&gt;-type function as part of your codebase, I’d highly recommend creating one. It’s a function that I use frequently when reading data from various sources and encourages a standardized way of formatting field names.&lt;/p&gt;
 &lt;p&gt;Now that we have our data, we’ll do some pre-forecasting data cleaning. The main steps are outlined below:&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Filter groups with limited observations&lt;/strong&gt; - It’s a good idea to put predictions against items where you have some historical data. While the space of &lt;a href=&#34;https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/&#34;&gt;cold-start forecasting&lt;/a&gt; is very interesting, it is outside the scope of this post. Thus, we are putting a minimum number of data points in place for something to be considered. This is also a good idea because some forecasting algorithms will not fit a model against a time series with fewer than N observations.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Filter groups with limited observations&lt;/strong&gt; - It’s a good idea to put predictions against items where you have some historical data. While the space of &lt;a href=&#34;https://aws.amazon.com/blogs/machine-learning/now-available-in-amazon-sagemaker-deepar-algorithm-for-more-accurate-time-series-forecasting/&#34;&gt;cold-start forecasting&lt;/a&gt; is very interesting, it is outside the scope of this post. Thus, we are putting a minimum threshold on the number of data points per group. This is also a good idea because some forecasting algorithms will not fit a model against a few observations, causing your program to crash.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Replace negative values with zero&lt;/strong&gt; - I’m assuming a negative value represents a returned product. Our goal is to forecast &lt;strong&gt;demand&lt;/strong&gt; not &lt;strong&gt;demand - returns&lt;/strong&gt;. This is an assumption that would need to be validated with domain knowledge.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Pad missing values&lt;/strong&gt; - This is an important but easy to overlook step for one simple reason: Missing values in time-series data are not usually flagged as “missing”. For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I’ve provied a brief example below to illustrate what this looks like from a data perspective.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Pad missing values&lt;/strong&gt; - Accounting for missing data is an easy step to overlook for one simple reason: Missing values in time-series data are not usually flagged as “missing”. For example, a store may shut down for six weeks of renovations. As a result, there will be a series of dates that have no sales data. Identifying these gaps is pivotal for generating reliable forecasts. I’ve provided a brief example below to illustrate what this looks like from a data perspective.&lt;/p&gt;
 &lt;style&gt;html {
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#kasmpplzul .gt_table {
+#gpdwgiewva .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -556,7 +561,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_heading {
+#gpdwgiewva .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -568,7 +573,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_title {
+#gpdwgiewva .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -578,7 +583,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#kasmpplzul .gt_subtitle {
+#gpdwgiewva .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -588,13 +593,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#kasmpplzul .gt_bottom_border {
+#gpdwgiewva .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_col_headings {
+#gpdwgiewva .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -609,7 +614,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_col_heading {
+#gpdwgiewva .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -629,7 +634,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#kasmpplzul .gt_column_spanner_outer {
+#gpdwgiewva .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -641,15 +646,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#kasmpplzul .gt_column_spanner_outer:first-child {
+#gpdwgiewva .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#kasmpplzul .gt_column_spanner_outer:last-child {
+#gpdwgiewva .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#kasmpplzul .gt_column_spanner {
+#gpdwgiewva .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -661,7 +666,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#kasmpplzul .gt_group_heading {
+#gpdwgiewva .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -683,7 +688,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#kasmpplzul .gt_empty_group_heading {
+#gpdwgiewva .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -698,15 +703,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#kasmpplzul .gt_from_md &gt; :first-child {
+#gpdwgiewva .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#kasmpplzul .gt_from_md &gt; :last-child {
+#gpdwgiewva .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#kasmpplzul .gt_row {
+#gpdwgiewva .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -725,7 +730,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#kasmpplzul .gt_stub {
+#gpdwgiewva .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -737,7 +742,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#kasmpplzul .gt_summary_row {
+#gpdwgiewva .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -747,7 +752,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#kasmpplzul .gt_first_summary_row {
+#gpdwgiewva .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -757,7 +762,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_grand_summary_row {
+#gpdwgiewva .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -767,7 +772,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#kasmpplzul .gt_first_grand_summary_row {
+#gpdwgiewva .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -777,11 +782,11 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_striped {
+#gpdwgiewva .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#kasmpplzul .gt_table_body {
+#gpdwgiewva .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -790,7 +795,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_footnotes {
+#gpdwgiewva .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -804,13 +809,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_footnote {
+#gpdwgiewva .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#kasmpplzul .gt_sourcenotes {
+#gpdwgiewva .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -824,46 +829,46 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kasmpplzul .gt_sourcenote {
+#gpdwgiewva .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#kasmpplzul .gt_left {
+#gpdwgiewva .gt_left {
   text-align: left;
 }
 
-#kasmpplzul .gt_center {
+#gpdwgiewva .gt_center {
   text-align: center;
 }
 
-#kasmpplzul .gt_right {
+#gpdwgiewva .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#kasmpplzul .gt_font_normal {
+#gpdwgiewva .gt_font_normal {
   font-weight: normal;
 }
 
-#kasmpplzul .gt_font_bold {
+#gpdwgiewva .gt_font_bold {
   font-weight: bold;
 }
 
-#kasmpplzul .gt_font_italic {
+#gpdwgiewva .gt_font_italic {
   font-style: italic;
 }
 
-#kasmpplzul .gt_super {
+#gpdwgiewva .gt_super {
   font-size: 65%;
 }
 
-#kasmpplzul .gt_footnote_marks {
+#gpdwgiewva .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;kasmpplzul&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;gpdwgiewva&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -925,7 +930,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#moirnnfdnv .gt_table {
+#mfjkkazozs .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -950,7 +955,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_heading {
+#mfjkkazozs .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -962,7 +967,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_title {
+#mfjkkazozs .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -972,7 +977,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#moirnnfdnv .gt_subtitle {
+#mfjkkazozs .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -982,13 +987,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#moirnnfdnv .gt_bottom_border {
+#mfjkkazozs .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_col_headings {
+#mfjkkazozs .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1003,7 +1008,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_col_heading {
+#mfjkkazozs .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1023,7 +1028,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#moirnnfdnv .gt_column_spanner_outer {
+#mfjkkazozs .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1035,15 +1040,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#moirnnfdnv .gt_column_spanner_outer:first-child {
+#mfjkkazozs .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#moirnnfdnv .gt_column_spanner_outer:last-child {
+#mfjkkazozs .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#moirnnfdnv .gt_column_spanner {
+#mfjkkazozs .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1055,7 +1060,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#moirnnfdnv .gt_group_heading {
+#mfjkkazozs .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1077,7 +1082,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#moirnnfdnv .gt_empty_group_heading {
+#mfjkkazozs .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1092,15 +1097,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#moirnnfdnv .gt_from_md &gt; :first-child {
+#mfjkkazozs .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#moirnnfdnv .gt_from_md &gt; :last-child {
+#mfjkkazozs .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#moirnnfdnv .gt_row {
+#mfjkkazozs .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1119,7 +1124,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#moirnnfdnv .gt_stub {
+#mfjkkazozs .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1131,7 +1136,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#moirnnfdnv .gt_summary_row {
+#mfjkkazozs .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1141,7 +1146,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#moirnnfdnv .gt_first_summary_row {
+#mfjkkazozs .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1151,7 +1156,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_grand_summary_row {
+#mfjkkazozs .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1161,7 +1166,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#moirnnfdnv .gt_first_grand_summary_row {
+#mfjkkazozs .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1171,11 +1176,11 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_striped {
+#mfjkkazozs .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#moirnnfdnv .gt_table_body {
+#mfjkkazozs .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1184,7 +1189,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_footnotes {
+#mfjkkazozs .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1198,13 +1203,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_footnote {
+#mfjkkazozs .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#moirnnfdnv .gt_sourcenotes {
+#mfjkkazozs .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1218,46 +1223,46 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#moirnnfdnv .gt_sourcenote {
+#mfjkkazozs .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#moirnnfdnv .gt_left {
+#mfjkkazozs .gt_left {
   text-align: left;
 }
 
-#moirnnfdnv .gt_center {
+#mfjkkazozs .gt_center {
   text-align: center;
 }
 
-#moirnnfdnv .gt_right {
+#mfjkkazozs .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#moirnnfdnv .gt_font_normal {
+#mfjkkazozs .gt_font_normal {
   font-weight: normal;
 }
 
-#moirnnfdnv .gt_font_bold {
+#mfjkkazozs .gt_font_bold {
   font-weight: bold;
 }
 
-#moirnnfdnv .gt_font_italic {
+#mfjkkazozs .gt_font_italic {
   font-style: italic;
 }
 
-#moirnnfdnv .gt_super {
+#mfjkkazozs .gt_super {
   font-size: 65%;
 }
 
-#moirnnfdnv .gt_footnote_marks {
+#mfjkkazozs .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;moirnnfdnv&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;mfjkkazozs&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -1334,11 +1339,11 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   
 &lt;/table&gt;&lt;/div&gt;
 &lt;p&gt;We’ll go back and fill or “interpolate” those missing values in the &lt;code&gt;weekly_sales&lt;/code&gt; field in a later step.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Filter groups with long ‘streaks’ of missing observations&lt;/strong&gt; - Building on the previous example, let’s say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won’t capture the overall trend, seasonality, or potential holiday/event effects that help improve our forecasting accuracy. I will initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, I’ll set a limit of four weeks, which says “if any time-series has more than four consecutive dates missing, exclude from the final forecasting step”.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Interpolate missing values&lt;/strong&gt; - Fills in missing data with “reasonable” values. We’ll use the overall mean of each series, which is a very simple and easy to understand technique.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Add forecasting bounds&lt;/strong&gt; - This function is specific to the Prophet API and is not required to generate a forecast. However, in a context where you cannot individually inspect the quality of each forecast, adding in some “guardrails” can prevent errant predictions that erode trust with your end stakeholders. adds a “floor” and “cap” field for each group, indicating that forecast cannot go above or below these bounds. For example, if a minimum value in a time-series in 10 and the max is 100, a floor of 0.5 and a cap of 1.5 would allow a forecast no higher than 150 and no lower than 5.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Log transform outcome variable&lt;/strong&gt; - Log transforming our outcome variable is an effective approach to reduce the influence of outliers on our forecats. The other approach is to use a box-cox transformation (see &lt;a href=&#34;&#34;&gt;here&lt;/a&gt; for more details), but I often start with a log-transformation because it does require me to keep track of the transformation parameters, which is something you’ll need to do with a box-cox transformation.&lt;/p&gt;
-&lt;p&gt;Below we’ll implement all of these data-cleaning steps via the &lt;code&gt;FcastDataFrame&lt;/code&gt; class, which I often use to prepare a clean grouped time-series data prior to generating forecasts.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Filter groups with long ‘streaks’ of missing observations&lt;/strong&gt; - Building on the previous example, let’s say the store closes for six months instead of six weeks. Thus, half of the year will not have any sales information. We could fill it in with a reasonable value, such as the average, but this won’t capture the overall trend, seasonality, or potential holiday/event effects that help to explain variation in our outcome variable. I’ll often initially exclude these time-series, and then try to understand why/how long streaks of values are missing. In this case, we’ll set a limit of four weeks (i.e., if any time-series has more than four consecutive dates missing, exclude from the final forecasting step).&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Interpolate missing values&lt;/strong&gt; - Fills in missing data with “reasonable” values. We’ll use the overall mean of each series, which is a very simple and easy to understand technique. There are better approaches that account for seasonality or local trends. However, the goal here isn’t to generate the best forecast but instead to create a good starting point from which to iterate.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Add forecasting bounds&lt;/strong&gt; - This function is specific to the Prophet API and is not required to generate a forecast via PySpark. However, when you cannot inspect the quality of each forecast, adding in some “guardrails” can prevent errant predictions that erode trust with your stakeholders. The &lt;code&gt;floor&lt;/code&gt; and &lt;code&gt;cap&lt;/code&gt; fields provide bounds that a forecast cannot go above or below. For example, if the minimum value in a time-series is 10 and the maximum is 100, a floor of 0.5 and a cap of 1.5 ensures all forecasted values are not above 150 (100 * 1.5) or less than 5 (10 * 0.5). Again, these decisions are often driven by domain knowledge of the forecaster. We’ll go a bit deeper on this field below as well.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Log transform outcome variable&lt;/strong&gt; - Log transforming our outcome variable is an effective approach to reduce the influence of outliers and stabilize variance that increases over time. A separate approach is to use a box-cox transformation (see &lt;a href=&#34;https://otexts.com/fpp2/transformations.html&#34;&gt;here&lt;/a&gt; for more details), which can yield better results than a log-transformation. However, I often start with a log-transformation because it does require us to keep track of the transformation parameters, which is something you’ll need to do with a box-cox transformation. Are we seeing a theme here? Start simple.&lt;/p&gt;
+&lt;p&gt;Whew - that was a lot of information, but we can finally implement all of these data-cleaning steps via the &lt;code&gt;FcastDataFrame&lt;/code&gt; class. The format was inspired by the &lt;a href=&#34;https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html&#34;&gt;sklearn.pipeline class&lt;/a&gt; to prepare and clean grouped time-series data prior to generating forecasts.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;class FcastDataFrame:
     &amp;quot;&amp;quot;&amp;quot;Use for pre-processing data prior to forecasting&amp;quot;&amp;quot;&amp;quot;
     def __init__(
@@ -1375,12 +1380,14 @@ fcast_df = FcastDataFrame(
         yvar_field=yvar_field,
         ts_frequency=ts_frequency,
     )        &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;While we won’t cover all methods in this class, I’ll&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;    def filter_groups_min_obs(self, min_obs_threshold):
-        &amp;quot;&amp;quot;&amp;quot;[summary]
+&lt;p&gt;While we won’t cover all methods in this class, I’ll briefly review one of the methods – &lt;code&gt;filter_groups_min_obs&lt;/code&gt; – to illustrate the structure of the class.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;    def filter_groups_min_obs(self, min_obs_threshold: int):
+        &amp;quot;&amp;quot;&amp;quot;Filters groups based on some minimum number of observations 
+           required for forecasting
 
         Args:
-            min_obs_threshold ([type]): [description]
+            min_obs_threshold (int): removes all groups with less obsevations than 
+                                     this threshold
         &amp;quot;&amp;quot;&amp;quot;
         n_unique_groups = self.df[self.group_fields].drop_duplicates().shape[0]
         min_obs_filter_df = (
@@ -1395,7 +1402,7 @@ fcast_df = FcastDataFrame(
         df = pd.merge(self.df, min_obs_filter_df, how=&amp;quot;inner&amp;quot;, on=self.group_fields)
         self.df = df
         logger.info(&amp;quot;N groups dropped: {}&amp;quot;.format(n_unique_groups - n_remaining_groups))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Below we’ll apply the filtering step as well as several others that will likely improve the quality of our forecasts.&lt;/p&gt;
+&lt;p&gt;Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing DataFrame with the updated DataFrame. This pattern is applied at each step until we are satisfied with the changes. Let’s apply these filtering and cleaning steps below.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# filter out groups with less than min number of observations
 fcast_df.filter_groups_min_obs(min_obs_threshold=min_obs_threshold)  
 # replace any negative value with a zero
@@ -1404,8 +1411,8 @@ fcast_df.replace_negative_value_with_zero()
 fcast_df.pad_missing_values()
 # filter groups with consecutive missing streak longer than 4
 fcast_df.filter_groups_max_missing_streak(max_streak=4)
-# fill in missing values based on linear interpolation
-fcast_df.fill_missing_values(method=&amp;quot;interpolate&amp;quot;)
+# impute missing values
+fcast_df.fill_missing_values()
 # add upper and lower bounds for forecasting
 fcast_df.add_forecast_bounds(
     floor_multiplier=fcast_floor, 
@@ -1415,11 +1422,11 @@ fcast_df.add_forecast_bounds(
 fcast_df.log_transform_values(yvar_field, &amp;quot;floor_value&amp;quot;, &amp;quot;cap_value&amp;quot;)
 # return transformed data
 fcast_df_trans = fcast_df.return_transformed_df()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Now we are ready to do some forecasting. In the next section, I’ll lay out how we go from&lt;/p&gt;
+&lt;p&gt;Now we are ready to do some forecasting. In the next section, we’ll produce our forecasts from the cleaned and prepared data.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;pyspark-forecasting&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;&lt;a id=&#34;forecasting_section&#34;&gt;&lt;/a&gt; Pyspark Forecasting&lt;/h3&gt;
-&lt;p&gt;First, we have to translate the field names to those that Prophet understands. For example, any variable needs to be named &lt;code&gt;ds&lt;/code&gt; and our outcome variable &lt;code&gt;y&lt;/code&gt;. We’ll use the &lt;em&gt;prep_for_prophet&lt;/em&gt; function to make the transition.&lt;/p&gt;
+&lt;p&gt;Let’s start by translating the field names to those that Prophet understands. For example, our date variable should be named &lt;code&gt;ds&lt;/code&gt; and our outcome variable &lt;code&gt;y&lt;/code&gt;. We’ll use the &lt;em&gt;prep_for_prophet&lt;/em&gt; function to make the transition.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def prep_for_prophet(
     df: pd.DataFrame, yvar_field: str, date_field: str, group_fields: List[str]
 ) -&amp;gt; pd.DataFrame:
@@ -1458,27 +1465,23 @@ fcast_df_trans = fcast_df.return_transformed_df()&lt;/code&gt;&lt;/pre&gt;
     df = df[group_fields + [date_field] + [yvar_field]]
     df = df.rename(columns={date_field: &amp;quot;ds&amp;quot;, yvar_field: &amp;quot;y&amp;quot;})
     df[&amp;quot;ds&amp;quot;] = pd.to_datetime(df[&amp;quot;ds&amp;quot;])
-    return df
-    
-fcast_df_prophet_input = prep_for_prophet(
+    return df&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_input = prep_for_prophet(
         df=fcast_df_trans,
         yvar_field=&amp;quot;weekly_sales_prep_log1p&amp;quot;,
         date_field=date_field,
         group_fields=group_fields,
     )    &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Before diving into Pyspark, let’s quickly review to make sure the dataset is in the intended format.
-- add snippet and put in github and then read in :)&lt;/p&gt;
-&lt;p&gt;Additionally, we haven’t discussed what the “cap” and “floor” fields represent, so briefly cover that is well. These fields represent something.&lt;/p&gt;
-&lt;p&gt;The first step is to create a Spark Session and indicate where our Java version is located. Note this step will vary depending on the environment that you are running.&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;os.environ[&amp;quot;JAVA_HOME&amp;quot;] = config[&amp;quot;java_home&amp;quot;]
+&lt;p&gt;With our data prepared, we’ll shift over to creating a Spark Session and indicate where our Java version is located. Note this step will vary depending on your computing environment.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;os.environ[&amp;quot;JAVA_HOME&amp;quot;] = java_home
 
 SPARK = (
-        SparkSession.builder.master(&amp;quot;local[4]&amp;quot;)
-        .appName(config[&amp;quot;app_name&amp;quot;])
-        .config(&amp;quot;spark.sql.execution.arrow.pyspark.enabled&amp;quot;, &amp;quot;true&amp;quot;)
-        .getOrCreate()
-    )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Next we’ll define the schema (or format) of our input and output data. The &lt;code&gt;fcast_df_prophet_input&lt;/code&gt; object is what our input will look like, so we can start by defining that first.&lt;/p&gt;
+    SparkSession.builder.master(f&amp;quot;local[{spark_n_threads}]&amp;quot;)
+    .appName(config[&amp;quot;app_name&amp;quot;])
+    .config(&amp;quot;spark.sql.execution.arrow.pyspark.enabled&amp;quot;, &amp;quot;true&amp;quot;)
+    .getOrCreate()
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next, we’ll define the schema (or format) of our input and output data.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;INPUT_SCHEMA = StructType(
         [
             StructField(&amp;quot;store&amp;quot;, IntegerType(), True),
@@ -1495,17 +1498,16 @@ OUTPUT_SCHEMA = StructType(
             StructField(&amp;quot;ds&amp;quot;, DateType(), True),
             StructField(&amp;quot;store&amp;quot;, IntegerType(), True),
             StructField(&amp;quot;dept&amp;quot;, IntegerType(), True),
-            StructField(&amp;quot;yhat_lower&amp;quot;, FloatType(), True),
+            StructField(&amp;quot;yhat_lower&amp;quot;, FloatType(), True), 
             StructField(&amp;quot;yhat_upper&amp;quot;, FloatType(), True),
             StructField(&amp;quot;yhat&amp;quot;, FloatType(), True),
         ]
 )    &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;If that all goes smoothly, you have correctly configured your spark environment. It is time to define what the output of forecasting process should be. Prophet provides many fields. However, I am primarily interested in three: the forecast (yhat), and the upper/lower bounds (yhat_upper/yhat_lower) of a 95% prediction interval.&lt;/p&gt;
-&lt;p&gt;Seems reasonable. Now let’s translate our pandas dataframe into a spark dataframe and pass in the schema we defined above.&lt;/p&gt;
+&lt;p&gt;We’ll now translate our Pandas DataFrame to a Spark DataFrame and pass in the schema we defined above.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_spark_prophet_input = SPARK.createDataFrame(
         fcast_df_prophet_input, schema=INPUT_SCHEMA
 )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The function below does the actual forecasting and we’ll spend a bit time unpacking what’s happening here.&lt;/p&gt;
+&lt;p&gt;The function below does the actual forecasting and we’ll spend some time unpacking what’s happening here.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def run_forecast(keys, df):
     &amp;quot;&amp;quot;&amp;quot;Generate time-series forecast 
 
@@ -1535,10 +1537,13 @@ OUTPUT_SCHEMA = StructType(
     results_df[&amp;quot;dept&amp;quot;] = dept
     results_df = results_df[fields]
     return results_df&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Let’s start discussin the model. In plain English, we want a forecast with 95% prediction interval, with yearly seasonality. Logistic growth indicates that we expect the growth of our time-series to reach a “saturation point” on both the upper and lower side. The “additive” part captures our belief about how we believe the time-series will evolve over time. Specifically, we assume that &lt;check documentation here&gt;.
-One aspect that confuses people (or at least confused me) when starting out is that the fact that you can pass in these “tuning parameters” and options as part of the input dataframe. You can then extract these for each group by referencing the field (e.g., &lt;code&gt;df[&#39;cap&#39;][0])&lt;/code&gt;) and pass them into the fit function.
-Another aspect that tends to trip people up is that when you call &lt;code&gt;model.make_future_dataframe&lt;/code&gt;, you must have the same fields and inputs as the data you fit the model against. Thus, we had the &lt;code&gt;cap&lt;/code&gt; and &lt;code&gt;floor&lt;/code&gt; values to our future dataframe. The same rule would apply if you were using external regressors (e.g., upcoming sales or advertising events that you know will affect sales).&lt;/p&gt;
-&lt;p&gt;We can put it all together with the following.&lt;/p&gt;
+&lt;p&gt;Let’s start by discussing the Prophet model, which automates the selection of many forecasting settings, like seasonality, determined during the model fitting process. Below is a brief summary of some of the key settings:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;interval_width&lt;/strong&gt; - Interval width quantifies uncertainty in our forecast. Wider intervals indicate greater uncertainty. Here, we are indicating that the actual values should fall outside of the interval ~5% of the time. By default, Prophet is set to 80%, which is less conservative than our setting here. Providing a measure of uncertainty is perhaps even more important than the forecast itself, as it allows a business to hedge against the risk of being wrong. For example, imagine a product has a high margin and a low inventory holding cost. In this instance, you would want to plan to a high percentile, as you rarely want to stock out of this product.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;yearly_seasonality&lt;/strong&gt; - Setting this to &lt;code&gt;True&lt;/code&gt; indicates my belief that there is week-over-week variation that repeats itself over the course of a year. For example, sales for items like sandals or sunscreen are likely higher in Summer weeks and lower in the Winter weeks. There are two other seasonality options not included above - &lt;code&gt;daily&lt;/code&gt; and &lt;code&gt;hourly&lt;/code&gt;. Daily captures hourly changes within a day, while hourly captures minute-by-minute changes within an hour. Our data is at the week level, so we can ignore these two settings.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;growth&lt;/strong&gt; - Growth is a way to encode our beliefs regarding if a forecast should reach a “saturation” point across your prediction horizon (see &lt;a href=&#34;https://facebook.github.io/prophet/docs/saturating_forecasts.html&#34;&gt;here&lt;/a&gt; for official documentation). For example, customer acquisition slows as a market matures and will eventually reach a saturation point (i.e., the total addressable market has been acquired). This is typically used for “long-range” forecasting on the scale of several years. Our forecasting horizon is much shorter at only 13 weeks. However, I like to codify what I consider to be reasonable amount of growth, via the “cap” parameter, as well as contraction, via the “floor” parameter, in my forecasts, especially when I cannot inspect each result.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;seasonality_mode&lt;/strong&gt; - I’ve selected “additive” for this parameter based on my belief that the magnitude of seasonal changes do not vary across time. Recall that our outcome variable has already been log-transformed, thus we are actually using an additive decomposition of the log-transformed values.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;add_country_holidays&lt;/strong&gt; - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a &lt;code&gt;lower_window&lt;/code&gt; and &lt;code&gt;upper_window&lt;/code&gt; to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Sales on the holiday date may not be that high, unless you are doing some last minute shopping. By extending the &lt;code&gt;lower_window&lt;/code&gt; parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter.&lt;/p&gt;
+&lt;p&gt;Now that we are familiar with how the model is being tuned, let’s generate the forecasts. This may take a few minutes depending on how many threads you are using. I am using four, and it took about 20 minutes to complete.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_output = (
         fcast_spark_prophet_input.groupBy(group_fields)
         .applyInPandas(func=run_forecast, schema=OUTPUT_SCHEMA)
@@ -1546,34 +1551,38 @@ Another aspect that tends to trip people up is that when you call &lt;code&gt;mo
         .withColumn(&amp;quot;fcast_date&amp;quot;, lit(datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;)))
         .toPandas()
     )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We should now have a 13-week ahead forecast for all store-department combinations.
+&lt;p&gt;We should have 13-week ahead forecast for all store-department combinations.
 The last step is to combine our forecasts with the historical data. However, our forecasting and prediction interval fields were log-transformed prior to fitting our model. Thus, we’ll need to invert this transformation to get back to our original scale. Note that &lt;code&gt;np.log1p&lt;/code&gt; and &lt;code&gt;np.expm1&lt;/code&gt; are inverses of one another, and elegantly deal with zero values by adding/subtracting a value of “1” in to avoid taking the log of zero, which is undefined and will make your code go 💥&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_output = fcast_df_prophet_output.apply(
         lambda x: round(np.expm1(x)) if &amp;quot;yhat&amp;quot; in x.name else x
     )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Perfect. Now we’ll bind our input dataframe with our output dataframe so we have a complete dataset and then write it out to the root directory of our project.&lt;/p&gt;
+&lt;p&gt;Perfect. Now we’ll bind our historical and forecasting data together and then write the results out to the root directory of our project.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def bind_actuals_and_forecast(
     actuals_df: pd.DataFrame,
     forecast_df: pd.DataFrame,
     yvar_field: str,
     group_fields: List[str],
     date_field: str,
-    exp_yvar_field: bool = True,
+    exp_yvar_field: bool = False,
 ) -&amp;gt; pd.DataFrame:
-    &amp;quot;&amp;quot;&amp;quot;[summary]
+    &amp;quot;&amp;quot;&amp;quot;Binds historical and Prophet forecasting data together
+       into a single DataFrame.
 
     Args:
-        actuals_df (pd.DataFrame): [description]
-        forecast_df (pd.DataFrame): [description]
-        yvar_field (str): [description]
-        group_fields (List[str]): [description]
-        date_field (str): [description]
-        exp_yvar_field (bool, optional): [description]. Defaults to True.
+        actuals_df (pd.DataFrame): Historical data
+        forecast_df (pd.DataFrame): Prophet Forecast data
+        yvar_field (str): outcome variable
+        group_fields (List[str]): grouping fields. These are often
+                represented by attributes of each unit
+                (e.g., store id, product id, etc.)
+        date_field (str): date field
+        exp_yvar_field (bool, optional): Flags if the outcome variable
+        was log transformed. If set to True, the transformation is inverted
+        back to the original scale. Defaults to False
 
     Returns:
-        pd.DataFrame: [description]
+        pd.DataFrame: Complete dataset with original field names and scales
     &amp;quot;&amp;quot;&amp;quot;
-    # prep actuals
     actuals_df[&amp;quot;part&amp;quot;] = &amp;quot;actuals&amp;quot;
     actuals_df = actuals_df.rename(columns={&amp;quot;y&amp;quot;: yvar_field})
     if exp_yvar_field:
@@ -1593,25 +1602,26 @@ The last step is to combine our forecasts with the historical data. However, our
     bound_df = bound_df.rename(columns={&amp;quot;ds&amp;quot;: date_field}).sort_values(
         group_fields + [date_field]
     )
-    return bound_df
-
-df_forecast = bind_actuals_and_forecast(
+    return bound_df&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;df_forecast = bind_actuals_and_forecast(
         actuals_df=fcast_df_prophet_input,
         forecast_df=fcast_df_prophet_output,
         yvar_field=yvar_field,
         group_fields=group_fields,
         date_field=date_field,
+        exp_yvar_field=True
 )
 
 df_forecast.to_csv(Path.cwd() / &amp;quot;sales_data_forecast.csv&amp;quot;, index=False)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We’ll transition back to the world of R for some quick quality-assurance work. Let’s read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to just do a quick sanity check. In short, “do the forecasts look reasonable for a few randomly sampled grouped?” We’ll read the raw output from github. Let’s start by examining the first and last five rows for a single Store-Dept combination.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;quality-assurance&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Quality Assurance&lt;/h3&gt;
+&lt;p&gt;We’ll transition back to the world of R for some quick quality-assurance work. Let’s read in our forecasts and examine a few store-department combinations. Note there are much more formal ways to validate the performance of our models, but our objective is to do a quick sanity check (i.e., “do the forecasts look reasonable for a few randomly sampled grouped?”). The raw output is stored in &lt;a href=&#34;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/sales_data_forecast.csv&#34;&gt;Github&lt;/a&gt;. Let’s start by examining the first and last five rows for a single Store-Dept combination.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
 library(timetk)
 library(lubridate)
-library(gt)
 
 fcast_df_url = &amp;quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/pyspark_forecasting_data/sales_data_forecast.csv&amp;quot;
-
 fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df_store_dept_sample &amp;lt;- fcast_df %&amp;gt;% 
   filter(store == 1, dept == 1) %&amp;gt;% 
@@ -1620,13 +1630,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#kjlawyujzx .gt_table {
+#xmnncrhndc .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
   margin-right: auto;
   color: #333333;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: normal;
   font-style: normal;
   background-color: #FFFFFF;
@@ -1645,7 +1655,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_heading {
+#xmnncrhndc .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1657,7 +1667,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_title {
+#xmnncrhndc .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1667,7 +1677,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#kjlawyujzx .gt_subtitle {
+#xmnncrhndc .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1677,13 +1687,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#kjlawyujzx .gt_bottom_border {
+#xmnncrhndc .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_col_headings {
+#xmnncrhndc .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1698,7 +1708,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_col_heading {
+#xmnncrhndc .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1718,7 +1728,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#kjlawyujzx .gt_column_spanner_outer {
+#xmnncrhndc .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1730,15 +1740,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#kjlawyujzx .gt_column_spanner_outer:first-child {
+#xmnncrhndc .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#kjlawyujzx .gt_column_spanner_outer:last-child {
+#xmnncrhndc .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#kjlawyujzx .gt_column_spanner {
+#xmnncrhndc .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1750,7 +1760,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#kjlawyujzx .gt_group_heading {
+#xmnncrhndc .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1772,7 +1782,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#kjlawyujzx .gt_empty_group_heading {
+#xmnncrhndc .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1787,15 +1797,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#kjlawyujzx .gt_from_md &gt; :first-child {
+#xmnncrhndc .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#kjlawyujzx .gt_from_md &gt; :last-child {
+#xmnncrhndc .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#kjlawyujzx .gt_row {
+#xmnncrhndc .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1814,7 +1824,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#kjlawyujzx .gt_stub {
+#xmnncrhndc .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1826,7 +1836,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#kjlawyujzx .gt_summary_row {
+#xmnncrhndc .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1836,7 +1846,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#kjlawyujzx .gt_first_summary_row {
+#xmnncrhndc .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1846,7 +1856,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_grand_summary_row {
+#xmnncrhndc .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1856,7 +1866,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#kjlawyujzx .gt_first_grand_summary_row {
+#xmnncrhndc .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1866,11 +1876,11 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_striped {
+#xmnncrhndc .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#kjlawyujzx .gt_table_body {
+#xmnncrhndc .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1879,7 +1889,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_footnotes {
+#xmnncrhndc .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1893,13 +1903,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_footnote {
+#xmnncrhndc .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#kjlawyujzx .gt_sourcenotes {
+#xmnncrhndc .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1913,46 +1923,46 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#kjlawyujzx .gt_sourcenote {
+#xmnncrhndc .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#kjlawyujzx .gt_left {
+#xmnncrhndc .gt_left {
   text-align: left;
 }
 
-#kjlawyujzx .gt_center {
+#xmnncrhndc .gt_center {
   text-align: center;
 }
 
-#kjlawyujzx .gt_right {
+#xmnncrhndc .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#kjlawyujzx .gt_font_normal {
+#xmnncrhndc .gt_font_normal {
   font-weight: normal;
 }
 
-#kjlawyujzx .gt_font_bold {
+#xmnncrhndc .gt_font_bold {
   font-weight: bold;
 }
 
-#kjlawyujzx .gt_font_italic {
+#xmnncrhndc .gt_font_italic {
   font-style: italic;
 }
 
-#kjlawyujzx .gt_super {
+#xmnncrhndc .gt_super {
   font-size: 65%;
 }
 
-#kjlawyujzx .gt_footnote_marks {
+#xmnncrhndc .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;kjlawyujzx&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;xmnncrhndc&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
@@ -2042,13 +2052,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#vqoondoukn .gt_table {
+#zlosqjsctg .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
   margin-right: auto;
   color: #333333;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: normal;
   font-style: normal;
   background-color: #FFFFFF;
@@ -2067,7 +2077,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_heading {
+#zlosqjsctg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2079,7 +2089,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_title {
+#zlosqjsctg .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2089,7 +2099,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#vqoondoukn .gt_subtitle {
+#zlosqjsctg .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2099,13 +2109,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#vqoondoukn .gt_bottom_border {
+#zlosqjsctg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_col_headings {
+#zlosqjsctg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2120,7 +2130,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_col_heading {
+#zlosqjsctg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2140,7 +2150,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#vqoondoukn .gt_column_spanner_outer {
+#zlosqjsctg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2152,15 +2162,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#vqoondoukn .gt_column_spanner_outer:first-child {
+#zlosqjsctg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vqoondoukn .gt_column_spanner_outer:last-child {
+#zlosqjsctg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vqoondoukn .gt_column_spanner {
+#zlosqjsctg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2172,7 +2182,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#vqoondoukn .gt_group_heading {
+#zlosqjsctg .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2194,7 +2204,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#vqoondoukn .gt_empty_group_heading {
+#zlosqjsctg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2209,15 +2219,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#vqoondoukn .gt_from_md &gt; :first-child {
+#zlosqjsctg .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#vqoondoukn .gt_from_md &gt; :last-child {
+#zlosqjsctg .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#vqoondoukn .gt_row {
+#zlosqjsctg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2236,7 +2246,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#vqoondoukn .gt_stub {
+#zlosqjsctg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2248,7 +2258,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#vqoondoukn .gt_summary_row {
+#zlosqjsctg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2258,7 +2268,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#vqoondoukn .gt_first_summary_row {
+#zlosqjsctg .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2268,7 +2278,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_grand_summary_row {
+#zlosqjsctg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2278,7 +2288,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#vqoondoukn .gt_first_grand_summary_row {
+#zlosqjsctg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2288,11 +2298,11 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_striped {
+#zlosqjsctg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vqoondoukn .gt_table_body {
+#zlosqjsctg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2301,7 +2311,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_footnotes {
+#zlosqjsctg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2315,13 +2325,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_footnote {
+#zlosqjsctg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#vqoondoukn .gt_sourcenotes {
+#zlosqjsctg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2335,46 +2345,46 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#vqoondoukn .gt_sourcenote {
+#zlosqjsctg .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#vqoondoukn .gt_left {
+#zlosqjsctg .gt_left {
   text-align: left;
 }
 
-#vqoondoukn .gt_center {
+#zlosqjsctg .gt_center {
   text-align: center;
 }
 
-#vqoondoukn .gt_right {
+#zlosqjsctg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vqoondoukn .gt_font_normal {
+#zlosqjsctg .gt_font_normal {
   font-weight: normal;
 }
 
-#vqoondoukn .gt_font_bold {
+#zlosqjsctg .gt_font_bold {
   font-weight: bold;
 }
 
-#vqoondoukn .gt_font_italic {
+#zlosqjsctg .gt_font_italic {
   font-style: italic;
 }
 
-#vqoondoukn .gt_super {
+#zlosqjsctg .gt_super {
   font-size: 65%;
 }
 
-#vqoondoukn .gt_footnote_marks {
+#zlosqjsctg .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;vqoondoukn&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;zlosqjsctg&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
@@ -2460,13 +2470,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   
   
 &lt;/table&gt;&lt;/div&gt;
-&lt;p&gt;Let’s select sample a few forecasts and plot them out.&lt;/p&gt;
+&lt;p&gt;Let’s sample a few forecasts and plot them out.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2021)
 fcast_df %&amp;gt;% 
   filter(store &amp;lt; 3,
          dept %in% c(df %&amp;gt;% distinct(dept) %&amp;gt;% sample_n(2) %&amp;gt;% pull())
          ) %&amp;gt;% 
-  mutate(store_id = paste(store, dept, sep=&amp;#39;_&amp;#39;)) %&amp;gt;% 
+  mutate(store = paste0(&amp;#39;Store: &amp;#39;, store),
+         dept = paste0(&amp;#39;Dept: &amp;#39;, dept),
+         store_id = paste(store, dept, sep=&amp;#39; &amp;#39;)) %&amp;gt;% 
   select(date, store_id, contains(&amp;#39;weekly&amp;#39;)) %&amp;gt;% 
   pivot_longer(contains(&amp;#39;weekly&amp;#39;)) %&amp;gt;%  
   mutate(name = str_to_title(str_replace_all(name, &amp;#39;_&amp;#39;, &amp;#39; &amp;#39;))) %&amp;gt;% 
@@ -2485,482 +2497,1264 @@ fcast_df %&amp;gt;%
         strip.text.y = element_text(size = 12),
         plot.title = element_text(size = 14)
         )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-24-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;Overall, the forecasts seem reasonable.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;next-steps&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Next Steps&lt;/h3&gt;
-&lt;p&gt;Now you have what I would consider to be a functioning prototype working in a sandbox of local environment, the next step naturally be to transition it to a cloud environment where the workflow could be scheduled and monitored.
-Additionally, if the goal was to improve model performance, a natural first place to start is by incorporating additional data sources. For example, in the current example, some of the hisot. Continuing with this theme, another place to look would be at historicla pricing information for the products. For most common consumer products, demand varies as a function of price. Thus, knowing when sales happened in the past – and their affect on consumer demand – would be useful for anticipating how future consumption would respond to upcoming sales. While many tutorials will focus a lot on hyperparameter tuning, I’ve found you are going make the biggest gains by asking yourself what factors external to your time-series .
-Until next time, happy forecasting.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-27-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
     
     <item>
-      <title>test-test</title>
-      <link>/post/2021-03-30-test-test/</link>
-      <pubDate>Tue, 30 Mar 2021 00:00:00 +0000</pubDate>
-      <guid>/post/2021-03-30-test-test/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;def hello_there():
-  print(&#39;hello there&#39;)
-  
-for i in range(1, 10):
-  print(i)
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Causal Inference Part 1</title>
+      <title>Causal Inference Part 1: Variance Reduction Methods</title>
       <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
       <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
       <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
       <description>
 
 
+&lt;p&gt;Causal -&amp;gt; Cause &amp;amp; Effect.
+Causal Inference -&amp;gt; Draw conclusions between cause &amp;amp; effect
+A -&amp;gt; B
+B -&amp;gt; A
+Z -&amp;gt; A
+Z -&amp;gt; B&lt;/p&gt;
+&lt;p&gt;Causal Inference answers the question “What would happen”? How much more beer would we sell if we buy more google ads?&lt;/p&gt;
+&lt;p&gt;Goal: Infer the effect of one thing on another
+- Effect of treatment on disease
+- Effect of website change on conversion
+- Effect of climate change policy on emissions&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Observational studies are just more convienient.&lt;/li&gt;
+&lt;li&gt;Adjust/control for confounders&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;How do you measure causal effects in observational studies?&lt;/p&gt;
+&lt;div id=&#34;simpsons-paradox&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Simpson’s Paradox&lt;/h3&gt;
 &lt;p&gt;BING BONG!!!
-Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y.&lt;/p&gt;
+Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y. Goal is to explain the structure.&lt;/p&gt;
 &lt;p&gt;Inputs, Interventions (T), and Outputs. What is the causal relationship between these three variables?&lt;/p&gt;
 &lt;p&gt;X is what you know about the person. X -&amp;gt; T (treatment plan -&amp;gt; binary (treatment 1, treatment 2))&lt;/p&gt;
 &lt;p&gt;Challenge is you only observe one outcome. And you must impute the other outcome. And this is the crux of the counterfactual.&lt;/p&gt;
 &lt;p&gt;Conditional Average Treatment Effect (For someone with a specific age, there is a big difference between the two treatments). What you want to predict.&lt;/p&gt;
 &lt;p&gt;Average treatment effect (does not condition on any variable) (On average, this intervention is a good intervention)&lt;/p&gt;
+&lt;/div&gt;
 </description>
     </item>
     
     <item>
-      <title>Welcome to Wowchemy, the website builder for Hugo</title>
-      <link>/post/getting-started/</link>
-      <pubDate>Sun, 13 Dec 2020 00:00:00 +0000</pubDate>
-      <guid>/post/getting-started/</guid>
-      <description>&lt;h2 id=&#34;overview&#34;&gt;Overview&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;The Wowchemy website builder for Hugo, along with its starter templates, is designed for professional creators, educators, and teams/organizations - although it can be used to create any kind of site&lt;/li&gt;
-&lt;li&gt;The template can be modified and customised to suit your needs. It&amp;rsquo;s a good platform for anyone looking to take control of their data and online identity whilst having the convenience to start off with a &lt;strong&gt;no-code solution (write in Markdown and customize with YAML parameters)&lt;/strong&gt; and having &lt;strong&gt;flexibility to later add even deeper personalization with HTML and CSS&lt;/strong&gt;&lt;/li&gt;
-&lt;li&gt;You can work with all your favourite tools and apps with hundreds of plugins and integrations to speed up your workflows, interact with your readers, and much more&lt;/li&gt;
-&lt;/ol&gt;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;figure  id=&#34;figure-the-template-is-mobile-first-with-a-responsive-design-to-ensure-that-your-site-looks-stunning-on-every-device&#34;&gt;
-  &lt;div class=&#34;d-flex justify-content-center&#34;&gt;
-    &lt;div class=&#34;w-100&#34; &gt;&lt;img src=&#34;https://raw.githubusercontent.com/wowchemy/wowchemy-hugo-modules/master/academic.png&#34; alt=&#34;The template is mobile first with a responsive design to ensure that your site looks stunning on every device.&#34; loading=&#34;lazy&#34; data-zoomable /&gt;&lt;/div&gt;
-  &lt;/div&gt;&lt;figcaption&gt;
-      The template is mobile first with a responsive design to ensure that your site looks stunning on every device.
-    &lt;/figcaption&gt;&lt;/figure&gt;
-&lt;h2 id=&#34;get-started&#34;&gt;Get Started&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;👉 &lt;a href=&#34;https://wowchemy.com/templates/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;Create a new site&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;📚 &lt;a href=&#34;https://wowchemy.com/docs/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;Personalize your site&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;💬 &lt;a href=&#34;https://discord.gg/z8wNYzb&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Chat with the &lt;strong&gt;Wowchemy community&lt;/strong&gt;&lt;/a&gt; or &lt;a href=&#34;https://discourse.gohugo.io&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;Hugo community&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;🐦 Twitter: &lt;a href=&#34;https://twitter.com/wowchemy&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;@wowchemy&lt;/a&gt; &lt;a href=&#34;https://twitter.com/GeorgeCushen&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;@GeorgeCushen&lt;/a&gt; &lt;a href=&#34;https://twitter.com/search?q=%28%23MadeWithWowchemy%20OR%20%23MadeWithAcademic%29&amp;amp;src=typed_query&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;#MadeWithWowchemy&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;💡 &lt;a href=&#34;https://github.com/wowchemy/wowchemy-hugo-modules/issues&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Request a &lt;strong&gt;feature&lt;/strong&gt; or report a &lt;strong&gt;bug&lt;/strong&gt; for &lt;em&gt;Wowchemy&lt;/em&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;⬆️ &lt;strong&gt;Updating Wowchemy?&lt;/strong&gt; View the &lt;a href=&#34;https://wowchemy.com/docs/guide/update/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Update Guide&lt;/a&gt; and &lt;a href=&#34;https://wowchemy.com/updates/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Release Notes&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;crowd-funded-open-source-software&#34;&gt;Crowd-funded open-source software&lt;/h2&gt;
-&lt;p&gt;To help us develop this template and software sustainably under the MIT license, we ask all individuals and businesses that use it to help support its ongoing maintenance and development via sponsorship.&lt;/p&gt;
-&lt;h3 id=&#34;-click-here-to-become-a-sponsor-and-help-support-wowchemys-future-httpswowchemycomplans&#34;&gt;&lt;a href=&#34;https://wowchemy.com/plans/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;❤️ Click here to become a sponsor and help support Wowchemy&amp;rsquo;s future ❤️&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;As a token of appreciation for sponsoring, you can &lt;strong&gt;unlock &lt;a href=&#34;https://wowchemy.com/plans/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;these&lt;/a&gt; awesome rewards and extra features 🦄✨&lt;/strong&gt;&lt;/p&gt;
-&lt;h2 id=&#34;ecosystem&#34;&gt;Ecosystem&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;&lt;a href=&#34;https://github.com/wowchemy/hugo-academic-cli&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Hugo Academic CLI&lt;/a&gt;:&lt;/strong&gt; Automatically import publications from BibTeX&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;inspiration&#34;&gt;Inspiration&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://academic-demo.netlify.com/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Check out the latest &lt;strong&gt;demo&lt;/strong&gt;&lt;/a&gt; of what you&amp;rsquo;ll get in less than 10 minutes, or &lt;a href=&#34;https://wowchemy.com/user-stories/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;view the &lt;strong&gt;showcase&lt;/strong&gt;&lt;/a&gt; of personal, project, and business sites.&lt;/p&gt;
-&lt;h2 id=&#34;features&#34;&gt;Features&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;Page builder&lt;/strong&gt; - Create &lt;em&gt;anything&lt;/em&gt; with &lt;a href=&#34;https://wowchemy.com/docs/page-builder/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;widgets&lt;/strong&gt;&lt;/a&gt; and &lt;a href=&#34;https://wowchemy.com/docs/writing-markdown-latex/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;elements&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Edit any type of content&lt;/strong&gt; - Blog posts, publications, talks, slides, projects, and more!&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Create content&lt;/strong&gt; in &lt;a href=&#34;https://wowchemy.com/docs/writing-markdown-latex/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;Markdown&lt;/strong&gt;&lt;/a&gt;, &lt;a href=&#34;https://wowchemy.com/docs/import/jupyter/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;Jupyter&lt;/strong&gt;&lt;/a&gt;, or &lt;a href=&#34;https://wowchemy.com/docs/install-locally/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;RStudio&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Plugin System&lt;/strong&gt; - Fully customizable &lt;a href=&#34;https://wowchemy.com/docs/customization/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;&lt;strong&gt;color&lt;/strong&gt; and &lt;strong&gt;font themes&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Display Code and Math&lt;/strong&gt; - Code highlighting and &lt;a href=&#34;https://en.wikibooks.org/wiki/LaTeX/Mathematics&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;LaTeX math&lt;/a&gt; supported&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Integrations&lt;/strong&gt; - &lt;a href=&#34;https://analytics.google.com&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Google Analytics&lt;/a&gt;, &lt;a href=&#34;https://disqus.com&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Disqus commenting&lt;/a&gt;, Maps, Contact Forms, and more!&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Beautiful Site&lt;/strong&gt; - Simple and refreshing one page design&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Industry-Leading SEO&lt;/strong&gt; - Help get your website found on search engines and social media&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Media Galleries&lt;/strong&gt; - Display your images and videos with captions in a customizable gallery&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Mobile Friendly&lt;/strong&gt; - Look amazing on every screen with a mobile friendly version of your site&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Multi-language&lt;/strong&gt; - 34+ language packs including English, 中文, and Português&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Multi-user&lt;/strong&gt; - Each author gets their own profile page&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Privacy Pack&lt;/strong&gt; - Assists with GDPR&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;Stand Out&lt;/strong&gt; - Bring your site to life with animation, parallax backgrounds, and scroll effects&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;One-Click Deployment&lt;/strong&gt; - No servers. No databases. Only files.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;themes&#34;&gt;Themes&lt;/h2&gt;
-&lt;p&gt;Wowchemy and its templates come with &lt;strong&gt;automatic day (light) and night (dark) mode&lt;/strong&gt; built-in. Alternatively, visitors can choose their preferred mode - click the moon icon in the top right of the &lt;a href=&#34;https://academic-demo.netlify.com/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Demo&lt;/a&gt; to see it in action! Day/night mode can also be disabled by the site admin in &lt;code&gt;params.toml&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;a href=&#34;https://wowchemy.com/docs/customization&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Choose a stunning &lt;strong&gt;theme&lt;/strong&gt; and &lt;strong&gt;font&lt;/strong&gt;&lt;/a&gt; for your site. Themes are fully customizable.&lt;/p&gt;
-&lt;h2 id=&#34;license&#34;&gt;License&lt;/h2&gt;
-&lt;p&gt;Copyright 2016-present &lt;a href=&#34;https://georgecushen.com&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;George Cushen&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Released under the &lt;a href=&#34;https://github.com/wowchemy/wowchemy-hugo-modules/blob/master/LICENSE.md&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;MIT&lt;/a&gt; license.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Hello R Markdown</title>
-      <link>/post/2020-12-01-r-rmarkdown/</link>
-      <pubDate>Tue, 01 Dec 2020 21:13:14 -0500</pubDate>
-      <guid>/post/2020-12-01-r-rmarkdown/</guid>
+      <title>Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</title>
+      <link>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
+      <pubDate>Mon, 26 Aug 2019 21:13:14 -0500</pubDate>
+      <guid>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
       <description>
 
 
-&lt;div id=&#34;r-markdown&#34; class=&#34;section level1&#34;&gt;
-&lt;h1&gt;R Markdown&lt;/h1&gt;
-&lt;p&gt;This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see &lt;a href=&#34;http://rmarkdown.rstudio.com&#34; class=&#34;uri&#34;&gt;http://rmarkdown.rstudio.com&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;You can embed an R code chunk like this:&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(cars)
-##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00
-fit &amp;lt;- lm(dist ~ speed, data = cars)
-fit
-## 
-## Call:
-## lm(formula = dist ~ speed, data = cars)
-## 
-## Coefficients:
-## (Intercept)        speed  
-##     -17.579        3.932&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;In less than two weeks, Fantasy Football will once again resume for the 2019 NFL season! While I’m looking forward to the impending draft, the start of the season brings back memories of a not-so-distant loss that left me one game shy of the championship. The loss stemmed from a missed field goal, leaving my team two points shy of victory. Of course, a myriad of factors beyond that missed field goal contributed to my fantasy demise, but those two points reinvigorated a question I’ve wondered about for the past few years: Why are kickers drafted in the last round?&lt;/p&gt;
+&lt;p&gt;Prevailing wisdom suggests that your kicker doesn’t matter. Some Fantasy Football leagues don’t even have kickers on the roster, which I think does a disservice to a player who probably doesn’t get invited to the cool team parties yet can decide the fate of a season in a single moment (like mine). As long as they suit up to take the field, the rest is out of your control. However, is it a suboptimal strategy to relegate your choice of kicker to the final round of the draft? Let’s find out!&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;including-plots&#34; class=&#34;section level1&#34;&gt;
-&lt;h1&gt;Including Plots&lt;/h1&gt;
-&lt;p&gt;You can also embed plots. See Figure &lt;a href=&#34;#fig:pie&#34;&gt;1&lt;/a&gt; for example:&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;par(mar = c(0, 1, 0, 1))
-pie(
-  c(280, 60, 20),
-  c(&amp;#39;Sky&amp;#39;, &amp;#39;Sunny side of pyramid&amp;#39;, &amp;#39;Shady side of pyramid&amp;#39;),
-  col = c(&amp;#39;#0292D8&amp;#39;, &amp;#39;#F7EA39&amp;#39;, &amp;#39;#C4B632&amp;#39;),
-  init.angle = -50, border = NA
+&lt;div id=&#34;getting-started&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Getting Started&lt;/h3&gt;
+&lt;p&gt;Before loading any data or discussing techniques, we’ll begin by defining our analytical objective. An easy way to get started is by posing a simple question: “How many more points can I expect over a 16-game regular season if I draft the best kicker relative to the worst kicker?” We’ll answer this question in two steps. First, we’ll estimate the &lt;em&gt;True&lt;/em&gt; field goal percentage for each kicker currently active in the NFL (as of 2016), which is analogous to a batting average in baseball or free-throw percentage in basketball. This parameter estimate will be used to compare the skill of one kicker to another. Second, we’ll translate our estimate into actual Fantasy Football points by simulating the outcomes 1000 football seasons for each kicker. Simulation enables us to quantify a realistic point differential between kickers, which is what we (the Fantasy Football team owners) will use to determine if we should try to select the best kicker by drafting in an earlier round.&lt;/p&gt;
+&lt;p&gt;With that question in mind, let’s load all pertinent libraries. The data can be downloaded directly from the 🎋 &lt;a href=&#34;https://github.com/thecodeforest&#34;&gt;the codeforest data repo&lt;/a&gt; 🎄. Note the original data comes from Kaggle and can found &lt;a href=&#34;https://www.kaggle.com/kendallgillies/nflstatistics/version/1?select=Career_Stats_Field_Goal_Kickers.csv&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Modeling 
+library(gamlss)
+
+# Core packages
+library(tidyverse)
+library(janitor)
+
+# Visualization 
+library(ggplot2)
+library(scales)
+library(viridis)
+library(ggridges)
+
+# Tables
+library(gt)
+
+# Global plot theme
+theme_set(theme_minimal())
+
+# Code Forest repo
+data_url &amp;lt;- &amp;quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/fantasy_football_kickers_data/Career_Stats_Field_Goal_Kickers.csv&amp;quot;
+
+# Helper function for visualization
+my_plot_theme = function(){
+  font_family = &amp;quot;Helvetica&amp;quot;
+  font_face = &amp;quot;bold&amp;quot;
+  return(theme(
+    axis.text.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 22, face = font_face, family = font_family),
+    plot.title = element_text(size = 22, face = font_face, family = font_family),
+    
+    legend.position = &amp;quot;top&amp;quot;,
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 16,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 5),
+    legend.key.size = unit(1.5, &amp;#39;lines&amp;#39;)
+  ))
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;There are several columns we won’t be using so we’ll select only the relevant ones.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_raw &amp;lt;- read_csv(data_url) %&amp;gt;% 
+  clean_names() %&amp;gt;% 
+  select(player_id, 
+         name, 
+         year, 
+         games_played, 
+         contains(&amp;#39;made&amp;#39;), 
+         contains(&amp;#39;attempted&amp;#39;),
+         contains(&amp;#39;percentage&amp;#39;),
+         -contains(&amp;#39;extra&amp;#39;), 
+         -longest_fg_made
+         )
+
+glimpse(stats_raw)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Rows: 1,994
+## Columns: 19
+## $ player_id                  &amp;lt;chr&amp;gt; &amp;quot;jeffhall/2500970&amp;quot;, &amp;quot;benagajanian/2508255&amp;quot;…
+## $ name                       &amp;lt;chr&amp;gt; &amp;quot;Hall, Jeff&amp;quot;, &amp;quot;Agajanian, Ben&amp;quot;, &amp;quot;Agajanian…
+## $ year                       &amp;lt;dbl&amp;gt; 2000, 1964, 1962, 1961, 1961, 1960, 1957, …
+## $ games_played               &amp;lt;dbl&amp;gt; 3, 3, 6, 3, 3, 14, 12, 10, 12, 12, 10, 12,…
+## $ f_gs_made                  &amp;lt;chr&amp;gt; &amp;quot;4&amp;quot;, &amp;quot;2&amp;quot;, &amp;quot;5&amp;quot;, &amp;quot;1&amp;quot;, &amp;quot;3&amp;quot;, &amp;quot;13&amp;quot;, &amp;quot;10&amp;quot;, &amp;quot;5&amp;quot;, …
+## $ f_gs_made_20_29_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_30_39_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_40_49_yards      &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_made_50_yards         &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted             &amp;lt;chr&amp;gt; &amp;quot;5&amp;quot;, &amp;quot;4&amp;quot;, &amp;quot;14&amp;quot;, &amp;quot;2&amp;quot;, &amp;quot;9&amp;quot;, &amp;quot;24&amp;quot;, &amp;quot;18&amp;quot;, &amp;quot;13&amp;quot;…
+## $ f_gs_attempted_20_29_yards &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_30_39_yards &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_40_49_yards &amp;lt;chr&amp;gt; &amp;quot;2&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ f_gs_attempted_50_yards    &amp;lt;chr&amp;gt; &amp;quot;1&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;…
+## $ fg_percentage              &amp;lt;chr&amp;gt; &amp;quot;80.0&amp;quot;, &amp;quot;50.0&amp;quot;, &amp;quot;35.7&amp;quot;, &amp;quot;50.0&amp;quot;, &amp;quot;33.3&amp;quot;, &amp;quot;5…
+## $ fg_percentage_20_29_yards  &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…
+## $ fg_percentage_30_39_yards  &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…
+## $ fg_percentage_40_49_yards  &amp;lt;chr&amp;gt; &amp;quot;50.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;…
+## $ fg_percentage_50_yards     &amp;lt;chr&amp;gt; &amp;quot;100.0&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--&amp;quot;, &amp;quot;--…&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Like most real-world datasets, this one is a bit messy (e.g., non-values are coded as “–”). I find it helps at the outset of data cleaning to envision what a perfect, pristine dataset should look like once data munging steps are complete. Below is an example of a basic starting point.
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#zpvivrqdou .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#zpvivrqdou .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#zpvivrqdou .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#zpvivrqdou .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#zpvivrqdou .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#zpvivrqdou .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#zpvivrqdou .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#zpvivrqdou .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zpvivrqdou .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zpvivrqdou .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#zpvivrqdou .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#zpvivrqdou .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#zpvivrqdou .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#zpvivrqdou .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zpvivrqdou .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zpvivrqdou .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#zpvivrqdou .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#zpvivrqdou .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zpvivrqdou .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#zpvivrqdou .gt_left {
+  text-align: left;
+}
+
+#zpvivrqdou .gt_center {
+  text-align: center;
+}
+
+#zpvivrqdou .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#zpvivrqdou .gt_font_normal {
+  font-weight: normal;
+}
+
+#zpvivrqdou .gt_font_bold {
+  font-weight: bold;
+}
+
+#zpvivrqdou .gt_font_italic {
+  font-style: italic;
+}
+
+#zpvivrqdou .gt_super {
+  font-size: 65%;
+}
+
+#zpvivrqdou .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;zpvivrqdou&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Desired Data Format&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;id&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;n_success&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;n_trials&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;12&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;20&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;24&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;6&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;50&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;60&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;200&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;9&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;11&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;14&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;24&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;61&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;&lt;/p&gt;
+&lt;p&gt;I used generic column names if you’re interested in adopting the techniques described herein to solve a separate problem. At a basic level, each row represents an individual observation, a count of the number of successes (i.e., count how many field goals are made), and finally the number of trials (i.e., count how many field goals are attempted). If you have this setup, the building blocks are in place to get started.&lt;/p&gt;
+&lt;p&gt;However, before going any further, we need to ensure the relationships in the data align with our understanding of the world. One approach is to generate some simple hypotheses that you know to be true. For example, water is wet, the sky is blue, and, in our case, the field goal percentage should decrease as the distance to the goal increases. That is, field goals taken from 50+ yards should be made at a lower rate those taken from 30-35 yards. Let’s verify our hypothesis below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;make_by_dist &amp;lt;-
+  stats_raw %&amp;gt;%
+  select(starts_with(&amp;quot;fg_percentage_&amp;quot;)) %&amp;gt;%
+  mutate_all(as.numeric) %&amp;gt;%
+  gather(key = &amp;quot;dist&amp;quot;, value = &amp;quot;fg_pct&amp;quot;) %&amp;gt;%
+  mutate(
+    dist = str_extract(dist,
+                       pattern = &amp;quot;\\d{2}&amp;quot;
+                       ),
+    dist = if_else(dist == &amp;quot;50&amp;quot;,
+                   paste0(dist, &amp;quot;+&amp;quot;),
+                   paste0(dist,&amp;quot;-&amp;quot;,as.numeric(dist) + 9)
+                   ),
+    fg_pct = fg_pct / 100
+  ) %&amp;gt;%
+  na.omit()&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;make_by_dist %&amp;gt;% 
+  ggplot(aes(fg_pct, dist, fill = dist)) + 
+  geom_density_ridges(
+    aes(point_color = dist, 
+        point_fill = dist, 
+        point_shape = dist),
+        alpha = .2, 
+        point_alpha = 1, 
+        jittered_points = TRUE
+    ) + 
+  scale_point_color_hue(l = 40) +
+  scale_discrete_manual(aesthetics = &amp;quot;point_shape&amp;quot;, 
+                        values = c(21, 22, 23, 24)) + 
+  scale_x_continuous(labels = scales::percent,
+                     breaks = c(0,0.2, 0.4, 0.6, 0.8, 1)
+                     ) + 
+  scale_fill_viridis_d() + 
+  my_plot_theme() + 
+  labs(x = &amp;#39;Field Goal Percentage&amp;#39;,
+       y = &amp;#39;Distance (Yards)&amp;#39;
+       ) + 
+    theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Looks good! Each point represents the field goal percentage for a player-season-distance combination. As the distance increases, the make rate gradually shifts to left, which is exactly what we’d expect. We’ll do a bit more cleaning below before proceeding.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed &amp;lt;- 
+  stats_raw %&amp;gt;%
+  mutate(
+    name = str_remove(name, &amp;quot;,&amp;quot;),
+    first_name = map(name, function(x) str_split(x, &amp;quot; &amp;quot;)[[1]][2]),
+    last_name = map(name, function(x) str_split(x, &amp;quot; &amp;quot;)[[1]][1]),
+    player_id = str_extract(player_id, &amp;quot;\\d+&amp;quot;)
+  ) %&amp;gt;%
+  unite(&amp;quot;name&amp;quot;, c(&amp;quot;first_name&amp;quot;, &amp;quot;last_name&amp;quot;), sep = &amp;quot; &amp;quot;) %&amp;gt;%
+  mutate_at(vars(matches(&amp;quot;attempted|made&amp;quot;)), as.numeric) %&amp;gt;% 
+  replace(., is.na(.), 0) %&amp;gt;% 
+  select(player_id, name, year, games_played, contains(&amp;quot;made&amp;quot;), contains(&amp;quot;attempted&amp;quot;)) %&amp;gt;%
+  rename(
+    fg_made = f_gs_made,
+    fg_attempted = f_gs_attempted
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s view the resulting data for one of the best kickers in modern NFL to familiarize ourselves with the format.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed %&amp;gt;%
+  filter(name == &amp;quot;Justin Tucker&amp;quot;) %&amp;gt;%
+  mutate(fg_pct = fg_made / fg_attempted) %&amp;gt;% 
+  select(name, year, fg_made, fg_attempted)&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#pkjidbziro .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#pkjidbziro .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#pkjidbziro .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#pkjidbziro .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#pkjidbziro .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#pkjidbziro .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#pkjidbziro .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#pkjidbziro .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pkjidbziro .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pkjidbziro .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#pkjidbziro .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#pkjidbziro .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#pkjidbziro .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#pkjidbziro .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pkjidbziro .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pkjidbziro .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#pkjidbziro .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pkjidbziro .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pkjidbziro .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pkjidbziro .gt_left {
+  text-align: left;
+}
+
+#pkjidbziro .gt_center {
+  text-align: center;
+}
+
+#pkjidbziro .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#pkjidbziro .gt_font_normal {
+  font-weight: normal;
+}
+
+#pkjidbziro .gt_font_bold {
+  font-weight: bold;
+}
+
+#pkjidbziro .gt_font_italic {
+  font-style: italic;
+}
+
+#pkjidbziro .gt_super {
+  font-size: 65%;
+}
+
+#pkjidbziro .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;pkjidbziro&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;4&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Justin Tucker Stats&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;4&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;name&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;year&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;fg_made&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;fg_attempted&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2016&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;38&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;39&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2015&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;33&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;40&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2014&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;29&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;34&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;38&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;41&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Justin Tucker&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2012&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;30&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;33&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;Just like what we had above! Next, we’ll add a few filters to reduce some of the noise in our data. Any player who has less than 30 field goal attempts and/or has kicked field goals in only one season across their career will be excluded from the analysis. Additionally, we’ll ignore any players with a rookie year before the 1970s. The rationale here is that the NFL made several changes to the location and positioning of the goal during the early 70s, so we want to keep the dynamics of the kicking environment consistent for all players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;min_attempts &amp;lt;- 30
+min_seasons &amp;lt;- 2
+min_decade &amp;lt;- 1970
+
+filter_df &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id) %&amp;gt;% 
+  summarise(n_seasons = n(),
+            n_attempts = sum(fg_attempted),
+            rookie_decade = min(year) %/% 10 * 10
+            ) %&amp;gt;% 
+  filter(n_seasons &amp;gt;= min_seasons,
+         n_attempts &amp;gt;= min_attempts,
+         rookie_decade &amp;gt;= min_decade
+         ) %&amp;gt;% 
+  select(player_id)
+
+stats_processed &amp;lt;- inner_join(stats_processed, filter_df)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next, we’ll add a few features before aggregating the kicking data from a season level to a career level for each player. I’ll cover the rationale of the features shortly in the estimation and inference section below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df_time_stats &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id) %&amp;gt;% 
+  summarise(
+    rookie_decade  = min(year) %/% 10 * 10,
+    last_yr_active = max(year)
+    ) %&amp;gt;% 
+  ungroup() %&amp;gt;% 
+  filter(rookie_decade &amp;gt;= min_decade) %&amp;gt;% 
+  mutate(status = ifelse(last_yr_active == 2016, &amp;#39;active&amp;#39;, &amp;#39;inactive&amp;#39;))
+
+stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We have our time-based features and the last step is to calculate our three key metrics – successes, attempts, and our rate metric.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  group_by(player_id, name, rookie_decade, status) %&amp;gt;% 
+  summarise(fg_made = sum(fg_made),
+            fg_attempted = sum(fg_attempted),
+            fg_pct = fg_made / fg_attempted
+            ) %&amp;gt;%
+  ungroup()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Time to move on to the key focus of this post.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;estimation-and-inference&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Estimation and Inference&lt;/h3&gt;
+&lt;p&gt;Let’s now discuss the logic underlying our estimation method as well as the role of the additional features (Note that some of the code below was inspired by the excellent book &lt;a href=&#34;http://varianceexplained.org/r/empirical-bayes-book/&#34;&gt;Introduction to Empirical Bayes: Examples from Baseball Statistics&lt;/a&gt; by David Robinson). To recap, we are estimating a proportion that captures the relationship between successes and attempts. We can model this outcome with the &lt;code&gt;beta distribution&lt;/code&gt;, which is simply a distribution of probabilities ranging from 0 - 1. In our case, it represents the likelihood of a particular field goal percentage for each player, which will fall somewhere between 0.5 and 0.9 depending on the decade(s) the player was active (more on that in second).&lt;/p&gt;
+&lt;p&gt;Below we’ll fit an &lt;em&gt;null model&lt;/em&gt; with no additional parameters when estimating each player’s &lt;code&gt;beta&lt;/code&gt; value. The absence of any inputs means that all players have the same &lt;code&gt;prior&lt;/code&gt;, independent of what decade they played in, whether they’re still active, or how many chances they’ve had to kick a field goal. We’ll then take our prior and update it based on how much information we have about each player, namely the number of field goals they’ve taken and how often they’ve succeeded.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_null &amp;lt;- gamlss(cbind(fg_made, fg_attempted - fg_made) ~ 1,
+  family = BB(mu.link = &amp;quot;identity&amp;quot;),
+  data = stats_agg
 )&lt;/code&gt;&lt;/pre&gt;
-&lt;div class=&#34;figure&#34;&gt;&lt;span id=&#34;fig:pie&#34;&gt;&lt;/span&gt;
-&lt;img src=&#34;/post/2020-12-01-r-rmarkdown/index_files/figure-html/pie-1.png&#34; alt=&#34;A fancy pie chart.&#34; width=&#34;672&#34; /&gt;
-&lt;p class=&#34;caption&#34;&gt;
-Figure 1: A fancy pie chart.
-&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;## GAMLSS-RS iteration 1: Global Deviance = 936.6917 
+## GAMLSS-RS iteration 2: Global Deviance = 836.9846 
+## GAMLSS-RS iteration 3: Global Deviance = 828.0258 
+## GAMLSS-RS iteration 4: Global Deviance = 827.9528 
+## GAMLSS-RS iteration 5: Global Deviance = 827.9526&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg_est &amp;lt;- 
+  stats_agg %&amp;gt;% 
+   mutate(
+    mu = fitted(fit_null, &amp;quot;mu&amp;quot;), 
+    sigma = fitted(fit_null, &amp;quot;sigma&amp;quot;), 
+    alpha0 = mu / sigma, 
+    beta0 = (1 - mu) / sigma,
+    alpha1 = alpha0 + fg_made,
+    beta1 = beta0 + fg_attempted - fg_made,
+    estimate = alpha1 / (alpha1 + beta1),
+    raw = fg_made / fg_attempted,
+    low = qbeta(.025, alpha1, beta1),
+    high = qbeta(.975, alpha1, beta1)
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s plot out the estimate for all active players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg_est %&amp;gt;%
+  mutate(name = paste0(name, &amp;quot;: &amp;quot;, fg_made, &amp;quot;|&amp;quot;, fg_attempted),
+         name = fct_reorder(name, estimate)
+         ) %&amp;gt;%
+  filter(status == &amp;quot;active&amp;quot;) %&amp;gt;%
+  ggplot(aes(name, estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = low, ymax = high)) +
+  coord_flip() +
+  geom_point(aes(name, raw), color = &amp;quot;red&amp;quot;, size = 3, alpha = 0.6) +
+  scale_y_continuous(labels = scales::percent_format()) + 
+  my_plot_theme() + 
+  labs(x = NULL,
+       y = &amp;#39;Field Goal Percentage&amp;#39;,
+       title = &amp;#39;Estimated field goal percentage amongst active NFL kickers&amp;#39;,
+       subtitle = &amp;#39;Black dot represents estimate while red dot is actual. Note the bias in our estimates.&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Let’s talk through this figure by comparing the field goal percentage estimates for Adam Vinatieri, who has made 530 of 629 fields goals throughout his career, to Chris Boswell, who has made 50 of 57 field goals. While Vinatieri has a lower actual make rate than Boswell (84.2% vs. 87.7%), we consider him to be a better field goal kicker. The seemingly incongruent finding is based on the fact that we have more evidence for Vinatieri (629 FG attempts vs. 57 FG attempts) than Boswell. It’s like saying, “Chris Boswell is good kicker, maybe better than Vinatieri, but we don’t have enough evidence (yet) to believe he is that much better than an average kicker, a number represented by our prior”. Indeed, if we also consider the width of the credible intervals surrounding these two players, Adam Vinatieri’s interval is considerably smaller than Chris Boswell’s interval.&lt;/p&gt;
+&lt;p&gt;While this is a good way to gain an intuition for what’s happening under the hood, we see an immediate problem – all of our estimates are biased! The actual field goal percentage is above every single estimate. Luckily, there is a solution: we can create conditional estimates of our prior. One way to do this is to create features that explain variability between our players. For example, &lt;a href=&#34;https://fivethirtyeight.com/features/kickers-are-forever/&#34;&gt;field goal percentages have improved dramatically over the past 50 years&lt;/a&gt;. Let’s consider our own data and map out this pattern from the 1970s to the 2010s.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
+  mutate(rookie_decade = as.factor(rookie_decade)) %&amp;gt;%
+  ggplot(aes(rookie_decade, fg_pct, color = rookie_decade)) +
+  geom_boxplot() +
+  geom_jitter() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  my_plot_theme() +
+  scale_color_viridis_d() + 
+  theme(legend.position = &amp;quot;none&amp;quot;) +
+  labs(
+    x = &amp;quot;Decade&amp;quot;,
+    y = &amp;quot;Field Goal Percentage&amp;quot;,
+    title = &amp;#39;Kicker performance has improved over time&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
+The best kicker in 1970s has a lower field goal percentage than the worst kicker in the 2010s. Including the decade of a kicker’s rookie season allows us to create a more informed prior. Thus, if we use the median field goal percentage of all kickers who debuted as rookies in 2010+, our best guess would be about 84%, whereas a kicker who debuted in the 1970s would be somewhere around 64%. This explains why the estimates from our null model were biased.&lt;/p&gt;
+&lt;p&gt;The second factor to consider is the number of field goal attempts per player, because better players have more opportunities to kick field goals. This makes intuitive sense and is captured in the following plot.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
+  ggplot(aes(log2(fg_attempted), fg_pct)) +
+  geom_point(size = 3) +
+  geom_smooth(span = 1) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  my_plot_theme() +
+  labs(
+    x = &amp;quot;Log2(Total Attempts)&amp;quot;,
+    y = &amp;quot;Field Goal percentage&amp;quot;,
+    title = &amp;quot;Better kickers have more opportunities&amp;quot;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Below we’ll use the same model except this time we’ll account for the number of field goal attempts and a player’s rookie decade.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_complete &amp;lt;- 
+  gamlss(cbind(fg_made, fg_attempted - fg_made) ~ log2(fg_attempted) + rookie_decade,
+  family = BB(mu.link = &amp;quot;identity&amp;quot;),
+  data = stats_agg
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## GAMLSS-RS iteration 1: Global Deviance = 918.3071 
+## GAMLSS-RS iteration 2: Global Deviance = 714.8471 
+## GAMLSS-RS iteration 3: Global Deviance = 668.3708 
+## GAMLSS-RS iteration 4: Global Deviance = 668.1839 
+## GAMLSS-RS iteration 5: Global Deviance = 668.1838&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
+Much better! Our estimates do not exhibit the same degree of bias as before. Moreover, the width of our credible intervals shrank across all players. This makes sense, given that we can now condition our prior estimates on inputs that explain variability in the field goal percentage. While there are other factors that might improve our model (e.g., did a player’s team have their home games in a dome?), this is a good starting point for answering our original question.&lt;/p&gt;
 &lt;/div&gt;
+&lt;div id=&#34;from-parameters-to-points&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;From Parameters to Points&lt;/h3&gt;
+&lt;p&gt;We have a model that does a reasonable job of estimating a kicker’s field goal percentage. Now we need to translate that into an estimate of fantasy points. This will take a few steps, but I’ll outline each in turn. First, we need to estimate the average worth (in fantasy points) of each successful field goal. Typically, field goals less-than 40 yards are worth 3 points, 40 - 49 yards are worth 4 points, and 50 or more yards are worth 5 points. We’ll use the 2016 season to come up with a global average. While we could technically account for distances of each player (e.g., some kickers are excellent at a longer distances, others not so much), this approach will give us a “good-enough” answer. Second, we’ll estimate the average number of field goal attempts per season. This can vary widely from one season to the next for a given kicker, as it is contingent upon the offense getting within kicking range. Again, we’ll keep it simple and just average the number of attempts across all players from the 2016 season.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Average points per FG
+pts_per_fg &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  filter(year == 2016) %&amp;gt;% 
+  mutate(pt_3_fgs = (f_gs_made_20_29_yards + f_gs_made_30_39_yards) * 3,
+         pt_4_fgs = f_gs_made_40_49_yards * 4,
+         pt_5_fgs = f_gs_made_50_yards * 5,
+         tot_pts = pt_3_fgs + pt_4_fgs + pt_5_fgs
+  )
+
+pts_per_fg &amp;lt;- round(sum(pts_per_fg$tot_pts) / sum(pts_per_fg$fg_made), 1)
+
+# Average number of attempts
+attempts_per_season &amp;lt;- 
+  stats_processed %&amp;gt;% 
+  filter(year == 2016) %&amp;gt;% 
+  pull(fg_attempted) %&amp;gt;% 
+  mean() %&amp;gt;% 
+  round()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Here comes the fun part. Below we’ll simulate 1000 seasons for each player by randomly generating 1000 values of &lt;code&gt;beta&lt;/code&gt;. This value is based on the posterior estimates, &lt;code&gt;alpha1&lt;/code&gt; and &lt;code&gt;beta1&lt;/code&gt;, produced by our model. The estimates will vary from one simulation to next, though most values will fall somewhere between 0.75 and 0.9. Better players like Justin Tucker will be near the high end of that range while player like Graham Gano will be near the lower end. We’ll then take each estimate and plug it into the &lt;code&gt;binomial distribution&lt;/code&gt; below. Recall that the &lt;code&gt;binomial distribution&lt;/code&gt; is defined by a single parameter, which represents the probability of success. This is exactly what our estimate of &lt;code&gt;beta&lt;/code&gt; represents! Given that all active players had an average of 27 FG attempts in 2016, each of the 1000 simulations will consist of 27 trials (or &lt;code&gt;attempts_per_season&lt;/code&gt;) each with a slightly different probability of success (how likely they are to make a field goal on a given attempt). We’ll lean on the &lt;code&gt;purrr&lt;/code&gt; package to vectorize these operations.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2018)
+n_seasons &amp;lt;- 1000
+
+est_active &amp;lt;- 
+  stats_agg_est %&amp;gt;% 
+  filter(status == &amp;#39;active&amp;#39;)
+
+est_make_pct &amp;lt;- map2(est_active %&amp;gt;% pull(alpha1),
+                     est_active %&amp;gt;% pull(beta1), 
+                     function(x, y) rbeta(n_seasons, x, y)
+                     )
+est_outcomes &amp;lt;- map(est_make_pct, 
+                    function(x) rbinom(n = n_seasons, 
+                                       size = attempts_per_season,
+                                       prob = x
+                                       )
+                    )
+names(est_outcomes) &amp;lt;- est_active$name&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;So much data! Below we’ll plot the distribution of total points accumulated for each player across the 1000 simulated seasons. We’ll create quantiles as a way to see how much overlap there is between players.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pt_simulation &amp;lt;- 
+  est_outcomes %&amp;gt;% 
+  tbl_df() %&amp;gt;% 
+  gather() %&amp;gt;% 
+  transmute(name = key,
+            season_pts = value * pts_per_fg
+            ) %&amp;gt;% 
+  group_by(name) %&amp;gt;% 
+  mutate(avg_pts = mean(season_pts)) %&amp;gt;% 
+  ungroup() %&amp;gt;% 
+  mutate(name = fct_reorder(name, avg_pts))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: `tbl_df()` is deprecated as of dplyr 1.0.0.
+## Please use `tibble::as_tibble()` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pt_simulation %&amp;gt;% 
+  ggplot(aes(season_pts, y = name, fill = factor(..quantile..))) + 
+  stat_density_ridges(
+    geom = &amp;quot;density_ridges_gradient&amp;quot;,
+    calc_ecdf = TRUE,
+    quantiles = 4,
+    quantile_lines = TRUE,
+    bandwidth = 2
+  ) +
+  scale_fill_viridis(discrete = TRUE, name = &amp;quot;Point Quartile&amp;quot;, alpha = 0.5) +
+  my_plot_theme() + 
+  scale_x_continuous(breaks = pretty_breaks(n = 7)) + 
+  labs(x = &amp;#39;Total Points Per Simulated Season&amp;#39;,
+       y = NULL,
+       title = &amp;quot;The best kicker is not much better than the worst kicker&amp;quot;,
+       subtitle = &amp;#39;Drafing any kicker is fine&amp;#39;
+       ) + 
+  theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Wait! We went all this way for you to tell me that the status quo is probably right? Yes, I did. But we still haven’t quantified how much better or worse drafting the best or worst kicker is in terms of fantasy points. A simple way is to count the number of seasons where Justin Tucker (the best kicker) scored more points than Andrew Franks (the worst kicker).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;jt_pts &amp;lt;- 
+  pt_simulation %&amp;gt;% 
+  filter(name == &amp;#39;Justin Tucker&amp;#39;) %&amp;gt;% 
+  pull(season_pts) 
+
+af_pts &amp;lt;- 
+pt_simulation %&amp;gt;% 
+  filter(name == &amp;#39;Andrew Franks&amp;#39;) %&amp;gt;% 
+  pull(season_pts)
+
+pct_greater &amp;lt;- sum(jt_pts &amp;gt; af_pts) / n_seasons
+print(str_glue(&amp;#39;PCT greater: {pct_greater * 100}%&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## PCT greater: 77.5%&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Turns out that approximately 77 of every 100 seasons Justin Tucker outscores Andrew Franks. Let’s go one step further and quantify the actual difference.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data.frame(pt_diff = jt_pts - af_pts), aes(pt_diff)) + 
+  geom_histogram(fill = &amp;#39;gray&amp;#39;, color = &amp;#39;black&amp;#39;, bins = 10) + 
+  scale_x_continuous(breaks = pretty_breaks(n = 15)) + 
+  labs(x = &amp;#39;Point Difference over Entire Season&amp;#39;) + 
+  theme_minimal() + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .05), lty = 2) + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .5), lty = 2, color = &amp;#39;red&amp;#39;, size = 2) + 
+  geom_vline(xintercept = quantile(jt_pts - af_pts, .95), lty = 2) + 
+  my_plot_theme() + 
+  labs(x = &amp;#39;Point Difference&amp;#39;,
+       y = &amp;#39;Count&amp;#39;,
+       title = &amp;#39;The best kicker should score about 10 more points per season compared to the worst&amp;#39;,
+       subtitle = &amp;#39;Estimate based on 27 FG attempts per season with each FG worth 3.5 points&amp;#39;
+       )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
+If we spread this estimate out across 16 regular-season games, it comes out to less than a single point per game.&lt;/p&gt;
 &lt;/div&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Writing technical content in Academic</title>
-      <link>/post/writing-technical-content/</link>
-      <pubDate>Fri, 12 Jul 2019 00:00:00 +0000</pubDate>
-      <guid>/post/writing-technical-content/</guid>
-      <description>&lt;p&gt;Academic is designed to give technical content creators a seamless experience. You can focus on the content and Academic handles the rest.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Highlight your code snippets, take notes on math classes, and draw diagrams from textual representation.&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;On this page, you&amp;rsquo;ll find some examples of the types of technical content that can be rendered with Academic.&lt;/p&gt;
-&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;
-&lt;h3 id=&#34;code&#34;&gt;Code&lt;/h3&gt;
-&lt;p&gt;Academic supports a Markdown extension for highlighting code syntax. You can enable this feature by toggling the &lt;code&gt;highlight&lt;/code&gt; option in your &lt;code&gt;config/_default/params.toml&lt;/code&gt; file.&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```python
-import pandas as pd
-data = pd.read_csv(&amp;quot;data.csv&amp;quot;)
-data.head()
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import pandas as pd
-data = pd.read_csv(&amp;quot;data.csv&amp;quot;)
-data.head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;charts&#34;&gt;Charts&lt;/h3&gt;
-&lt;p&gt;Academic supports the popular &lt;a href=&#34;https://plot.ly/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Plotly&lt;/a&gt; chart format.&lt;/p&gt;
-&lt;p&gt;Save your Plotly JSON in your page folder, for example &lt;code&gt;chart.json&lt;/code&gt;, and then add the &lt;code&gt;{{&amp;lt; chart data=&amp;quot;chart&amp;quot; &amp;gt;}}&lt;/code&gt; shortcode where you would like the chart to appear.&lt;/p&gt;
-&lt;p&gt;Demo:&lt;/p&gt;
-
-
-&lt;div id=&#34;chart-681239457&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
-&lt;script&gt;
-  (function() {
-    let a = setInterval( function() {
-      if ( typeof window.Plotly === &#39;undefined&#39; ) {
-        return;
-      }
-      clearInterval( a );
-
-      Plotly.d3.json(&#34;./line-chart.json&#34;, function(chart) {
-        Plotly.plot(&#39;chart-681239457&#39;, chart.data, chart.layout, {responsive: true});
-      });
-    }, 500 );
-  })();
-&lt;/script&gt;
-&lt;p&gt;You might also find the &lt;a href=&#34;http://plotly-json-editor.getforge.io/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Plotly JSON Editor&lt;/a&gt; useful.&lt;/p&gt;
-&lt;h3 id=&#34;math&#34;&gt;Math&lt;/h3&gt;
-&lt;p&gt;Academic supports a Markdown extension for $\LaTeX$ math. You can enable this feature by toggling the &lt;code&gt;math&lt;/code&gt; option in your &lt;code&gt;config/_default/params.toml&lt;/code&gt; file.&lt;/p&gt;
-&lt;p&gt;To render &lt;em&gt;inline&lt;/em&gt; or &lt;em&gt;block&lt;/em&gt; math, wrap your LaTeX math with &lt;code&gt;$...$&lt;/code&gt; or &lt;code&gt;$$...$$&lt;/code&gt;, respectively.&lt;/p&gt;
-&lt;p&gt;Example &lt;strong&gt;math block&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-latex&#34;&gt;$$\gamma_{n} = \frac{ 
-\left | \left (\mathbf x_{n} - \mathbf x_{n-1} \right )^T 
-\left [\nabla F (\mathbf x_{n}) - \nabla F (\mathbf x_{n-1}) \right ] \right |}
-{\left \|\nabla F(\mathbf{x}_{n}) - \nabla F(\mathbf{x}_{n-1}) \right \|^2}$$
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;p&gt;$$\gamma_{n} = \frac{ \left | \left (\mathbf x_{n} - \mathbf x_{n-1} \right )^T \left [\nabla F (\mathbf x_{n}) - \nabla F (\mathbf x_{n-1}) \right ] \right |}{\left |\nabla F(\mathbf{x}_{n}) - \nabla F(\mathbf{x}_{n-1}) \right |^2}$$&lt;/p&gt;
-&lt;p&gt;Example &lt;strong&gt;inline math&lt;/strong&gt; &lt;code&gt;$\nabla F(\mathbf{x}_{n})$&lt;/code&gt; renders as $\nabla F(\mathbf{x}_{n})$.&lt;/p&gt;
-&lt;p&gt;Example &lt;strong&gt;multi-line math&lt;/strong&gt; using the &lt;code&gt;\\\\&lt;/code&gt; math linebreak:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-latex&#34;&gt;$$f(k;p_{0}^{*}) = \begin{cases}p_{0}^{*} &amp;amp; \text{if }k=1, \\\\
-1-p_{0}^{*} &amp;amp; \text{if }k=0.\end{cases}$$
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;p&gt;$$f(k;p_{0}^{*}) = \begin{cases}p_{0}^{*} &amp;amp; \text{if }k=1, \\&lt;br&gt;
-1-p_{0}^{*} &amp;amp; \text{if }k=0.\end{cases}$$&lt;/p&gt;
-&lt;h3 id=&#34;diagrams&#34;&gt;Diagrams&lt;/h3&gt;
-&lt;p&gt;Academic supports a Markdown extension for diagrams. You can enable this feature by toggling the &lt;code&gt;diagram&lt;/code&gt; option in your &lt;code&gt;config/_default/params.toml&lt;/code&gt; file or by adding &lt;code&gt;diagram: true&lt;/code&gt; to your page front matter.&lt;/p&gt;
-&lt;p&gt;An example &lt;strong&gt;flowchart&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```mermaid
-graph TD
-A[Hard] --&amp;gt;|Text| B(Round)
-B --&amp;gt; C{Decision}
-C --&amp;gt;|One| D[Result 1]
-C --&amp;gt;|Two| E[Result 2]
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-mermaid&#34;&gt;graph TD
-A[Hard] --&amp;gt;|Text| B(Round)
-B --&amp;gt; C{Decision}
-C --&amp;gt;|One| D[Result 1]
-C --&amp;gt;|Two| E[Result 2]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;An example &lt;strong&gt;sequence diagram&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```mermaid
-sequenceDiagram
-Alice-&amp;gt;&amp;gt;John: Hello John, how are you?
-loop Healthcheck
-    John-&amp;gt;&amp;gt;John: Fight against hypochondria
-end
-Note right of John: Rational thoughts!
-John--&amp;gt;&amp;gt;Alice: Great!
-John-&amp;gt;&amp;gt;Bob: How about you?
-Bob--&amp;gt;&amp;gt;John: Jolly good!
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-mermaid&#34;&gt;sequenceDiagram
-Alice-&amp;gt;&amp;gt;John: Hello John, how are you?
-loop Healthcheck
-    John-&amp;gt;&amp;gt;John: Fight against hypochondria
-end
-Note right of John: Rational thoughts!
-John--&amp;gt;&amp;gt;Alice: Great!
-John-&amp;gt;&amp;gt;Bob: How about you?
-Bob--&amp;gt;&amp;gt;John: Jolly good!
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;An example &lt;strong&gt;Gantt diagram&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```mermaid
-gantt
-section Section
-Completed :done,    des1, 2014-01-06,2014-01-08
-Active        :active,  des2, 2014-01-07, 3d
-Parallel 1   :         des3, after des1, 1d
-Parallel 2   :         des4, after des1, 1d
-Parallel 3   :         des5, after des3, 1d
-Parallel 4   :         des6, after des4, 1d
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-mermaid&#34;&gt;gantt
-section Section
-Completed :done,    des1, 2014-01-06,2014-01-08
-Active        :active,  des2, 2014-01-07, 3d
-Parallel 1   :         des3, after des1, 1d
-Parallel 2   :         des4, after des1, 1d
-Parallel 3   :         des5, after des3, 1d
-Parallel 4   :         des6, after des4, 1d
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;An example &lt;strong&gt;class diagram&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```mermaid
-classDiagram
-Class01 &amp;lt;|-- AveryLongClass : Cool
-&amp;lt;&amp;lt;interface&amp;gt;&amp;gt; Class01
-Class09 --&amp;gt; C2 : Where am i?
-Class09 --* C3
-Class09 --|&amp;gt; Class07
-Class07 : equals()
-Class07 : Object[] elementData
-Class01 : size()
-Class01 : int chimp
-Class01 : int gorilla
-class Class10 {
-  &amp;lt;&amp;lt;service&amp;gt;&amp;gt;
-  int id
-  size()
-}
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-mermaid&#34;&gt;classDiagram
-Class01 &amp;lt;|-- AveryLongClass : Cool
-&amp;lt;&amp;lt;interface&amp;gt;&amp;gt; Class01
-Class09 --&amp;gt; C2 : Where am i?
-Class09 --* C3
-Class09 --|&amp;gt; Class07
-Class07 : equals()
-Class07 : Object[] elementData
-Class01 : size()
-Class01 : int chimp
-Class01 : int gorilla
-class Class10 {
-  &amp;lt;&amp;lt;service&amp;gt;&amp;gt;
-  int id
-  size()
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;An example &lt;strong&gt;state diagram&lt;/strong&gt;:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;```mermaid
-stateDiagram
-[*] --&amp;gt; Still
-Still --&amp;gt; [*]
-Still --&amp;gt; Moving
-Moving --&amp;gt; Still
-Moving --&amp;gt; Crash
-Crash --&amp;gt; [*]
-```
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-mermaid&#34;&gt;stateDiagram
-[*] --&amp;gt; Still
-Still --&amp;gt; [*]
-Still --&amp;gt; Moving
-Moving --&amp;gt; Still
-Moving --&amp;gt; Crash
-Crash --&amp;gt; [*]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;todo-lists&#34;&gt;Todo lists&lt;/h3&gt;
-&lt;p&gt;You can even write your todo lists in Academic too:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-markdown&#34;&gt;- [x] Write math example
-- [x] Write diagram example
-- [ ] Do something else
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;input checked=&#34;&#34; disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Write math example&lt;/li&gt;
-&lt;li&gt;&lt;input checked=&#34;&#34; disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Write diagram example&lt;/li&gt;
-&lt;li&gt;&lt;input disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Do something else&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;tables&#34;&gt;Tables&lt;/h3&gt;
-&lt;p&gt;Represent your data in tables:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-markdown&#34;&gt;| First Header  | Second Header |
-| ------------- | ------------- |
-| Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  |
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;First Header&lt;/th&gt;
-&lt;th&gt;Second Header&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;Content Cell&lt;/td&gt;
-&lt;td&gt;Content Cell&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Content Cell&lt;/td&gt;
-&lt;td&gt;Content Cell&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;h3 id=&#34;callouts&#34;&gt;Callouts&lt;/h3&gt;
-&lt;p&gt;Academic supports a &lt;a href=&#34;https://wowchemy.com/docs/content/writing-markdown-latex/#callouts&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;shortcode for callouts&lt;/a&gt;, also referred to as &lt;em&gt;asides&lt;/em&gt;, &lt;em&gt;hints&lt;/em&gt;, or &lt;em&gt;alerts&lt;/em&gt;. By wrapping a paragraph in &lt;code&gt;{{% callout note %}} ... {{% /callout %}}&lt;/code&gt;, it will render as an aside.&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-markdown&#34;&gt;{{% callout note %}}
-A Markdown aside is useful for displaying notices, hints, or definitions to your readers.
-{{% /callout %}}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;div class=&#34;alert alert-note&#34;&gt;
-  &lt;div&gt;
-    A Markdown aside is useful for displaying notices, hints, or definitions to your readers.
-  &lt;/div&gt;
+&lt;div id=&#34;conclusion&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+&lt;p&gt;Needless to say, pick your kicker last in Fantasy Football! All kickers in modern-day NFL are really good, so save those late-round picks for positions other than a kicker. Cheers!&lt;/p&gt;
 &lt;/div&gt;
-&lt;h3 id=&#34;spoilers&#34;&gt;Spoilers&lt;/h3&gt;
-&lt;p&gt;Add a spoiler to a page to reveal text, such as an answer to a question, after a button is clicked.&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-markdown&#34;&gt;{{&amp;lt; spoiler text=&amp;quot;Click to view the spoiler&amp;quot; &amp;gt;}}
-You found me!
-{{&amp;lt; /spoiler &amp;gt;}}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;details class=&#34;spoiler &#34;  id=&#34;spoiler-2&#34;&gt;
-  &lt;summary&gt;Click to view the spoiler&lt;/summary&gt;
-  &lt;p&gt;You found me!&lt;/p&gt;
-&lt;/details&gt;
-&lt;h3 id=&#34;icons&#34;&gt;Icons&lt;/h3&gt;
-&lt;p&gt;Academic enables you to use a wide range of &lt;a href=&#34;https://sourcethemes.com/academic/docs/page-builder/#icons&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;icons from &lt;em&gt;Font Awesome&lt;/em&gt; and &lt;em&gt;Academicons&lt;/em&gt;&lt;/a&gt; in addition to &lt;a href=&#34;https://sourcethemes.com/academic/docs/writing-markdown-latex/#emojis&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;emojis&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Here are some examples using the &lt;code&gt;icon&lt;/code&gt; shortcode to render icons:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-markdown&#34;&gt;{{&amp;lt; icon name=&amp;quot;terminal&amp;quot; pack=&amp;quot;fas&amp;quot; &amp;gt;}} Terminal  
-{{&amp;lt; icon name=&amp;quot;python&amp;quot; pack=&amp;quot;fab&amp;quot; &amp;gt;}} Python  
-{{&amp;lt; icon name=&amp;quot;r-project&amp;quot; pack=&amp;quot;fab&amp;quot; &amp;gt;}} R
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;renders as&lt;/p&gt;
-&lt;p&gt;
-  &lt;i class=&#34;fas fa-terminal  pr-1 fa-fw&#34;&gt;&lt;/i&gt; Terminal&lt;br&gt;
-
-  &lt;i class=&#34;fab fa-python  pr-1 fa-fw&#34;&gt;&lt;/i&gt; Python&lt;br&gt;
-
-  &lt;i class=&#34;fab fa-r-project  pr-1 fa-fw&#34;&gt;&lt;/i&gt; R&lt;/p&gt;
-&lt;h3 id=&#34;did-you-find-this-page-helpful-consider-sharing-it-&#34;&gt;Did you find this page helpful? Consider sharing it 🙌&lt;/h3&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Display Jupyter Notebooks with Academic</title>
-      <link>/post/jupyter/</link>
-      <pubDate>Tue, 05 Feb 2019 00:00:00 +0000</pubDate>
-      <guid>/post/jupyter/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;from IPython.core.display import Image
-Image(&#39;https://www.python.org/static/community_logos/python-logo-master-v3-TM-flattened.png&#39;)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;./index_1_0.png&#34; alt=&#34;png&#34;&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;print(&amp;quot;Welcome to Academic!&amp;quot;)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;Welcome to Academic!
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;install-python-and-jupyterlab&#34;&gt;Install Python and JupyterLab&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&#34;https://www.anaconda.com/distribution/#download-section&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Install Anaconda&lt;/a&gt; which includes Python 3 and JupyterLab.&lt;/p&gt;
-&lt;p&gt;Alternatively, install JupyterLab with &lt;code&gt;pip3 install jupyterlab&lt;/code&gt;.&lt;/p&gt;
-&lt;h2 id=&#34;create-or-upload-a-jupyter-notebook&#34;&gt;Create or upload a Jupyter notebook&lt;/h2&gt;
-&lt;p&gt;Run the following commands in your Terminal, substituting &lt;code&gt;&amp;lt;MY-WEBSITE-FOLDER&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;SHORT-POST-TITLE&amp;gt;&lt;/code&gt; with the file path to your Academic website folder and a short title for your blog post (use hyphens instead of spaces), respectively:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;mkdir -p &amp;lt;MY-WEBSITE-FOLDER&amp;gt;/content/post/&amp;lt;SHORT-POST-TITLE&amp;gt;/
-cd &amp;lt;MY-WEBSITE-FOLDER&amp;gt;/content/post/&amp;lt;SHORT-POST-TITLE&amp;gt;/
-jupyter lab index.ipynb
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The &lt;code&gt;jupyter&lt;/code&gt; command above will launch the JupyterLab editor, allowing us to add Academic metadata and write the content.&lt;/p&gt;
-&lt;h2 id=&#34;edit-your-post-metadata&#34;&gt;Edit your post metadata&lt;/h2&gt;
-&lt;p&gt;The first cell of your Jupter notebook will contain your post metadata (&lt;a href=&#34;https://sourcethemes.com/academic/docs/front-matter/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;front matter&lt;/a&gt;).&lt;/p&gt;
-&lt;p&gt;In Jupter, choose &lt;em&gt;Markdown&lt;/em&gt; as the type of the first cell and wrap your Academic metadata in three dashes, indicating that it is YAML front matter:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;---
-title: My post&#39;s title
-date: 2019-09-01
-
-# Put any other Academic metadata here...
----
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Edit the metadata of your post, using the &lt;a href=&#34;https://sourcethemes.com/academic/docs/managing-content&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;documentation&lt;/a&gt; as a guide to the available options.&lt;/p&gt;
-&lt;p&gt;To set a &lt;a href=&#34;https://sourcethemes.com/academic/docs/managing-content/#featured-image&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;featured image&lt;/a&gt;, place an image named &lt;code&gt;featured&lt;/code&gt; into your post&amp;rsquo;s folder.&lt;/p&gt;
-&lt;p&gt;For other tips, such as using math, see the guide on &lt;a href=&#34;https://sourcethemes.com/academic/docs/writing-markdown-latex/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;writing content with Academic&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id=&#34;convert-notebook-to-markdown&#34;&gt;Convert notebook to Markdown&lt;/h2&gt;
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;jupyter nbconvert index.ipynb --to markdown --NbConvertApp.output_files_dir=.
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;example&#34;&gt;Example&lt;/h2&gt;
-&lt;p&gt;This post was created with Jupyter. The orginal files can be found at &lt;a href=&#34;https://github.com/gcushen/hugo-academic/tree/master/exampleSite/content/post/jupyter&#34;&gt;https://github.com/gcushen/hugo-academic/tree/master/exampleSite/content/post/jupyter&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

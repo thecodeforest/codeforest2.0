@@ -11,20 +11,20 @@
     <loc>/courses/example/stats/</loc>
     <lastmod>2021-01-01T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>/</loc>
-    <lastmod>2030-06-01T13:00:00+00:00</lastmod>
-  </url><url>
     <loc>/talk/example-talk/</loc>
     <lastmod>2030-06-01T13:00:00+00:00</lastmod>
   </url><url>
     <loc>/event/</loc>
     <lastmod>2030-06-01T13:00:00+00:00</lastmod>
   </url><url>
+    <loc>/</loc>
+    <lastmod>2030-06-01T13:00:00+00:00</lastmod>
+  </url><url>
     <loc>/categories/</loc>
     <lastmod>2021-03-29T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/post/</loc>
-    <lastmod>2021-03-30T10:27:16-07:00</lastmod>
+    <lastmod>2021-03-29T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/tag/prophet/</loc>
     <lastmod>2021-03-29T21:13:14-05:00</lastmod>
@@ -38,6 +38,12 @@
     <loc>/category/pyspark/</loc>
     <lastmod>2021-03-29T21:13:14-05:00</lastmod>
   </url><url>
+    <loc>/tag/python/</loc>
+    <lastmod>2021-03-29T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>/category/python/</loc>
+    <lastmod>2021-03-29T21:13:14-05:00</lastmod>
+  </url><url>
     <loc>/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</loc>
     <lastmod>2021-03-29T21:13:14-05:00</lastmod>
   </url><url>
@@ -49,9 +55,6 @@
   </url><url>
     <loc>/category/time-series-forecasting/</loc>
     <lastmod>2021-03-29T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/post/2021-03-30-test-test/</loc>
-    <lastmod>2021-03-30T10:27:16-07:00</lastmod>
   </url><url>
     <loc>/tag/beta-distribution/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
@@ -68,12 +71,6 @@
     <loc>/category/fantasy-football/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/tag/python/</loc>
-    <lastmod>2021-03-15T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/category/python/</loc>
-    <lastmod>2021-03-15T21:13:14-05:00</lastmod>
-  </url><url>
     <loc>/tag/r/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
@@ -86,49 +83,25 @@
     <loc>/courses/example/</loc>
     <lastmod>2021-01-24T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>/tag/academic/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
+    <loc>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</loc>
+    <lastmod>2019-08-26T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/authors/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
+    <loc>/tag/emperical-bayes/</loc>
+    <lastmod>2019-08-26T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/category/demo/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/author/mark-leboeuf/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/post/getting-started/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/author/%E5%90%B3%E6%81%A9%E9%81%94/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/tag/%E5%BC%80%E6%BA%90/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/category/%E6%95%99%E7%A8%8B/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/post/2020-12-01-r-rmarkdown/</loc>
-    <lastmod>2020-12-01T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/tag/plot/</loc>
-    <lastmod>2020-12-01T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/tag/r-markdown/</loc>
-    <lastmod>2020-12-01T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/tag/regression/</loc>
-    <lastmod>2020-12-01T21:13:14-05:00</lastmod>
-  </url><url>
-    <loc>/post/writing-technical-content/</loc>
-    <lastmod>2019-07-12T00:00:00+00:00</lastmod>
+    <loc>/category/emperical-bayes/</loc>
+    <lastmod>2019-08-26T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/publication-type/3/</loc>
     <lastmod>2019-04-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/publication/preprint/</loc>
+    <lastmod>2019-04-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>/authors/</loc>
+    <lastmod>2019-04-07T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>/author/mark-leboeuf/</loc>
     <lastmod>2019-04-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/publication_types/</loc>
@@ -139,9 +112,6 @@
   </url><url>
     <loc>/tag/source-themes/</loc>
     <lastmod>2019-04-07T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/post/jupyter/</loc>
-    <lastmod>2019-09-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/slides/</loc>
     <lastmod>2019-02-05T00:00:00+00:00</lastmod>
