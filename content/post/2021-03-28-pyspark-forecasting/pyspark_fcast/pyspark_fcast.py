@@ -142,55 +142,6 @@ def run_forecast(keys, df):
     return results_df
 
 
-def bind_actuals_and_forecast(
-    actuals_df: pd.DataFrame,
-    forecast_df: pd.DataFrame,
-    yvar_field: str,
-    group_fields: List[str],
-    date_field: str,
-    exp_yvar_field: bool = True,
-) -> pd.DataFrame:
-    """Binds historical and Prophet forecasting data together
-       into a single DataFrame.
-
-    Args:
-        actuals_df (pd.DataFrame): Historical data
-        forecast_df (pd.DataFrame): Prophet Forecast data
-        yvar_field (str): outcome variable
-        group_fields (List[str]): grouping fields. These are often
-                represented by attributes of each unit
-                (e.g., store id, product id, etc.)
-        date_field (str): date field
-        exp_yvar_field (bool, optional): Flags if the outcome variable
-        was log transformed. If set to True, the transformation is inverted
-        back to the original scale. Defaults to True.
-
-    Returns:
-        pd.DataFrame: Complete dataset with original field names and scales
-    """
-    # prep actuals
-    actuals_df["part"] = "actuals"
-    actuals_df = actuals_df.rename(columns={"y": yvar_field})
-    if exp_yvar_field:
-        actuals_df[yvar_field] = actuals_df[yvar_field].apply(lambda x: np.expm1(x))
-    if any(["cap" in x for x in actuals_df.columns]):
-        del actuals_df["cap"]
-        del actuals_df["floor"]
-    # prep forecast
-    forecast_df = forecast_df.rename(
-        columns={
-            "yhat": yvar_field,
-            "yhat_lower": f"{yvar_field}_lb",
-            "yhat_upper": f"{yvar_field}_ub",
-        }
-    )
-    bound_df = pd.concat([actuals_df, forecast_df])
-    bound_df = bound_df.rename(columns={"ds": date_field}).sort_values(
-        group_fields + [date_field]
-    )
-    return bound_df
-
-
 def main():
     args = read_args()
     with open(args.forecast_config_file) as f:
@@ -269,25 +220,32 @@ def main():
     fcast_spark_prophet_input = SPARK.createDataFrame(
         fcast_df_prophet_input, schema=INPUT_SCHEMA
     )
+
     fcast_df_prophet_output = (
         fcast_spark_prophet_input.groupBy(group_fields)
         .applyInPandas(func=run_forecast, schema=OUTPUT_SCHEMA)
         .withColumn("part", lit("forecast"))
         .withColumn("fcast_date", lit(datetime.now().strftime("%Y-%m-%d")))
         .toPandas()
+        .rename(
+            columns={
+                "yhat": yvar_field,
+                "yhat_lower": f"{yvar_field}_lb",
+                "yhat_upper": f"{yvar_field}_ub",
+                "ds": date_field,
+            }
+        )
     )
-    fcast_df_prophet_output = fcast_df_prophet_output.apply(
-        lambda x: round(np.expm1(x)) if "yhat" in x.name else x
+    fcast_df_prophet_input["part"] = "actuals"
+    fcast_df_prophet_input = fcast_df_prophet_input.rename(
+        columns={"y": yvar_field, "ds": date_field}
     )
+    del fcast_df_prophet_input["cap"]
+    del fcast_df_prophet_input["floor"]
+    ret_df = pd.concat([fcast_df_prophet_input, fcast_df_prophet_output])
+    ret_df = ret_df.apply(lambda x: round(np.expm1(x)) if yvar_field in x.name else x)
 
-    df = bind_actuals_and_forecast(
-        actuals_df=fcast_df_prophet_input,
-        forecast_df=fcast_df_prophet_output,
-        yvar_field=yvar_field,
-        group_fields=group_fields,
-        date_field=date_field,
-    )
-    df.to_csv(Path.cwd() / "sales_data_forecast.csv", index=False)
+    ret_df.to_csv(Path.cwd() / "sales_data_forecast.csv", index=False)
 
 
 if __name__ == "__main__":
