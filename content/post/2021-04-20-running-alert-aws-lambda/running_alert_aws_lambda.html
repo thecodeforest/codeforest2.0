@@ -1,0 +1,37 @@
+---
+title: "running_alert_aws_lambda"
+output: html_document
+---
+
+
+
+<p>AWS solves one of the biggest problems within analytics: The Last Mile. This is basically “I developed something that works locally or in a cloud-based Sandbox environment” to “This is going to be accessible to others in the real-world”. The key about analytics is that value is only realized in the second stage, yet very little time is spent on it. Thus, the goal of this to highlight an AWS service that I’ve found to have many helpful applications - Lambda - through an real-life use-case.</p>
+<div id="why-i-dont-plan-a-run-on-weather-forecasts" class="section level3">
+<h3>Why I don’t plan a run on weather forecasts</h3>
+</div>
+<div id="part-1" class="section level3">
+<h3>Part 1:</h3>
+</div>
+<div id="configuring-environment" class="section level3">
+<h3>Configuring Environment</h3>
+<p>Functions -&gt; Configuration -&gt; Environment Variables
+“use image add_environment_variables”</p>
+<p>Change how long you want the lambda to run for. 3 seconds is very fast. If you are accessing an API you’ll likely need longer :)</p>
+</div>
+<div id="adding-layers" class="section level3">
+<h3>Adding Layers</h3>
+<p>here is how you do it</p>
+</div>
+<div id="adding-permissions" class="section level3">
+<h3>Adding Permissions</h3>
+<p>Configuration -&gt; Execution Role -&gt; Permissions -&gt; Attach Policies
+* AmazonS3FullAccess - allows lambda to access S3
+* AmazonSES FullAccess - allows lambda to send emails</p>
+</div>
+<div id="creating-an-s3-bucket-to-land-data" class="section level3">
+<h3>Creating an S3 Bucket to land data</h3>
+</div>
+<div id="setting-up-triggers" class="section level3">
+<h3>Setting up Triggers</h3>
+<p><code>arn:aws:sts::371410071971:assumed-role/time-to-run/SendRunningEmail' is not authorized to perform</code>ses:SendEmail’</p>
+</div>

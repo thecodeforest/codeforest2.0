@@ -1,0 +1,355 @@
+---
+title: "Causal Inference with Propensity Scores"
+author: "Mark LeBoeuf"
+date: '2021-03-15T21:13:14-05:00'
+summary: This post highlights one approach to generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making
+tags:
+- Causal Inference
+- Propensity Scores
+- R
+categories:
+- Causal Inference
+- Propensity Scores
+- R
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+![](/post/2021-03-15-causal-inference-pt-1/images/dag.png){width=700px height=600px}  
+
+### Overview
+Causal inference attempts to answer "what-if" questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention -- a change in wages or a targeted marketing campaign -- on an outcome -- increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of *prescriptive* analytics and can inform decision-making in the face of multiple possible actions.
+
+However, most analytics efforts are applied to either *describing* or *predicting* an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to *describe* how sales of cheese have changed over the past year. Or perhaps you want to *predict* how much cheese will sell over the next 12 months. Descriptive analytics can reveal if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. Predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). While all of the applications can provide valuable answers to different questions, none can provide insight into the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business. 
+
+Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We'll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making. 
+
+### Causal Inference & Propensity Scores
+When people hear the words "causal inference", they often think "A/B Test". Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.    
+
+While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on future purchasing behavior, you cannot assign customers to be a member or non-member; customers would enroll in the program under their own volition. Further, customers who enrolled as members are probably more interested in the product than those who did not enroll. This fact "confounds" the relationship between the effect of our member program on purchasing behavior.    
+
+Propensity score matching attempts to address this issue, known as *selection bias*, by adjusting for factors that relate both to the treatment and outcome (i.e., confounding variables). A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score indicates the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of making a future purchase. Formalizing the roles of individual variables that increase/decrease membership enrollment and their interrelations is the topic of the next section.
+
+### Causal Graphs
+We can codify our beliefs and assumptions about observational data through a *causal graph*. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit.  
+
+In the context of the current example, we assume that  a customer in enrolling as a member influences future purchase behavior, not that future purchase behavior influences enrollment in membership. We can then encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we assume these variables do not directly or indirectly affect purchase frequency or membership.    
+
+These assumptions can and should be verified. If we believe a customer's age affects purchase frequency and membership enrollment, we can stratify our customers by age (i.e,.,  20-29, 30-39) and test both hypotheses. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the treatment and outcome. 
+
+This is a contrived example, so we'll keep things simple and formalize the main components of our analysis as follows:
+
+![](/post/2021-03-15-causal-inference-pt-1/images/dag.png){width=700px height=600px}  
+
+**Purchase Frequency** - the total number of purchases six months following the launch of our membership program. This is our outcome variable. 
+
+**Membership** - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable. 
+
+**Engagement** - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we'll only use prior purchase history, defined as the total number of purchases in the six months before the launch of the membership program. This variable will serve as a proxy for Engagement. We assume that customers who have made more purchases in the past six months will be inclined to make more purchases in the future -- that is, more engaged in the past translates into more engaged in the future. We also assume that this (partially) motivates membership enrollment. Engaged customers will not only purchase more frequently but also be more interested in exclusive offers and discounts -- a few benefits provided to members -- relative to customers that have historically purchased infrequently. 
+
+The image above was created via the [daggity website](http://dagitty.net/), which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from **Engagement** to **Purchase Frequency**. This addresses the issue of *selection bias*, in that our customers can "select into" the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias *strongly ignorable*, similar to a randomized experiment.    
+
+Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally a few months have elapsed so we can see what happens. Second, membership offers and the quality may change over time, just as the consumer's relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.    
+
+Last, we want to time-bound prior purchase history. Some customers may have frequently purchased in the past but have not been active for several years (or churned completely). We want to ensure that all customers in our sample have a chance of being exposed to the treatment. Thus, we could apply simple logic to narrow our consideration set, such as "all customers that have engaged with the brand in some capacity (e.g., made a purchase, browsed the website, or opened a marketing communication) since the start of our member program". This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis. 
+
+### Estimating the Effect of Membership on Purchase Frequency
+
+Now that we have a solid conceptual foundation, let's continue to work through our membership example by generating some contrived data. 
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(broom)
+library(rsample)
+library(janitor)
+# set base theme as black & white
+theme_set(theme_bw())
+```
+
+```{r}
+set.seed(2021)
+# sample size of members and non-members
+n = 5000
+# expected purchase frequency
+base_lambda = .75
+# purchase frequency effect size for "more engaged" customers 
+engagement_effect_size = .25
+
+less_engaged = rpois(n=n, lambda = base_lambda)
+more_engaged = rpois(n=n, lambda = base_lambda + engagement_effect_size)
+# create tibble with number of previous purchases for each customer
+purchase_df <- tibble(n_purchase_pre = c(less_engaged, more_engaged))
+```
+In the code block above, we expect "less engaged" customers to make 0.75 purchases (on average) over six months, and "more engaged" customers to make one purchase over the same period. The difference in purchase frequency between our customer types is ascribed to our latent variable of Engagement. We assume the data generating process for historical purchase frequency can be represented by the Poisson distribution. Recall that the Poisson distribution models the number of events expected to occur within a given period. It also approximates consumer purchase frequency patterns in the real world, such that most customers make a small number of purchases, while a few customers make a large number of purchases.
+
+We established our expected purchase frequency and engagement effect size above,so let's simulate the effect of Engagement on Membership. We'll create three bins and assign a probability of enrolling as a member within each bin, such that higher bins (i.e., the top 33% of customers) have a higher probability of enrolling relative to lower bins (i.e., the bottom 33% of customers). 
+
+```{r, message=FALSE, warning=FALSE}
+membership_sim <- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.2))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.3))
+  } else {
+    return(rbinom(1, 1, prob = 0.4))
+  }
+}
+
+purchase_df <- purchase_df %>% 
+  mutate(bin = ntile(n_purchase_pre, 3),
+         member_enrolled = map_int(bin, membership_sim)
+         ) %>% 
+  select(-bin)
+```
+
+While we know the true effect size (given that we generated the numbers), let's verify the assumption that our proxy for engagement (Prior Purchases) exhibits the hypothesized effect on membership. 
+```{r, fig.height=7, fig.width=12, message=FALSE, warning=FALSE}
+purchase_df %>% 
+  mutate(n_purchase_pre = fct_lump(as.factor(n_purchase_pre), 
+                                   n=2,
+                                   other_level = '2 or More'
+                                   )) %>% 
+  group_by(n_purchase_pre) %>% 
+  summarise(pct_member = mean(member_enrolled)) %>% 
+  ggplot(aes(n_purchase_pre, pct_member)) + 
+  theme_bw() + 
+  geom_col() + 
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  labs(x = 'N Prior Purchases',
+       y = 'Percent Enrolled as Members'
+       ) + 
+  theme(axis.text.x = element_text(size = 12, angle = 90),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    strip.text.y = element_text(size = 14)
+  )
+```
+
+Now that we have validated the relationship between these variables, we'll create the joint effect of treatment (Membership) and our single covariate (Engagement) on our outcome (Purchase Frequency). 
+
+```{r}
+purchase_sim <- function(n_purchase_pre, member_enrolled){
+  membership_effect_size = .1
+  if(member_enrolled == 1){
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre + membership_effect_size)
+    return(post_purchase_freq)
+  } else {
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre)
+    return(post_purchase_freq)
+  }
+}
+
+purchase_df <- purchase_df %>% 
+  mutate(n_purchase_post = map2_int(n_purchase_pre, 
+                                member_enrolled, 
+                                purchase_sim)
+         )
+```
+
+The `purchase_sim` function accounts for the number of prior purchases as well as if the customer has enrolled as a member. If they have enrolled, the true effect size is .1, in that enrolling a customer as a member leads to .1 additional purchases (on average) during the six months.
+
+Below, we'll confirm that members have made more purchases relative to non-members. 
+```{r, fig.height=7, fig.width=12, message=FALSE, warning=FALSE}
+avg_purchase_freq <- purchase_df %>% 
+  group_by(member_enrolled) %>% 
+  summarise(avg_post_purchase = mean(n_purchase_post),
+            se = sqrt(mean(n_purchase_post) / n())
+            ) %>% 
+  mutate(is_member = str_to_title(ifelse(member_enrolled == 1, 
+                                         'member', 
+                                         'non-member')),
+         is_member = fct_reorder(is_member, avg_post_purchase),
+         lb = avg_post_purchase - 1.96 * se,
+         ub = avg_post_purchase + 1.96 * se
+         )
+
+avg_purchase_freq %>% 
+  ggplot(aes(is_member, avg_post_purchase, fill = is_member)) + 
+  geom_col(color = 'black') + 
+  geom_errorbar(aes(ymin = lb, ymax=ub), width=0.4) + 
+  coord_flip() + 
+  labs(x = NULL,
+       y = 'Average Number of Purchases',
+       fill = 'Membership Status'
+  ) + 
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16),
+        legend.position = 'top'
+  )
+```
+
+Indeed, this confirms that the data aligns with our expectations. We could reach the same conclusion by fitting a regression model and then considering the magnitude of the coefficient for membership. 
+```{r}
+incorrect_fit <- glm(n_purchase_post ~ member_enrolled,
+                     data = purchase_df,
+                     family = "poisson"
+                     )
+
+incorrect_fit_coef <- tidy(incorrect_fit)
+
+intercept <- incorrect_fit_coef %>% 
+  filter(term == '(Intercept)') %>% 
+  pull(estimate)
+
+member_est <- incorrect_fit_coef %>% 
+  filter(term == 'member_enrolled') %>% 
+  pull(estimate)
+
+effect_size_est <- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue('Estimated Difference: {effect_size_est}'))
+```
+
+Note that if we did not adjust for any confounding variables, we would **mistakenly conclude** that membership leads to ~.3 extra purchases per customer. That is, we would overestimate the effect size of membership on customer purchase behaviors because we know that Engagement affects both Membership and Purchase Frequency. In the following section, we'll generate propensity scores to create more balance between our control and treatment groups on our confounding variables.
+
+### Propensity Scores
+
+Two common approaches for creating comparison groups with observational data are (1) *propensity score matching* and (2) *inverse probability of treatment weighting (IPTW)*. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If groups are different sizes, the number of non-treated observations is reduced to the size of the treated condition, as each treated observation is matched with a non-treated observation.  In contrast, weighting includes all observations but places more weight on observations with high propensity scores and less weight on observations with low propensity scores. While both approaches can yield similar results, I prefer weighting because you are not discarding any data.
+
+Below, we'll specify our model for generating propensity scores. 
+```{r}
+# specify model for estimating P(treatment | Previous Purchases)
+model_spec <- as.formula(member_enrolled ~ n_purchase_pre)
+member_model <- glm(model_spec, 
+                    data = purchase_df, 
+                    family = binomial())
+member_prop_df <- member_model %>% 
+  augment(type.predict = 'response', data = purchase_df) %>% 
+  select(member_enrolled, n_purchase_pre, n_purchase_post, member_prob = .fitted) %>% 
+  mutate(iptw = 1 / ifelse(member_enrolled == 0, 1 - member_prob, member_prob))
+```
+
+A few things to note since we've created our propensity scores. First, we used logistic regression to estimate membership probability. However, any classification model can generate a propensity score. If there are non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.
+    
+Second, we'll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I'm not sure). I'd prefer to use a point from our actual distribution, so we'll assign any value above the 99th percentile to the value at the 99th percentile. 
+
+```{r}
+iptw_pct_99 <- quantile(member_prop_df %>% pull(iptw), 0.99)[[1]]
+member_prop_df <- member_prop_df %>% 
+  mutate(iptw = ifelse(iptw > iptw_pct_99, iptw_pct_99, iptw))
+```
+
+Now that we've addressed some common pre-modeling issues, let's generate an initial estimate of the effect of Membership on Purchase Frequency.  
+
+```{r, message=FALSE, warning=FALSE}
+membership_fit <- glm(n_purchase_post ~ member_enrolled,
+              data = member_prop_df,
+              family = 'poisson',
+              weights = iptw
+              )
+membership_fit_coef <- tidy(membership_fit)
+
+intercept <- membership_fit_coef %>% 
+  filter(term == '(Intercept)') %>% 
+  pull(estimate)
+
+member_est <- membership_fit_coef %>% 
+  filter(term == 'member_enrolled') %>% 
+  pull(estimate)
+
+effect_size_est_adj <- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue('Estimated Difference: {effect_size_est_adj}'))
+```
+Our initial estimate indicates that membership leads to ~.1 extra purchases, which matches perfectly with the true effect size! This is a great start, but we also need to consider certainty in the estimate. In our example, we have a fairly large sample size, there is only one covariate, and the distribution of treatment (members vs. non-members) is relatively even between groups. Real world data sets, on the other hand, are often small, present a high degree of skew between groups, or exhibit intricate causal structures. The presence of these factors affects how accurately we can estimate a true effect, and using the method above to create a confidence interval can lead to incorrect estimates of our standard error (too small).
+To address this issue, we'll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better quantify uncertainty in our estimate. 
+
+```{r}
+member_fit_bootstrap <- function(split){
+  temp_df <- analysis(split)
+  
+  temp_model <- glm(member_enrolled ~ n_purchase_pre,
+                    family = binomial(),
+                    data = temp_df
+                  )
+  
+  temp_df <- temp_model %>% 
+    augment(type.predict = 'response', data = temp_df) %>% 
+    select(member_enrolled, n_purchase_pre, 
+           n_purchase_post, member_prob = .fitted) %>% 
+    mutate(iptw = 1 / ifelse(member_enrolled == 0, 
+                             1 - member_prob, 
+                             member_prob))
+  
+  temp_iptw_pct_99 <- quantile(temp_df %>% pull(iptw), 0.99)[[1]]
+  
+  temp_df <- temp_df %>% 
+    mutate(iptw = ifelse(iptw > temp_iptw_pct_99, 
+                         temp_iptw_pct_99, 
+                         iptw))
+  
+  temp_ret_df <- glm(n_purchase_post ~ member_enrolled,
+                data = temp_df,
+                family = 'poisson',
+                weights = iptw) %>% 
+    tidy()
+  return(temp_ret_df)
+}
+```
+
+```{r, message=FALSE, warning=FALSE}
+n_boot = 500
+boot_results <- bootstraps(purchase_df, n_boot, apparent = TRUE) %>% 
+  mutate(results = map(splits, member_fit_bootstrap))
+```
+
+In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates. 
+
+```{r}
+boot_results_unnest <- 
+  boot_results %>% 
+  select(-splits) %>% 
+  unnest(cols=results)
+
+boot_results_est <- 
+  boot_results_unnest %>% 
+  select(id, term, estimate) %>% 
+  pivot_wider(names_from = term, 
+              values_from = estimate
+              ) %>% 
+  clean_names() %>% 
+  mutate(est_effect = exp(member_enrolled + intercept) - exp(intercept))
+
+
+boot_results_summary <- boot_results_est %>%
+  summarise(lb = quantile(est_effect, 0.025),
+            mdn = quantile(est_effect, 0.5),
+            ub = quantile(est_effect, 0.975)
+  ) %>%
+  pivot_longer(everything())
+```
+
+```{r, fig.height=7, fig.width=12, message=FALSE, warning=FALSE}
+lb_est <- boot_results_summary %>% filter(name=='lb') %>% pull(value)
+ub_est <- boot_results_summary %>% filter(name=='ub') %>% pull(value)
+effect_est <- boot_results_summary %>% filter(name=='mdn') %>% pull(value)
+boot_results_est %>% 
+  ggplot(aes(x=est_effect)) + 
+  geom_histogram(fill='grey90', color = 'black') + 
+  theme_bw() + 
+  geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=ub_est, xend = ub_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  annotate(geom='text', x=lb_est, y = 11, label = round(lb_est, 2), size = 8) + 
+  annotate(geom='text', x=effect_est, y = 11, label = round(effect_est, 2), size = 8) + 
+  annotate(geom='text', x=ub_est, y = 11, label = round(ub_est, 2), size = 8) + 
+  labs(x = 'Estimated Treatment Effect') + 
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14)
+  )
+```
+
+Our final estimate of the causal effect of membership on purchase frequency is between 0.06 and 0.14. Note that these confidence intervals aren't much different from those in the original, non-bootstrapped approach. As mentioned previously, the primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. However, in many instances, confidence intervals following bootstrapping will be wider -- and more accurate -- than those provided by OLS. 
+
+Hopefully, this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we'll discuss an equally important topic -- variance reduction methods -- that come in handy when you can run a true A/B test. Until then, happy experimenting! 

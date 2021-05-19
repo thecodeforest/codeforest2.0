@@ -59,16 +59,19 @@
     <loc>/tag/beta-distribution/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/category/beta-distribution/</loc>
+    <loc>/tag/causal-inference/</loc>
+    <lastmod>2021-03-15T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>/category/causal-inference/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/tag/fantasy-football/</loc>
+    <loc>/tag/propensity-scores/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
-    <loc>/category/fantasy-football/</loc>
+    <loc>/category/propensity-scores/</loc>
     <lastmod>2021-03-15T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/tag/r/</loc>
@@ -90,6 +93,12 @@
     <lastmod>2019-08-26T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/category/emperical-bayes/</loc>
+    <lastmod>2019-08-26T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>/tag/fantasy-football/</loc>
+    <lastmod>2019-08-26T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>/category/fantasy-football/</loc>
     <lastmod>2019-08-26T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/publication-type/3/</loc>
@@ -121,6 +130,9 @@
   </url><url>
     <loc>/terms/</loc>
     <lastmod>2018-06-28T00:00:00+01:00</lastmod>
+  </url><url>
+    <loc>/category/beta-distribution/</loc>
+    <lastmod>2017-09-10T21:13:14-05:00</lastmod>
   </url><url>
     <loc>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</loc>
     <lastmod>2017-09-10T21:13:14-05:00</lastmod>
@@ -156,5 +168,7 @@
     <lastmod>2013-07-01T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/admin/</loc>
+  </url><url>
+    <loc>/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</loc>
   </url>
 </urlset>

@@ -289,7 +289,7 @@
   
   <meta property="og:site_name" content="The Code Forest" />
   <meta property="og:url" content="/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/" />
-  <meta property="og:title" content="Causal Inference Part 1: Variance Reduction Methods | The Code Forest" />
+  <meta property="og:title" content="Causal Inference with Propensity Scores | The Code Forest" />
   <meta property="og:description" content="A Summary" /><meta property="og:image" content="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" />
     <meta property="twitter:image" content="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" /><meta property="og:locale" content="en-us" />
   
@@ -325,7 +325,7 @@
     "@type": "WebPage",
     "@id": "/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/"
   },
-  "headline": "Causal Inference Part 1: Variance Reduction Methods",
+  "headline": "Causal Inference with Propensity Scores",
   
   "datePublished": "2021-03-15T21:13:14-05:00",
   "dateModified": "2021-03-15T21:13:14-05:00",
@@ -359,7 +359,7 @@
 
 
 
-  <title>Causal Inference Part 1: Variance Reduction Methods | The Code Forest</title>
+  <title>Causal Inference with Propensity Scores | The Code Forest</title>
 </head>
 
 
@@ -615,7 +615,7 @@
   
   
 <div class="article-container pt-3">
-  <h1>Causal Inference Part 1: Variance Reduction Methods</h1>
+  <h1>Causal Inference with Propensity Scores</h1>
 
   
 
@@ -643,7 +643,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    2 min read
+    14 min read
   </span>
   
 
@@ -658,7 +658,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-categories">
-    <i class="fas fa-folder mr-1"></i><a href="/category/fantasy-football/">Fantasy Football</a>, <a href="/category/python/">Python</a>, <a href="/category/r/">R</a>, <a href="/category/beta-distribution/">Beta Distribution</a></span>
+    <i class="fas fa-folder mr-1"></i><a href="/category/causal-inference/">Causal Inference</a>, <a href="/category/propensity-scores/">Propensity Scores</a>, <a href="/category/r/">R</a></span>
   
 
 </div>
@@ -680,31 +680,215 @@
       
 
 
-<p>Causal -&gt; Cause &amp; Effect.
-Causal Inference -&gt; Draw conclusions between cause &amp; effect
-A -&gt; B
-B -&gt; A
-Z -&gt; A
-Z -&gt; B</p>
-<p>Causal Inference answers the question “What would happen”? How much more beer would we sell if we buy more google ads?</p>
-<p>Goal: Infer the effect of one thing on another
-- Effect of treatment on disease
-- Effect of website change on conversion
-- Effect of climate change policy on emissions</p>
-<ul>
-<li>Observational studies are just more convienient.</li>
-<li>Adjust/control for confounders</li>
-</ul>
-<p>How do you measure causal effects in observational studies?</p>
-<div id="simpsons-paradox" class="section level3">
-<h3>Simpson’s Paradox</h3>
-<p>BING BONG!!!
-Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&gt; y. Goal is to explain the structure.</p>
-<p>Inputs, Interventions (T), and Outputs. What is the causal relationship between these three variables?</p>
-<p>X is what you know about the person. X -&gt; T (treatment plan -&gt; binary (treatment 1, treatment 2))</p>
-<p>Challenge is you only observe one outcome. And you must impute the other outcome. And this is the crux of the counterfactual.</p>
-<p>Conditional Average Treatment Effect (For someone with a specific age, there is a big difference between the two treatments). What you want to predict.</p>
-<p>Average treatment effect (does not condition on any variable) (On average, this intervention is a good intervention)</p>
+<p><img src="/post/2021-03-15-causal-inference-pt-1/images/dag.png" width="700" height="600" /></p>
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p>Causal inference attempts to answer “what-if” questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention – a change in wages or a targeted marketing campaign – on an outcome – increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of <em>prescriptive</em> analytics and can inform decision-making in the face of multiple possible actions.</p>
+<p>However, most analytics efforts are applied to either <em>describing</em> or <em>predicting</em> an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to <em>describe</em> how sales of cheese have changed over the past year. Or perhaps you want to <em>predict</em> how much cheese will sell over the next 12 months. Descriptive analytics highlights if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. In contrast, predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). Note that none of these applications provide insight about the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.</p>
+<p>Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real-world to guide decision-making.</p>
+</div>
+<div id="causal-inference-propensity-scores" class="section level3">
+<h3>Causal Inference &amp; Propensity Scores</h3>
+<p>When people hear the words “causal inference”, they often think “A/B Test”. Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.</p>
+<p>While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on customer retention, you cannot assign customers to be a member or non-member; customers choose to enroll in the program under their own volition. Further, customers who chose to enroll as members are probably more interested in the product than those who chose not to enroll. This fact “confounds” the relationship between the effect of our member program on retention.</p>
+<p>Propensity score matching attempts to address this issue, known as <em>selection bias</em>, by adjusting for factors that relate both to the treatment and outcome. A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score would indicate the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of churning.</p>
+<p>Each individual in our sample would receive a propensity score. The score is a single number that attempts to capture all factors that contribute to churn that aren’t related to membership but have an effect on our outcome variable. Such factors are known as <em>latent variables</em> and could include prior spend, willingness to provide personal information, or how long the individual has been a customer. Formalizing how these variables relate to one another is the topic of the next section.</p>
+</div>
+<div id="causal-graphs" class="section level3">
+<h3>Causal Graphs</h3>
+<p>We can formalize our beliefs and assumptions about observational data through a <em>causal graph</em>. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit. For example, we <em>assume</em> that membership should influence churn, not that churn influences membership, and we encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we <em>assume</em> these variables do not directly or indirectly affect churn or membership.</p>
+<p>All of these assumptions can be examined. If we assume that the age of our customer has an effect on churn, we can stratify our customers by age (i.e,., 20-29, 30-39) and test if churn rates differ between age groups. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the outcome.</p>
+<p>This is a contrived example, so we’ll keep things simple and formalize the main components of our analysis as follows:</p>
+<p><img src="/post/2021-03-15-causal-inference-pt-1/images/dag.png" width="700" height="600" /></p>
+<p><strong>Churn</strong> - if a customer has made at least one purchase six months following the launch of our membership program. This is our outcome variable.</p>
+<p><strong>Membership</strong> - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable.</p>
+<p><strong>Brand Interest</strong> - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total dollars spent over the past year, as a proxy for <strong>Brand Interest</strong>. Our assumption is that customers who are more interested in the brand will spend more money. We also assume that this (partially) motivates enrollment in membership. Engaged customers will not only spend more but also be more interested in exclusive offers and discounts – a few benefits often provided to members – relative to customers that have historically spent less.</p>
+<p>The image above was created via the <a href="http://dagitty.net/">daggity website</a>, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from <strong>Interest in Brand</strong> to <strong>Churn</strong>. This addresses the issue of <em>selection bias</em>, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias <em>strongly ignorable</em>, similar to a randomized experiment.</p>
+<p>Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally we have at least a few months to see what happens. Second, membership offers and the quality may change over time, just as the consumers relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.</p>
+<p>Last, we want to time-bound the meaning of “historical spend”. Some customers may have spent a lot in the past but have not been active for several years. These customers have may have already churned, and we want to ensure that all customers in our sample have at least some chance of being exposed to the treatment. Thus, we could apply some simple logic to narrow our consideration set, such as “all customers that made at least one purchase 12 months prior to the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.</p>
+</div>
+<div id="estimating-the-effect-of-membership-on-churn" class="section level3">
+<h3>Estimating the Effect of Membership on Churn</h3>
+<p>Now that we have a solid conceptual foundation, let’s continue to work through our membership example by generating some contrived data.</p>
+<pre class="r"><code>library(tidyverse)
+library(broom)
+library(rsample)</code></pre>
+<pre class="r"><code>set.seed(2021)
+# sample size
+n = 5000
+enrolled_in_membership &lt;- c(rep(0, n), rep(1, n))
+membership_effect_size = 0.05
+churn_prob_non_member = 0.5
+churn_prob_member = churn_prob_non_member - membership_effect_size
+churned_member &lt;- c(rbinom(n, 1, prob=churn_prob_non_member),
+                    rbinom(n, 1, prob=churn_prob_member))</code></pre>
+<p>In the code block above, we are saying that the effect size of membership on churn is 0.05, such that 50% of non-members will churn after six months, while only 45% of members will churn over the same time period. This establishes the effect size of membership on churn.</p>
+<p>Next, we’ll define the historical differences in total spend via the <code>gamma</code> distribution. The gamma distribution is useful for continuous data that is right-skewed and always positive. The two parameters - alpha (shape) and beta (rate) - determine the skew and how “stretched” the range of values are for the distribution, respectively. It also approximates aggregate spending patterns in the real-world, such that most consumers spend a little, while a few spend a lot. Let’s visualize what this looks like, under the assumption that members tend to spend more than non-members, after bringing all the data together.</p>
+<pre class="r"><code>shape = 1
+rate_member &lt;- 0.005
+rate_non_member &lt;- rate_member + 0.005
+member_spend_hist &lt;- rgamma(n=n, 
+                            shape=shape, 
+                            rate = rate_member)
+non_member_spend_hist &lt;- rgamma(n=n, 
+                                shape=shape, 
+                                rate = rate_non_member)
+prior_spend = c(non_member_spend_hist, member_spend_hist)
+
+df &lt;- tibble(member = enrolled_in_membership,
+             churned_member = churned_member,
+             prior_spend = prior_spend
+             )</code></pre>
+<pre class="r"><code>spend_summary &lt;- df %&gt;% 
+  group_by(member) %&gt;% 
+  summarise(avg_prior_spend = mean(prior_spend))
+
+df %&gt;% 
+  inner_join(spend_summary) %&gt;% 
+  mutate(member = as.factor(member)) %&gt;% 
+  ggplot(aes(prior_spend, fill = member)) + 
+  geom_histogram(alpha = 0.75) + 
+  geom_vline(data = spend_summary, aes(xintercept = avg_prior_spend),
+             size = 2, lty = 4, alpha = 0.5) + 
+  facet_grid(member ~ .) + 
+  theme_bw() + 
+  scale_x_continuous(labels = scales::dollar_format(),
+                     breaks = seq(0, 2000, 100)
+                     ) + 
+  labs(x = &#39;Total Previous Spend&#39;) + 
+  theme(legend.position = &quot;top&quot;,
+    axis.text.x = element_text(size = 12, angle = 90),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    strip.text.y = element_text(size = 14)
+  )</code></pre>
+<p><img src="/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-4-1.png" width="1152" /></p>
+<p>On average, members spent ~$100 more relative to non-members. This is a simple yet effective way for validating our initial assumption that members exhibit different behavior than non-members.</p>
+<p>Next, we’ll establish the relationship between historical spend and churn. Let’s create five bins and assign a probability of churn within each bin, such that higher bins (i.e., the top 20% of spenders) have a lower probability of churning relative to lower bins (i.e., the bottom 20% of spenders). We’ll then create the joint effect of treatment (membership) and our single covariate (prior spend) on our outcome (churned).</p>
+<pre class="r"><code>churn_simulator &lt;- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.5))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.4))
+  } else if (bin == 3){
+    return(rbinom(1, 1, prob = 0.3))
+  } else if (bin == 4){
+    return(rbinom(1, 1, prob = 0.2))
+  } else {
+    return(rbinom(1, 1, prob = 0.1))
+  }
+}
+
+df &lt;- df %&gt;% 
+  mutate(bin = ntile(prior_spend, 5), 
+         churned_spend = map_int(bin, churn_simulator),
+         churned = ifelse(churned_member + churned_spend &gt; 0, 1, 0)
+         )</code></pre>
+<p>We can verify that our simulated relationship between churn and historical spend matches our expectations. Note we’ll scale our <code>prior_spend</code> field to be per $100 dollars spent instead of per $1 dollar spent. This makes interpreting the resulting coefficient more intuitive.</p>
+<pre class="r"><code>glm(churned ~ prior_spend, 
+    data = df %&gt;% mutate(prior_spend = prior_spend / 100),
+    family = binomial()
+) %&gt;% 
+  tidy(exponentiate = TRUE) %&gt;% 
+  filter(term == &#39;prior_spend&#39;)</code></pre>
+<pre><code>## # A tibble: 1 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 prior_spend    0.860    0.0129     -11.7 1.73e-31</code></pre>
+<p>The estimated coefficient indicates that for each additional $100 of historical spend, the odds of churn decrease by ~14%. Now that we have verified the assumed relationships between our variables, we’ll generate propensity scores an in effort to create more “balance” between our control and treatment groups.</p>
+</div>
+<div id="propensity-scores" class="section level3">
+<h3>Propensity Scores</h3>
+<p>The most common approaches for creating comparison groups are (1) <em>propensity score matching</em> and (2) <em>inverse probability of treatment weighting (IPTW)</em>. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If the groups are different sizes, the number of non-treated observations are reduced to the size of the treated condition, as each treated observation is matched with a single non-treated observation. In contrast, weighting includes all observations but places <em>more weight</em> on observations with a high propensity scores and less weight on observations with low propensity scores.</p>
+<p>This post will use weighting. While both approaches may yield similar results, I prefer weighting because you are not discarding data. Our simulated data does not suffer from an imbalance, but in most real-world situations you’ll have a lot fewer observations in your treatment group relative to your control group. Additionally, the quality of your matching will depend mostly on how well you’ve specified your model and accounted for unobserved covariates.</p>
+<p>With that in mind, we’ll specify our model for generating propensity scores.</p>
+<pre class="r"><code># specify model for estimating P(treatment | prior_spend)
+model_spec &lt;- as.formula(member ~ prior_spend)
+member_model &lt;- glm(model_spec, data = df, family = binomial())
+member_prop_df &lt;- member_model %&gt;% 
+  augment(type.predict = &#39;response&#39;, data = df) %&gt;% 
+  select(member, churned, prior_spend, member_prob = .fitted) %&gt;% 
+  mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))</code></pre>
+<p>A few things to note now we’ve generated our propensity scores. First, we used logistic regression as a way to estimate membership probability. However, any classification model can be used to generate a score. If you suspect non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.
+Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.</p>
+<pre class="r"><code>iptw_pct_99 &lt;- quantile(member_prop_df %&gt;% pull(iptw), 0.99)[[1]]
+member_prop_df &lt;- member_prop_df %&gt;% 
+  mutate(iptw = ifelse(iptw &gt; iptw_pct_99, iptw_pct_99, iptw))</code></pre>
+<p>Now that we’ve addressed some common pre-modeling isues, let’s generate an initial estimate of the effect of membership on churn.</p>
+<pre class="r"><code>membership_effect &lt;- glm(churned ~ member,
+              data = member_prop_df,
+              family = binomial(),
+              weights = iptw
+              ) %&gt;% 
+  tidy(exponentiate = TRUE) %&gt;% 
+  filter(term == &#39;member&#39;) %&gt;% 
+  pull(estimate)</code></pre>
+<pre class="r"><code>print(membership_effect)</code></pre>
+<pre><code>## [1] 0.8870706</code></pre>
+<p>Our initial estimate indicates that membership leads to a 11% reduction in churn, which in the real-world would be fairly significant effect! However, we are also interested in the uncertainty of our estimate; that is, what is best-case and worst-case of our effect size? The above-approach has been known to provide biased estimates of our standard error, which in turn results in confidence intervals that are too narrow. This means we over-confident in our ability to accurately estimate our causal effect.
+To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better capture the uncertainty in our estimate.</p>
+<pre class="r"><code>member_fit_bootstrap &lt;- function(split){
+  temp_df &lt;- analysis(split)
+  temp_model &lt;- glm(member ~ prior_spend,
+                    family = binomial(),
+                    data = temp_df
+                  )
+  temp_df &lt;- temp_model %&gt;% 
+    augment(type.predict = &#39;response&#39;, data = temp_df) %&gt;% 
+    select(member, churned, prior_spend, member_prob = .fitted) %&gt;% 
+    mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))
+  temp_iptw_pct_99 &lt;- quantile(temp_df %&gt;% pull(iptw), 0.99)[[1]]
+  temp_df &lt;- temp_df %&gt;% 
+    mutate(iptw = ifelse(iptw &gt; temp_iptw_pct_99, temp_iptw_pct_99, iptw))
+  temp_ret_df &lt;- glm(churned ~ member,
+                data = temp_df,
+                family = binomial(),
+                weights = iptw) %&gt;% 
+    tidy(exponentiate = TRUE)
+  
+  return(temp_ret_df)
+}</code></pre>
+<pre class="r"><code>n_boot = 500
+boot_results &lt;- bootstraps(df, n_boot, apparent = TRUE) %&gt;% 
+  mutate(results = map(splits, member_fit_bootstrap))</code></pre>
+<p>In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates.</p>
+<pre class="r"><code>boot_results &lt;- boot_results %&gt;% 
+  select(-splits) %&gt;% 
+  unnest(cols=results) %&gt;% 
+  filter(term == &#39;member&#39;)
+
+boot_summary &lt;- boot_results %&gt;%
+  summarise(lb = quantile(estimate, 0.025),
+            mdn = quantile(estimate, 0.5),
+            ub = quantile(estimate, 0.975)
+            ) %&gt;%
+  pivot_longer(everything())</code></pre>
+<pre class="r"><code>lb_est &lt;- boot_summary %&gt;% filter(name==&#39;lb&#39;) %&gt;% pull(value)
+ub_est &lt;- boot_summary %&gt;% filter(name==&#39;ub&#39;) %&gt;% pull(value)
+effect_est &lt;- boot_summary %&gt;% filter(name==&#39;mdn&#39;) %&gt;% pull(value)
+boot_results %&gt;% 
+  ggplot(aes(x=estimate)) + 
+  geom_histogram(fill = &#39;orange&#39;) + 
+  theme_bw() + 
+  geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=ub_est, xend = ub_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  annotate(geom=&#39;text&#39;, x=lb_est, y = 11, label = round(lb_est, 2), size = 8) + 
+  annotate(geom=&#39;text&#39;, x=effect_est, y = 11, label = round(effect_est, 2), size = 8) + 
+  annotate(geom=&#39;text&#39;, x=ub_est, y = 11, label = round(ub_est, 2), size = 8) + 
+  labs(x = &#39;Estimated Treatment Effect&#39;) + 
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14)
+  )</code></pre>
+<p><img src="/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-14-1.png" width="1152" /></p>
+<p>Our final estimate is that membership reduces the odds customer churn by somewhere between 0.04 and 0.18. confidence intervals aren’t actually that much different from those in the original model. The primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. Again, in real data sets, the confidence intervals following bootstrapping will typically be wider than those provided by OLS.</p>
+<p>Hopefully this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that comes in handy when you are able to run a true a/b test. Until then, happy experimenting!</p>
 </div>
 
     </div>
@@ -718,9 +902,9 @@ Need to answer Causal graphs. This is different from traditional machine learnin
 
 <div class="article-tags">
   
-  <a class="badge badge-light" href="/tag/fantasy-football/">Fantasy Football</a>
+  <a class="badge badge-light" href="/tag/causal-inference/">Causal Inference</a>
   
-  <a class="badge badge-light" href="/tag/python/">Python</a>
+  <a class="badge badge-light" href="/tag/propensity-scores/">Propensity Scores</a>
   
   <a class="badge badge-light" href="/tag/r/">R</a>
   
@@ -741,7 +925,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;text=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;text=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -754,7 +938,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;t=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods" target="_blank" rel="noopener" class="share-btn-facebook">
+        <a href="https://www.facebook.com/sharer.php?u=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;t=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -767,7 +951,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="mailto:?subject=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods&amp;body=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/" target="_blank" rel="noopener" class="share-btn-email">
+        <a href="mailto:?subject=Causal%20Inference%20with%20Propensity%20Scores&amp;body=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/" target="_blank" rel="noopener" class="share-btn-email">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -780,7 +964,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;title=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;title=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -793,7 +977,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="whatsapp://send?text=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods%20/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+        <a href="whatsapp://send?text=Causal%20Inference%20with%20Propensity%20Scores%20/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/" target="_blank" rel="noopener" class="share-btn-whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -806,7 +990,7 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;title=Causal%20Inference%20Part%201:%20Variance%20Reduction%20Methods" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/&amp;title=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
@@ -928,8 +1112,6 @@ Need to answer Causal graphs. This is different from traditional machine learnin
       <li><a href="/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/">Choosing a Fantasy Football Quarterback</a></li>
       
       <li><a href="/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/">Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</a></li>
-      
-      <li><a href="/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/">Scalable Time-Series Forecasting in Python</a></li>
       
     </ul>
   </div>

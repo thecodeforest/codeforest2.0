@@ -58,7 +58,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#ygghhxcffs .gt_table {
+#rqobitfmng .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -83,7 +83,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-left-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_heading {
+#rqobitfmng .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -95,7 +95,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_title {
+#rqobitfmng .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -105,7 +105,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-bottom-width: 0;
 }
 
-#ygghhxcffs .gt_subtitle {
+#rqobitfmng .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -115,13 +115,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-width: 0;
 }
 
-#ygghhxcffs .gt_bottom_border {
+#rqobitfmng .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_col_headings {
+#rqobitfmng .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -136,7 +136,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_col_heading {
+#rqobitfmng .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -156,7 +156,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   overflow-x: hidden;
 }
 
-#ygghhxcffs .gt_column_spanner_outer {
+#rqobitfmng .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -168,15 +168,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 4px;
 }
 
-#ygghhxcffs .gt_column_spanner_outer:first-child {
+#rqobitfmng .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ygghhxcffs .gt_column_spanner_outer:last-child {
+#rqobitfmng .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ygghhxcffs .gt_column_spanner {
+#rqobitfmng .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -188,7 +188,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   width: 100%;
 }
 
-#ygghhxcffs .gt_group_heading {
+#rqobitfmng .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -210,7 +210,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   vertical-align: middle;
 }
 
-#ygghhxcffs .gt_empty_group_heading {
+#rqobitfmng .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -225,15 +225,15 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   vertical-align: middle;
 }
 
-#ygghhxcffs .gt_from_md &gt; :first-child {
+#rqobitfmng .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#ygghhxcffs .gt_from_md &gt; :last-child {
+#rqobitfmng .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#ygghhxcffs .gt_row {
+#rqobitfmng .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -252,7 +252,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   overflow-x: hidden;
 }
 
-#ygghhxcffs .gt_stub {
+#rqobitfmng .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -264,7 +264,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-left: 12px;
 }
 
-#ygghhxcffs .gt_summary_row {
+#rqobitfmng .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -274,7 +274,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 5px;
 }
 
-#ygghhxcffs .gt_first_summary_row {
+#rqobitfmng .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -284,7 +284,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_grand_summary_row {
+#rqobitfmng .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -294,7 +294,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   padding-right: 5px;
 }
 
-#ygghhxcffs .gt_first_grand_summary_row {
+#rqobitfmng .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -304,11 +304,11 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-top-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_striped {
+#rqobitfmng .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ygghhxcffs .gt_table_body {
+#rqobitfmng .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -317,7 +317,7 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-bottom-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_footnotes {
+#rqobitfmng .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -331,13 +331,13 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_footnote {
+#rqobitfmng .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#ygghhxcffs .gt_sourcenotes {
+#rqobitfmng .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -351,46 +351,46 @@ from pyspark_ts_fcast.fcast_data_frame import FcastDataFrame&lt;/code&gt;&lt;/pr
   border-right-color: #D3D3D3;
 }
 
-#ygghhxcffs .gt_sourcenote {
+#rqobitfmng .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#ygghhxcffs .gt_left {
+#rqobitfmng .gt_left {
   text-align: left;
 }
 
-#ygghhxcffs .gt_center {
+#rqobitfmng .gt_center {
   text-align: center;
 }
 
-#ygghhxcffs .gt_right {
+#rqobitfmng .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ygghhxcffs .gt_font_normal {
+#rqobitfmng .gt_font_normal {
   font-weight: normal;
 }
 
-#ygghhxcffs .gt_font_bold {
+#rqobitfmng .gt_font_bold {
   font-weight: bold;
 }
 
-#ygghhxcffs .gt_font_italic {
+#rqobitfmng .gt_font_italic {
   font-style: italic;
 }
 
-#ygghhxcffs .gt_super {
+#rqobitfmng .gt_super {
   font-size: 65%;
 }
 
-#ygghhxcffs .gt_footnote_marks {
+#rqobitfmng .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;ygghhxcffs&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;rqobitfmng&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -536,7 +536,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#gpdwgiewva .gt_table {
+#nbpomebbll .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -561,7 +561,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_heading {
+#nbpomebbll .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -573,7 +573,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_title {
+#nbpomebbll .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -583,7 +583,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#gpdwgiewva .gt_subtitle {
+#nbpomebbll .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -593,13 +593,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#gpdwgiewva .gt_bottom_border {
+#nbpomebbll .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_col_headings {
+#nbpomebbll .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -614,7 +614,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_col_heading {
+#nbpomebbll .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -634,7 +634,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#gpdwgiewva .gt_column_spanner_outer {
+#nbpomebbll .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -646,15 +646,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#gpdwgiewva .gt_column_spanner_outer:first-child {
+#nbpomebbll .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gpdwgiewva .gt_column_spanner_outer:last-child {
+#nbpomebbll .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gpdwgiewva .gt_column_spanner {
+#nbpomebbll .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -666,7 +666,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#gpdwgiewva .gt_group_heading {
+#nbpomebbll .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -688,7 +688,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#gpdwgiewva .gt_empty_group_heading {
+#nbpomebbll .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -703,15 +703,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#gpdwgiewva .gt_from_md &gt; :first-child {
+#nbpomebbll .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#gpdwgiewva .gt_from_md &gt; :last-child {
+#nbpomebbll .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#gpdwgiewva .gt_row {
+#nbpomebbll .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -730,7 +730,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#gpdwgiewva .gt_stub {
+#nbpomebbll .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -742,7 +742,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#gpdwgiewva .gt_summary_row {
+#nbpomebbll .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -752,7 +752,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#gpdwgiewva .gt_first_summary_row {
+#nbpomebbll .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -762,7 +762,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_grand_summary_row {
+#nbpomebbll .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -772,7 +772,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#gpdwgiewva .gt_first_grand_summary_row {
+#nbpomebbll .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -782,11 +782,11 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_striped {
+#nbpomebbll .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gpdwgiewva .gt_table_body {
+#nbpomebbll .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -795,7 +795,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_footnotes {
+#nbpomebbll .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -809,13 +809,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_footnote {
+#nbpomebbll .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#gpdwgiewva .gt_sourcenotes {
+#nbpomebbll .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -829,46 +829,46 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#gpdwgiewva .gt_sourcenote {
+#nbpomebbll .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#gpdwgiewva .gt_left {
+#nbpomebbll .gt_left {
   text-align: left;
 }
 
-#gpdwgiewva .gt_center {
+#nbpomebbll .gt_center {
   text-align: center;
 }
 
-#gpdwgiewva .gt_right {
+#nbpomebbll .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gpdwgiewva .gt_font_normal {
+#nbpomebbll .gt_font_normal {
   font-weight: normal;
 }
 
-#gpdwgiewva .gt_font_bold {
+#nbpomebbll .gt_font_bold {
   font-weight: bold;
 }
 
-#gpdwgiewva .gt_font_italic {
+#nbpomebbll .gt_font_italic {
   font-style: italic;
 }
 
-#gpdwgiewva .gt_super {
+#nbpomebbll .gt_super {
   font-size: 65%;
 }
 
-#gpdwgiewva .gt_footnote_marks {
+#nbpomebbll .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;gpdwgiewva&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;nbpomebbll&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -930,7 +930,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#mfjkkazozs .gt_table {
+#rggjwgclsv .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -955,7 +955,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_heading {
+#rggjwgclsv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -967,7 +967,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_title {
+#rggjwgclsv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -977,7 +977,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#mfjkkazozs .gt_subtitle {
+#rggjwgclsv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -987,13 +987,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#mfjkkazozs .gt_bottom_border {
+#rggjwgclsv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_col_headings {
+#rggjwgclsv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1008,7 +1008,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_col_heading {
+#rggjwgclsv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1028,7 +1028,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#mfjkkazozs .gt_column_spanner_outer {
+#rggjwgclsv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1040,15 +1040,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#mfjkkazozs .gt_column_spanner_outer:first-child {
+#rggjwgclsv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#mfjkkazozs .gt_column_spanner_outer:last-child {
+#rggjwgclsv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#mfjkkazozs .gt_column_spanner {
+#rggjwgclsv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1060,7 +1060,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#mfjkkazozs .gt_group_heading {
+#rggjwgclsv .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1082,7 +1082,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#mfjkkazozs .gt_empty_group_heading {
+#rggjwgclsv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1097,15 +1097,15 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#mfjkkazozs .gt_from_md &gt; :first-child {
+#rggjwgclsv .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#mfjkkazozs .gt_from_md &gt; :last-child {
+#rggjwgclsv .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#mfjkkazozs .gt_row {
+#rggjwgclsv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1124,7 +1124,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#mfjkkazozs .gt_stub {
+#rggjwgclsv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1136,7 +1136,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#mfjkkazozs .gt_summary_row {
+#rggjwgclsv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1146,7 +1146,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#mfjkkazozs .gt_first_summary_row {
+#rggjwgclsv .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1156,7 +1156,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_grand_summary_row {
+#rggjwgclsv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1166,7 +1166,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#mfjkkazozs .gt_first_grand_summary_row {
+#rggjwgclsv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1176,11 +1176,11 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_striped {
+#rggjwgclsv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#mfjkkazozs .gt_table_body {
+#rggjwgclsv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1189,7 +1189,7 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_footnotes {
+#rggjwgclsv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1203,13 +1203,13 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_footnote {
+#rggjwgclsv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#mfjkkazozs .gt_sourcenotes {
+#rggjwgclsv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1223,46 +1223,46 @@ sales_df = clean_names(sales_df)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#mfjkkazozs .gt_sourcenote {
+#rggjwgclsv .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#mfjkkazozs .gt_left {
+#rggjwgclsv .gt_left {
   text-align: left;
 }
 
-#mfjkkazozs .gt_center {
+#rggjwgclsv .gt_center {
   text-align: center;
 }
 
-#mfjkkazozs .gt_right {
+#rggjwgclsv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#mfjkkazozs .gt_font_normal {
+#rggjwgclsv .gt_font_normal {
   font-weight: normal;
 }
 
-#mfjkkazozs .gt_font_bold {
+#rggjwgclsv .gt_font_bold {
   font-weight: bold;
 }
 
-#mfjkkazozs .gt_font_italic {
+#rggjwgclsv .gt_font_italic {
   font-style: italic;
 }
 
-#mfjkkazozs .gt_super {
+#rggjwgclsv .gt_super {
   font-size: 65%;
 }
 
-#mfjkkazozs .gt_footnote_marks {
+#rggjwgclsv .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;mfjkkazozs&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;rggjwgclsv&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -1381,27 +1381,27 @@ fcast_df = FcastDataFrame(
         ts_frequency=ts_frequency,
     )        &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;While we won’t cover all methods in this class, I’ll briefly review one of the methods – &lt;code&gt;filter_groups_min_obs&lt;/code&gt; – to illustrate the structure of the class.&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;    def filter_groups_min_obs(self, min_obs_threshold: int):
-        &amp;quot;&amp;quot;&amp;quot;Filters groups based on some minimum number of observations 
-           required for forecasting
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def filter_groups_min_obs(self, min_obs_threshold: int):
+    &amp;quot;&amp;quot;&amp;quot;Filters groups based on some minimum number of observations 
+       required for forecasting
 
-        Args:
-            min_obs_threshold (int): removes all groups with less obsevations than 
-                                     this threshold
-        &amp;quot;&amp;quot;&amp;quot;
-        n_unique_groups = self.df[self.group_fields].drop_duplicates().shape[0]
-        min_obs_filter_df = (
-            self.df.groupby(self.group_fields)[self.yvar_field]
-            .count()
-            .reset_index()
-            .rename(columns={self.yvar_field: &amp;quot;obs_count&amp;quot;})
-            .query(f&amp;quot;obs_count &amp;gt; {str(min_obs_threshold)}&amp;quot;)
-            .drop(columns=&amp;quot;obs_count&amp;quot;)
-        )
-        n_remaining_groups = min_obs_filter_df.shape[0]
-        df = pd.merge(self.df, min_obs_filter_df, how=&amp;quot;inner&amp;quot;, on=self.group_fields)
-        self.df = df
-        logger.info(&amp;quot;N groups dropped: {}&amp;quot;.format(n_unique_groups - n_remaining_groups))&lt;/code&gt;&lt;/pre&gt;
+    Args:
+        min_obs_threshold (int): removes all groups with less obsevations than 
+                                 this threshold
+    &amp;quot;&amp;quot;&amp;quot;
+    n_unique_groups = self.df[self.group_fields].drop_duplicates().shape[0]
+    min_obs_filter_df = (
+        self.df.groupby(self.group_fields)[self.yvar_field]
+        .count()
+        .reset_index()
+        .rename(columns={self.yvar_field: &amp;quot;obs_count&amp;quot;})
+        .query(f&amp;quot;obs_count &amp;gt; {str(min_obs_threshold)}&amp;quot;)
+        .drop(columns=&amp;quot;obs_count&amp;quot;)
+    )
+    n_remaining_groups = min_obs_filter_df.shape[0]
+    df = pd.merge(self.df, min_obs_filter_df, how=&amp;quot;inner&amp;quot;, on=self.group_fields)
+    self.df = df
+    logger.info(&amp;quot;N groups dropped: {}&amp;quot;.format(n_unique_groups - n_remaining_groups))&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Each data transformation takes in our data, applies some filtering, cleaning, or formatting, logs the changes, and then replaces the existing DataFrame with the updated DataFrame. This pattern is applied at each step until we are satisfied with the changes. Let’s apply these filtering and cleaning steps below.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# filter out groups with less than min number of observations
 fcast_df.filter_groups_min_obs(min_obs_threshold=min_obs_threshold)  
@@ -1545,74 +1545,32 @@ OUTPUT_SCHEMA = StructType(
 &lt;p&gt;&lt;strong&gt;add_country_holidays&lt;/strong&gt; - Holidays tend to drive increases in consumption of particular products. And some holidays, like Easter, are not consistent year-over-year. Thus, you can improve forecasting accuracy if you anticipate how demand shifts when generating forecasts based on when holidays occur. One thing to note that is not included in the current post (but is incredibly useful) is the ability to apply a &lt;code&gt;lower_window&lt;/code&gt; and &lt;code&gt;upper_window&lt;/code&gt; to each holiday date. Continuing with our Easter example, you can imagine egg sales increase in the days leading up to Easter. Sales on the holiday date may not be that high, unless you are doing some last minute shopping. By extending the &lt;code&gt;lower_window&lt;/code&gt; parameter for this holiday to something like -5, you can capture the elevated demand during the five days that precede Easter.&lt;/p&gt;
 &lt;p&gt;Now that we are familiar with how the model is being tuned, let’s generate the forecasts. This may take a few minutes depending on how many threads you are using. I am using four, and it took about 20 minutes to complete.&lt;/p&gt;
 &lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_output = (
-        fcast_spark_prophet_input.groupBy(group_fields)
-        .applyInPandas(func=run_forecast, schema=OUTPUT_SCHEMA)
-        .withColumn(&amp;quot;part&amp;quot;, lit(&amp;quot;forecast&amp;quot;))
-        .withColumn(&amp;quot;fcast_date&amp;quot;, lit(datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;)))
-        .toPandas()
-    )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We should have 13-week ahead forecast for all store-department combinations.
-The last step is to combine our forecasts with the historical data. However, our forecasting and prediction interval fields were log-transformed prior to fitting our model. Thus, we’ll need to invert this transformation to get back to our original scale. Note that &lt;code&gt;np.log1p&lt;/code&gt; and &lt;code&gt;np.expm1&lt;/code&gt; are inverses of one another, and elegantly deal with zero values by adding/subtracting a value of “1” in to avoid taking the log of zero, which is undefined and will make your code go 💥&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_output = fcast_df_prophet_output.apply(
-        lambda x: round(np.expm1(x)) if &amp;quot;yhat&amp;quot; in x.name else x
-    )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Perfect. Now we’ll bind our historical and forecasting data together and then write the results out to the root directory of our project.&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def bind_actuals_and_forecast(
-    actuals_df: pd.DataFrame,
-    forecast_df: pd.DataFrame,
-    yvar_field: str,
-    group_fields: List[str],
-    date_field: str,
-    exp_yvar_field: bool = False,
-) -&amp;gt; pd.DataFrame:
-    &amp;quot;&amp;quot;&amp;quot;Binds historical and Prophet forecasting data together
-       into a single DataFrame.
-
-    Args:
-        actuals_df (pd.DataFrame): Historical data
-        forecast_df (pd.DataFrame): Prophet Forecast data
-        yvar_field (str): outcome variable
-        group_fields (List[str]): grouping fields. These are often
-                represented by attributes of each unit
-                (e.g., store id, product id, etc.)
-        date_field (str): date field
-        exp_yvar_field (bool, optional): Flags if the outcome variable
-        was log transformed. If set to True, the transformation is inverted
-        back to the original scale. Defaults to False
-
-    Returns:
-        pd.DataFrame: Complete dataset with original field names and scales
-    &amp;quot;&amp;quot;&amp;quot;
-    actuals_df[&amp;quot;part&amp;quot;] = &amp;quot;actuals&amp;quot;
-    actuals_df = actuals_df.rename(columns={&amp;quot;y&amp;quot;: yvar_field})
-    if exp_yvar_field:
-        actuals_df[yvar_field] = actuals_df[yvar_field].apply(lambda x: np.expm1(x))
-    if any([&amp;quot;cap&amp;quot; in x for x in actuals_df.columns]):
-        del actuals_df[&amp;quot;cap&amp;quot;]
-        del actuals_df[&amp;quot;floor&amp;quot;]
-    # prep forecast
-    forecast_df = forecast_df.rename(
+    fcast_spark_prophet_input.groupBy(group_fields)
+    .applyInPandas(func=run_forecast, schema=OUTPUT_SCHEMA)
+    .withColumn(&amp;quot;part&amp;quot;, lit(&amp;quot;forecast&amp;quot;))
+    .withColumn(&amp;quot;fcast_date&amp;quot;, lit(datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;)))
+    .toPandas()
+    .rename(
         columns={
             &amp;quot;yhat&amp;quot;: yvar_field,
             &amp;quot;yhat_lower&amp;quot;: f&amp;quot;{yvar_field}_lb&amp;quot;,
             &amp;quot;yhat_upper&amp;quot;: f&amp;quot;{yvar_field}_ub&amp;quot;,
+            &amp;quot;ds&amp;quot;: date_field,
         }
     )
-    bound_df = pd.concat([actuals_df, forecast_df])
-    bound_df = bound_df.rename(columns={&amp;quot;ds&amp;quot;: date_field}).sort_values(
-        group_fields + [date_field]
-    )
-    return bound_df&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;df_forecast = bind_actuals_and_forecast(
-        actuals_df=fcast_df_prophet_input,
-        forecast_df=fcast_df_prophet_output,
-        yvar_field=yvar_field,
-        group_fields=group_fields,
-        date_field=date_field,
-        exp_yvar_field=True
+)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We should have 13-week forecasts for all store-department combinations. Our next steps are to combine the forecasts with the historical data and invert our log-transformation of the outcome variable to get back to our original scale. Note that &lt;code&gt;np.log1p&lt;/code&gt; and &lt;code&gt;np.expm1&lt;/code&gt; are inverses of one another, and elegantly deal with zero values by adding/subtracting a value of “1” to avoid taking the log of zero, which is undefined and will make your code go 💥. Lastly, we’ll write the results out to our root directory.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;fcast_df_prophet_input[&amp;quot;part&amp;quot;] = &amp;quot;actuals&amp;quot;
+fcast_df_prophet_input = fcast_df_prophet_input.rename(
+    columns={&amp;quot;y&amp;quot;: yvar_field, &amp;quot;ds&amp;quot;: date_field}
 )
+del fcast_df_prophet_input[&amp;quot;cap&amp;quot;]
+del fcast_df_prophet_input[&amp;quot;floor&amp;quot;]
 
-df_forecast.to_csv(Path.cwd() / &amp;quot;sales_data_forecast.csv&amp;quot;, index=False)&lt;/code&gt;&lt;/pre&gt;
+ret_df = pd.concat([fcast_df_prophet_input, fcast_df_prophet_output])
+ret_df = ret_df.apply(lambda x: round(np.expm1(x)) if yvar_field in x.name else x)
+
+ret_df.to_csv(Path.cwd() / &amp;quot;sales_data_forecast.csv&amp;quot;, index=False)&lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 &lt;div id=&#34;quality-assurance&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Quality Assurance&lt;/h3&gt;
@@ -1630,7 +1588,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#xmnncrhndc .gt_table {
+#vajqssudrv .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -1655,7 +1613,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_heading {
+#vajqssudrv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1667,7 +1625,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_title {
+#vajqssudrv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1677,7 +1635,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#xmnncrhndc .gt_subtitle {
+#vajqssudrv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1687,13 +1645,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#xmnncrhndc .gt_bottom_border {
+#vajqssudrv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_col_headings {
+#vajqssudrv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1708,7 +1666,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_col_heading {
+#vajqssudrv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1728,7 +1686,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#xmnncrhndc .gt_column_spanner_outer {
+#vajqssudrv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1740,15 +1698,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#xmnncrhndc .gt_column_spanner_outer:first-child {
+#vajqssudrv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#xmnncrhndc .gt_column_spanner_outer:last-child {
+#vajqssudrv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#xmnncrhndc .gt_column_spanner {
+#vajqssudrv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1760,7 +1718,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#xmnncrhndc .gt_group_heading {
+#vajqssudrv .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1782,7 +1740,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#xmnncrhndc .gt_empty_group_heading {
+#vajqssudrv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1797,15 +1755,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#xmnncrhndc .gt_from_md &gt; :first-child {
+#vajqssudrv .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#xmnncrhndc .gt_from_md &gt; :last-child {
+#vajqssudrv .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#xmnncrhndc .gt_row {
+#vajqssudrv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1824,7 +1782,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#xmnncrhndc .gt_stub {
+#vajqssudrv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1836,7 +1794,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#xmnncrhndc .gt_summary_row {
+#vajqssudrv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1846,7 +1804,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#xmnncrhndc .gt_first_summary_row {
+#vajqssudrv .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1856,7 +1814,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_grand_summary_row {
+#vajqssudrv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1866,7 +1824,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#xmnncrhndc .gt_first_grand_summary_row {
+#vajqssudrv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1876,11 +1834,11 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_striped {
+#vajqssudrv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#xmnncrhndc .gt_table_body {
+#vajqssudrv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1889,7 +1847,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_footnotes {
+#vajqssudrv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1903,13 +1861,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_footnote {
+#vajqssudrv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#xmnncrhndc .gt_sourcenotes {
+#vajqssudrv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1923,46 +1881,46 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#xmnncrhndc .gt_sourcenote {
+#vajqssudrv .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#xmnncrhndc .gt_left {
+#vajqssudrv .gt_left {
   text-align: left;
 }
 
-#xmnncrhndc .gt_center {
+#vajqssudrv .gt_center {
   text-align: center;
 }
 
-#xmnncrhndc .gt_right {
+#vajqssudrv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#xmnncrhndc .gt_font_normal {
+#vajqssudrv .gt_font_normal {
   font-weight: normal;
 }
 
-#xmnncrhndc .gt_font_bold {
+#vajqssudrv .gt_font_bold {
   font-weight: bold;
 }
 
-#xmnncrhndc .gt_font_italic {
+#vajqssudrv .gt_font_italic {
   font-style: italic;
 }
 
-#xmnncrhndc .gt_super {
+#vajqssudrv .gt_super {
   font-size: 65%;
 }
 
-#xmnncrhndc .gt_footnote_marks {
+#vajqssudrv .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;xmnncrhndc&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;vajqssudrv&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
@@ -2052,7 +2010,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#zlosqjsctg .gt_table {
+#uwmuwyxmsv .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -2077,7 +2035,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_heading {
+#uwmuwyxmsv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2089,7 +2047,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_title {
+#uwmuwyxmsv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2099,7 +2057,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#zlosqjsctg .gt_subtitle {
+#uwmuwyxmsv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2109,13 +2067,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#zlosqjsctg .gt_bottom_border {
+#uwmuwyxmsv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_col_headings {
+#uwmuwyxmsv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2130,7 +2088,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_col_heading {
+#uwmuwyxmsv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2150,7 +2108,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#zlosqjsctg .gt_column_spanner_outer {
+#uwmuwyxmsv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2162,15 +2120,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#zlosqjsctg .gt_column_spanner_outer:first-child {
+#uwmuwyxmsv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#zlosqjsctg .gt_column_spanner_outer:last-child {
+#uwmuwyxmsv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#zlosqjsctg .gt_column_spanner {
+#uwmuwyxmsv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2182,7 +2140,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#zlosqjsctg .gt_group_heading {
+#uwmuwyxmsv .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2204,7 +2162,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#zlosqjsctg .gt_empty_group_heading {
+#uwmuwyxmsv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2219,15 +2177,15 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#zlosqjsctg .gt_from_md &gt; :first-child {
+#uwmuwyxmsv .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#zlosqjsctg .gt_from_md &gt; :last-child {
+#uwmuwyxmsv .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#zlosqjsctg .gt_row {
+#uwmuwyxmsv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2246,7 +2204,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#zlosqjsctg .gt_stub {
+#uwmuwyxmsv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2258,7 +2216,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#zlosqjsctg .gt_summary_row {
+#uwmuwyxmsv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2268,7 +2226,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#zlosqjsctg .gt_first_summary_row {
+#uwmuwyxmsv .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2278,7 +2236,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_grand_summary_row {
+#uwmuwyxmsv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2288,7 +2246,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#zlosqjsctg .gt_first_grand_summary_row {
+#uwmuwyxmsv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2298,11 +2256,11 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_striped {
+#uwmuwyxmsv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#zlosqjsctg .gt_table_body {
+#uwmuwyxmsv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2311,7 +2269,7 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_footnotes {
+#uwmuwyxmsv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2325,13 +2283,13 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_footnote {
+#uwmuwyxmsv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#zlosqjsctg .gt_sourcenotes {
+#uwmuwyxmsv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2345,46 +2303,46 @@ fcast_df = read_csv(fcast_df_url)&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#zlosqjsctg .gt_sourcenote {
+#uwmuwyxmsv .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#zlosqjsctg .gt_left {
+#uwmuwyxmsv .gt_left {
   text-align: left;
 }
 
-#zlosqjsctg .gt_center {
+#uwmuwyxmsv .gt_center {
   text-align: center;
 }
 
-#zlosqjsctg .gt_right {
+#uwmuwyxmsv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#zlosqjsctg .gt_font_normal {
+#uwmuwyxmsv .gt_font_normal {
   font-weight: normal;
 }
 
-#zlosqjsctg .gt_font_bold {
+#uwmuwyxmsv .gt_font_bold {
   font-weight: bold;
 }
 
-#zlosqjsctg .gt_font_italic {
+#uwmuwyxmsv .gt_font_italic {
   font-style: italic;
 }
 
-#zlosqjsctg .gt_super {
+#uwmuwyxmsv .gt_super {
   font-size: 65%;
 }
 
-#zlosqjsctg .gt_footnote_marks {
+#uwmuwyxmsv .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;zlosqjsctg&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;uwmuwyxmsv&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
     &lt;col style=&#34;width:75px;&#34;/&gt;
@@ -2497,45 +2455,229 @@ fcast_df %&amp;gt;%
         strip.text.y = element_text(size = 12),
         plot.title = element_text(size = 14)
         )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-27-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-25-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
     
     <item>
-      <title>Causal Inference Part 1: Variance Reduction Methods</title>
+      <title>Causal Inference with Propensity Scores</title>
       <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
       <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
       <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
       <description>
 
 
-&lt;p&gt;Causal -&amp;gt; Cause &amp;amp; Effect.
-Causal Inference -&amp;gt; Draw conclusions between cause &amp;amp; effect
-A -&amp;gt; B
-B -&amp;gt; A
-Z -&amp;gt; A
-Z -&amp;gt; B&lt;/p&gt;
-&lt;p&gt;Causal Inference answers the question “What would happen”? How much more beer would we sell if we buy more google ads?&lt;/p&gt;
-&lt;p&gt;Goal: Infer the effect of one thing on another
-- Effect of treatment on disease
-- Effect of website change on conversion
-- Effect of climate change policy on emissions&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Observational studies are just more convienient.&lt;/li&gt;
-&lt;li&gt;Adjust/control for confounders&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;How do you measure causal effects in observational studies?&lt;/p&gt;
-&lt;div id=&#34;simpsons-paradox&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Simpson’s Paradox&lt;/h3&gt;
-&lt;p&gt;BING BONG!!!
-Need to answer Causal graphs. This is different from traditional machine learnining, where the goal is map F(x) -&amp;gt; y. Goal is to explain the structure.&lt;/p&gt;
-&lt;p&gt;Inputs, Interventions (T), and Outputs. What is the causal relationship between these three variables?&lt;/p&gt;
-&lt;p&gt;X is what you know about the person. X -&amp;gt; T (treatment plan -&amp;gt; binary (treatment 1, treatment 2))&lt;/p&gt;
-&lt;p&gt;Challenge is you only observe one outcome. And you must impute the other outcome. And this is the crux of the counterfactual.&lt;/p&gt;
-&lt;p&gt;Conditional Average Treatment Effect (For someone with a specific age, there is a big difference between the two treatments). What you want to predict.&lt;/p&gt;
-&lt;p&gt;Average treatment effect (does not condition on any variable) (On average, this intervention is a good intervention)&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;Causal inference attempts to answer “what-if” questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention – a change in wages or a targeted marketing campaign – on an outcome – increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of &lt;em&gt;prescriptive&lt;/em&gt; analytics and can inform decision-making in the face of multiple possible actions.&lt;/p&gt;
+&lt;p&gt;However, most analytics efforts are applied to either &lt;em&gt;describing&lt;/em&gt; or &lt;em&gt;predicting&lt;/em&gt; an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to &lt;em&gt;describe&lt;/em&gt; how sales of cheese have changed over the past year. Or perhaps you want to &lt;em&gt;predict&lt;/em&gt; how much cheese will sell over the next 12 months. Descriptive analytics highlights if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. In contrast, predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). Note that none of these applications provide insight about the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.&lt;/p&gt;
+&lt;p&gt;Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real-world to guide decision-making.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;causal-inference-propensity-scores&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Causal Inference &amp;amp; Propensity Scores&lt;/h3&gt;
+&lt;p&gt;When people hear the words “causal inference”, they often think “A/B Test”. Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.&lt;/p&gt;
+&lt;p&gt;While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on customer retention, you cannot assign customers to be a member or non-member; customers choose to enroll in the program under their own volition. Further, customers who chose to enroll as members are probably more interested in the product than those who chose not to enroll. This fact “confounds” the relationship between the effect of our member program on retention.&lt;/p&gt;
+&lt;p&gt;Propensity score matching attempts to address this issue, known as &lt;em&gt;selection bias&lt;/em&gt;, by adjusting for factors that relate both to the treatment and outcome. A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score would indicate the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of churning.&lt;/p&gt;
+&lt;p&gt;Each individual in our sample would receive a propensity score. The score is a single number that attempts to capture all factors that contribute to churn that aren’t related to membership but have an effect on our outcome variable. Such factors are known as &lt;em&gt;latent variables&lt;/em&gt; and could include prior spend, willingness to provide personal information, or how long the individual has been a customer. Formalizing how these variables relate to one another is the topic of the next section.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;causal-graphs&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Causal Graphs&lt;/h3&gt;
+&lt;p&gt;We can formalize our beliefs and assumptions about observational data through a &lt;em&gt;causal graph&lt;/em&gt;. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit. For example, we &lt;em&gt;assume&lt;/em&gt; that membership should influence churn, not that churn influences membership, and we encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we &lt;em&gt;assume&lt;/em&gt; these variables do not directly or indirectly affect churn or membership.&lt;/p&gt;
+&lt;p&gt;All of these assumptions can be examined. If we assume that the age of our customer has an effect on churn, we can stratify our customers by age (i.e,., 20-29, 30-39) and test if churn rates differ between age groups. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the outcome.&lt;/p&gt;
+&lt;p&gt;This is a contrived example, so we’ll keep things simple and formalize the main components of our analysis as follows:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Churn&lt;/strong&gt; - if a customer has made at least one purchase six months following the launch of our membership program. This is our outcome variable.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Membership&lt;/strong&gt; - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Brand Interest&lt;/strong&gt; - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total dollars spent over the past year, as a proxy for &lt;strong&gt;Brand Interest&lt;/strong&gt;. Our assumption is that customers who are more interested in the brand will spend more money. We also assume that this (partially) motivates enrollment in membership. Engaged customers will not only spend more but also be more interested in exclusive offers and discounts – a few benefits often provided to members – relative to customers that have historically spent less.&lt;/p&gt;
+&lt;p&gt;The image above was created via the &lt;a href=&#34;http://dagitty.net/&#34;&gt;daggity website&lt;/a&gt;, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from &lt;strong&gt;Interest in Brand&lt;/strong&gt; to &lt;strong&gt;Churn&lt;/strong&gt;. This addresses the issue of &lt;em&gt;selection bias&lt;/em&gt;, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias &lt;em&gt;strongly ignorable&lt;/em&gt;, similar to a randomized experiment.&lt;/p&gt;
+&lt;p&gt;Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally we have at least a few months to see what happens. Second, membership offers and the quality may change over time, just as the consumers relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.&lt;/p&gt;
+&lt;p&gt;Last, we want to time-bound the meaning of “historical spend”. Some customers may have spent a lot in the past but have not been active for several years. These customers have may have already churned, and we want to ensure that all customers in our sample have at least some chance of being exposed to the treatment. Thus, we could apply some simple logic to narrow our consideration set, such as “all customers that made at least one purchase 12 months prior to the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;estimating-the-effect-of-membership-on-churn&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Estimating the Effect of Membership on Churn&lt;/h3&gt;
+&lt;p&gt;Now that we have a solid conceptual foundation, let’s continue to work through our membership example by generating some contrived data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
+library(broom)
+library(rsample)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2021)
+# sample size
+n = 5000
+enrolled_in_membership &amp;lt;- c(rep(0, n), rep(1, n))
+membership_effect_size = 0.05
+churn_prob_non_member = 0.5
+churn_prob_member = churn_prob_non_member - membership_effect_size
+churned_member &amp;lt;- c(rbinom(n, 1, prob=churn_prob_non_member),
+                    rbinom(n, 1, prob=churn_prob_member))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In the code block above, we are saying that the effect size of membership on churn is 0.05, such that 50% of non-members will churn after six months, while only 45% of members will churn over the same time period. This establishes the effect size of membership on churn.&lt;/p&gt;
+&lt;p&gt;Next, we’ll define the historical differences in total spend via the &lt;code&gt;gamma&lt;/code&gt; distribution. The gamma distribution is useful for continuous data that is right-skewed and always positive. The two parameters - alpha (shape) and beta (rate) - determine the skew and how “stretched” the range of values are for the distribution, respectively. It also approximates aggregate spending patterns in the real-world, such that most consumers spend a little, while a few spend a lot. Let’s visualize what this looks like, under the assumption that members tend to spend more than non-members, after bringing all the data together.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape = 1
+rate_member &amp;lt;- 0.005
+rate_non_member &amp;lt;- rate_member + 0.005
+member_spend_hist &amp;lt;- rgamma(n=n, 
+                            shape=shape, 
+                            rate = rate_member)
+non_member_spend_hist &amp;lt;- rgamma(n=n, 
+                                shape=shape, 
+                                rate = rate_non_member)
+prior_spend = c(non_member_spend_hist, member_spend_hist)
+
+df &amp;lt;- tibble(member = enrolled_in_membership,
+             churned_member = churned_member,
+             prior_spend = prior_spend
+             )&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;spend_summary &amp;lt;- df %&amp;gt;% 
+  group_by(member) %&amp;gt;% 
+  summarise(avg_prior_spend = mean(prior_spend))
+
+df %&amp;gt;% 
+  inner_join(spend_summary) %&amp;gt;% 
+  mutate(member = as.factor(member)) %&amp;gt;% 
+  ggplot(aes(prior_spend, fill = member)) + 
+  geom_histogram(alpha = 0.75) + 
+  geom_vline(data = spend_summary, aes(xintercept = avg_prior_spend),
+             size = 2, lty = 4, alpha = 0.5) + 
+  facet_grid(member ~ .) + 
+  theme_bw() + 
+  scale_x_continuous(labels = scales::dollar_format(),
+                     breaks = seq(0, 2000, 100)
+                     ) + 
+  labs(x = &amp;#39;Total Previous Spend&amp;#39;) + 
+  theme(legend.position = &amp;quot;top&amp;quot;,
+    axis.text.x = element_text(size = 12, angle = 90),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    strip.text.y = element_text(size = 14)
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;On average, members spent ~$100 more relative to non-members. This is a simple yet effective way for validating our initial assumption that members exhibit different behavior than non-members.&lt;/p&gt;
+&lt;p&gt;Next, we’ll establish the relationship between historical spend and churn. Let’s create five bins and assign a probability of churn within each bin, such that higher bins (i.e., the top 20% of spenders) have a lower probability of churning relative to lower bins (i.e., the bottom 20% of spenders). We’ll then create the joint effect of treatment (membership) and our single covariate (prior spend) on our outcome (churned).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;churn_simulator &amp;lt;- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.5))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.4))
+  } else if (bin == 3){
+    return(rbinom(1, 1, prob = 0.3))
+  } else if (bin == 4){
+    return(rbinom(1, 1, prob = 0.2))
+  } else {
+    return(rbinom(1, 1, prob = 0.1))
+  }
+}
+
+df &amp;lt;- df %&amp;gt;% 
+  mutate(bin = ntile(prior_spend, 5), 
+         churned_spend = map_int(bin, churn_simulator),
+         churned = ifelse(churned_member + churned_spend &amp;gt; 0, 1, 0)
+         )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can verify that our simulated relationship between churn and historical spend matches our expectations. Note we’ll scale our &lt;code&gt;prior_spend&lt;/code&gt; field to be per $100 dollars spent instead of per $1 dollar spent. This makes interpreting the resulting coefficient more intuitive.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;glm(churned ~ prior_spend, 
+    data = df %&amp;gt;% mutate(prior_spend = prior_spend / 100),
+    family = binomial()
+) %&amp;gt;% 
+  tidy(exponentiate = TRUE) %&amp;gt;% 
+  filter(term == &amp;#39;prior_spend&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 5
+##   term        estimate std.error statistic  p.value
+##   &amp;lt;chr&amp;gt;          &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;    &amp;lt;dbl&amp;gt;
+## 1 prior_spend    0.860    0.0129     -11.7 1.73e-31&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The estimated coefficient indicates that for each additional $100 of historical spend, the odds of churn decrease by ~14%. Now that we have verified the assumed relationships between our variables, we’ll generate propensity scores an in effort to create more “balance” between our control and treatment groups.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;propensity-scores&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Propensity Scores&lt;/h3&gt;
+&lt;p&gt;The most common approaches for creating comparison groups are (1) &lt;em&gt;propensity score matching&lt;/em&gt; and (2) &lt;em&gt;inverse probability of treatment weighting (IPTW)&lt;/em&gt;. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If the groups are different sizes, the number of non-treated observations are reduced to the size of the treated condition, as each treated observation is matched with a single non-treated observation. In contrast, weighting includes all observations but places &lt;em&gt;more weight&lt;/em&gt; on observations with a high propensity scores and less weight on observations with low propensity scores.&lt;/p&gt;
+&lt;p&gt;This post will use weighting. While both approaches may yield similar results, I prefer weighting because you are not discarding data. Our simulated data does not suffer from an imbalance, but in most real-world situations you’ll have a lot fewer observations in your treatment group relative to your control group. Additionally, the quality of your matching will depend mostly on how well you’ve specified your model and accounted for unobserved covariates.&lt;/p&gt;
+&lt;p&gt;With that in mind, we’ll specify our model for generating propensity scores.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify model for estimating P(treatment | prior_spend)
+model_spec &amp;lt;- as.formula(member ~ prior_spend)
+member_model &amp;lt;- glm(model_spec, data = df, family = binomial())
+member_prop_df &amp;lt;- member_model %&amp;gt;% 
+  augment(type.predict = &amp;#39;response&amp;#39;, data = df) %&amp;gt;% 
+  select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
+  mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;A few things to note now we’ve generated our propensity scores. First, we used logistic regression as a way to estimate membership probability. However, any classification model can be used to generate a score. If you suspect non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.
+Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;iptw_pct_99 &amp;lt;- quantile(member_prop_df %&amp;gt;% pull(iptw), 0.99)[[1]]
+member_prop_df &amp;lt;- member_prop_df %&amp;gt;% 
+  mutate(iptw = ifelse(iptw &amp;gt; iptw_pct_99, iptw_pct_99, iptw))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now that we’ve addressed some common pre-modeling isues, let’s generate an initial estimate of the effect of membership on churn.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_effect &amp;lt;- glm(churned ~ member,
+              data = member_prop_df,
+              family = binomial(),
+              weights = iptw
+              ) %&amp;gt;% 
+  tidy(exponentiate = TRUE) %&amp;gt;% 
+  filter(term == &amp;#39;member&amp;#39;) %&amp;gt;% 
+  pull(estimate)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;print(membership_effect)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.8870706&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Our initial estimate indicates that membership leads to a 11% reduction in churn, which in the real-world would be fairly significant effect! However, we are also interested in the uncertainty of our estimate; that is, what is best-case and worst-case of our effect size? The above-approach has been known to provide biased estimates of our standard error, which in turn results in confidence intervals that are too narrow. This means we over-confident in our ability to accurately estimate our causal effect.
+To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better capture the uncertainty in our estimate.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;member_fit_bootstrap &amp;lt;- function(split){
+  temp_df &amp;lt;- analysis(split)
+  temp_model &amp;lt;- glm(member ~ prior_spend,
+                    family = binomial(),
+                    data = temp_df
+                  )
+  temp_df &amp;lt;- temp_model %&amp;gt;% 
+    augment(type.predict = &amp;#39;response&amp;#39;, data = temp_df) %&amp;gt;% 
+    select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
+    mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))
+  temp_iptw_pct_99 &amp;lt;- quantile(temp_df %&amp;gt;% pull(iptw), 0.99)[[1]]
+  temp_df &amp;lt;- temp_df %&amp;gt;% 
+    mutate(iptw = ifelse(iptw &amp;gt; temp_iptw_pct_99, temp_iptw_pct_99, iptw))
+  temp_ret_df &amp;lt;- glm(churned ~ member,
+                data = temp_df,
+                family = binomial(),
+                weights = iptw) %&amp;gt;% 
+    tidy(exponentiate = TRUE)
+  
+  return(temp_ret_df)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;n_boot = 500
+boot_results &amp;lt;- bootstraps(df, n_boot, apparent = TRUE) %&amp;gt;% 
+  mutate(results = map(splits, member_fit_bootstrap))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;boot_results &amp;lt;- boot_results %&amp;gt;% 
+  select(-splits) %&amp;gt;% 
+  unnest(cols=results) %&amp;gt;% 
+  filter(term == &amp;#39;member&amp;#39;)
+
+boot_summary &amp;lt;- boot_results %&amp;gt;%
+  summarise(lb = quantile(estimate, 0.025),
+            mdn = quantile(estimate, 0.5),
+            ub = quantile(estimate, 0.975)
+            ) %&amp;gt;%
+  pivot_longer(everything())&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;lb_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;lb&amp;#39;) %&amp;gt;% pull(value)
+ub_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;ub&amp;#39;) %&amp;gt;% pull(value)
+effect_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;mdn&amp;#39;) %&amp;gt;% pull(value)
+boot_results %&amp;gt;% 
+  ggplot(aes(x=estimate)) + 
+  geom_histogram(fill = &amp;#39;orange&amp;#39;) + 
+  theme_bw() + 
+  geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=ub_est, xend = ub_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  annotate(geom=&amp;#39;text&amp;#39;, x=lb_est, y = 11, label = round(lb_est, 2), size = 8) + 
+  annotate(geom=&amp;#39;text&amp;#39;, x=effect_est, y = 11, label = round(effect_est, 2), size = 8) + 
+  annotate(geom=&amp;#39;text&amp;#39;, x=ub_est, y = 11, label = round(ub_est, 2), size = 8) + 
+  labs(x = &amp;#39;Estimated Treatment Effect&amp;#39;) + 
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14)
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Our final estimate is that membership reduces the odds customer churn by somewhere between 0.04 and 0.18. confidence intervals aren’t actually that much different from those in the original model. The primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. Again, in real data sets, the confidence intervals following bootstrapping will typically be wider than those provided by OLS.&lt;/p&gt;
+&lt;p&gt;Hopefully this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that comes in handy when you are able to run a true a/b test. Until then, happy experimenting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
@@ -3810,6 +3952,47 @@ for year in game_years:
         
 quarterback_data.columns = [&amp;quot;year&amp;quot;, &amp;quot;week&amp;quot;, &amp;quot;player&amp;quot;, &amp;quot;touchdowns&amp;quot;, &amp;quot;passing_yds&amp;quot;]
 quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>running_alert_aws_lambda</title>
+      <link>/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</guid>
+      <description>
+
+
+&lt;p&gt;AWS solves one of the biggest problems within analytics: The Last Mile. This is basically “I developed something that works locally or in a cloud-based Sandbox environment” to “This is going to be accessible to others in the real-world”. The key about analytics is that value is only realized in the second stage, yet very little time is spent on it. Thus, the goal of this to highlight an AWS service that I’ve found to have many helpful applications - Lambda - through an real-life use-case.&lt;/p&gt;
+&lt;div id=&#34;why-i-dont-plan-a-run-on-weather-forecasts&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Why I don’t plan a run on weather forecasts&lt;/h3&gt;
+&lt;/div&gt;
+&lt;div id=&#34;part-1&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Part 1:&lt;/h3&gt;
+&lt;/div&gt;
+&lt;div id=&#34;configuring-environment&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Configuring Environment&lt;/h3&gt;
+&lt;p&gt;Functions -&amp;gt; Configuration -&amp;gt; Environment Variables
+“use image add_environment_variables”&lt;/p&gt;
+&lt;p&gt;Change how long you want the lambda to run for. 3 seconds is very fast. If you are accessing an API you’ll likely need longer :)&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;adding-layers&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Adding Layers&lt;/h3&gt;
+&lt;p&gt;here is how you do it&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;adding-permissions&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Adding Permissions&lt;/h3&gt;
+&lt;p&gt;Configuration -&amp;gt; Execution Role -&amp;gt; Permissions -&amp;gt; Attach Policies
+* AmazonS3FullAccess - allows lambda to access S3
+* AmazonSES FullAccess - allows lambda to send emails&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;creating-an-s3-bucket-to-land-data&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Creating an S3 Bucket to land data&lt;/h3&gt;
+&lt;/div&gt;
+&lt;div id=&#34;setting-up-triggers&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Setting up Triggers&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;arn:aws:sts::371410071971:assumed-role/time-to-run/SendRunningEmail&#39; is not authorized to perform&lt;/code&gt;ses:SendEmail’&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
