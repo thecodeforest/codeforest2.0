@@ -132,3 +132,4 @@ dmypy.json
 # data science 
 *.ipynb
 *.DS_STORE
+.DS_Store
