@@ -2,25 +2,25 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Fantasy Football | The Code Forest</title>
-    <link>/category/fantasy-football/</link>
-      <atom:link href="/category/fantasy-football/index.xml" rel="self" type="application/rss+xml" />
+    <link>http://example.org/category/fantasy-football/</link>
+      <atom:link href="http://example.org/category/fantasy-football/index.xml" rel="self" type="application/rss+xml" />
     <description>Fantasy Football</description>
     <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Mon, 26 Aug 2019 21:13:14 -0500</lastBuildDate>
     <image>
-      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
       <title>Fantasy Football</title>
-      <link>/category/fantasy-football/</link>
+      <link>http://example.org/category/fantasy-football/</link>
     </image>
     
     <item>
       <title>Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</title>
-      <link>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
+      <link>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
       <pubDate>Mon, 26 Aug 2019 21:13:14 -0500</pubDate>
-      <guid>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
+      <guid>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;In less than two weeks, Fantasy Football will once again resume for the 2019 NFL season! While I’m looking forward to the impending draft, the start of the season brings back memories of a not-so-distant loss that left me one game shy of the championship. The loss stemmed from a missed field goal, leaving my team two points shy of victory. Of course, a myriad of factors beyond that missed field goal contributed to my fantasy demise, but those two points reinvigorated a question I’ve wondered about for the past few years: Why are kickers drafted in the last round?&lt;/p&gt;
@@ -564,7 +564,7 @@ glimpse(stats_raw)&lt;/code&gt;&lt;/pre&gt;
        y = &amp;#39;Distance (Yards)&amp;#39;
        ) + 
     theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Looks good! Each point represents the field goal percentage for a player-season-distance combination. As the distance increases, the make rate gradually shifts to left, which is exactly what we’d expect. We’ll do a bit more cleaning below before proceeding.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed &amp;lt;- 
   stats_raw %&amp;gt;%
@@ -1069,7 +1069,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
        title = &amp;#39;Estimated field goal percentage amongst active NFL kickers&amp;#39;,
        subtitle = &amp;#39;Black dot represents estimate while red dot is actual. Note the bias in our estimates.&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Let’s talk through this figure by comparing the field goal percentage estimates for Adam Vinatieri, who has made 530 of 629 fields goals throughout his career, to Chris Boswell, who has made 50 of 57 field goals. While Vinatieri has a lower actual make rate than Boswell (84.2% vs. 87.7%), we consider him to be a better field goal kicker. The seemingly incongruent finding is based on the fact that we have more evidence for Vinatieri (629 FG attempts vs. 57 FG attempts) than Boswell. It’s like saying, “Chris Boswell is good kicker, maybe better than Vinatieri, but we don’t have enough evidence (yet) to believe he is that much better than an average kicker, a number represented by our prior”. Indeed, if we also consider the width of the credible intervals surrounding these two players, Adam Vinatieri’s interval is considerably smaller than Chris Boswell’s interval.&lt;/p&gt;
 &lt;p&gt;While this is a good way to gain an intuition for what’s happening under the hood, we see an immediate problem – all of our estimates are biased! The actual field goal percentage is above every single estimate. Luckily, there is a solution: we can create conditional estimates of our prior. One way to do this is to create features that explain variability between our players. For example, &lt;a href=&#34;https://fivethirtyeight.com/features/kickers-are-forever/&#34;&gt;field goal percentages have improved dramatically over the past 50 years&lt;/a&gt;. Let’s consider our own data and map out this pattern from the 1970s to the 2010s.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -1086,7 +1086,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
     y = &amp;quot;Field Goal Percentage&amp;quot;,
     title = &amp;#39;Kicker performance has improved over time&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
 The best kicker in 1970s has a lower field goal percentage than the worst kicker in the 2010s. Including the decade of a kicker’s rookie season allows us to create a more informed prior. Thus, if we use the median field goal percentage of all kickers who debuted as rookies in 2010+, our best guess would be about 84%, whereas a kicker who debuted in the 1970s would be somewhere around 64%. This explains why the estimates from our null model were biased.&lt;/p&gt;
 &lt;p&gt;The second factor to consider is the number of field goal attempts per player, because better players have more opportunities to kick field goals. This makes intuitive sense and is captured in the following plot.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -1100,7 +1100,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
     y = &amp;quot;Field Goal percentage&amp;quot;,
     title = &amp;quot;Better kickers have more opportunities&amp;quot;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Below we’ll use the same model except this time we’ll account for the number of field goal attempts and a player’s rookie decade.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_complete &amp;lt;- 
   gamlss(cbind(fg_made, fg_attempted - fg_made) ~ log2(fg_attempted) + rookie_decade,
@@ -1112,7 +1112,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
 ## GAMLSS-RS iteration 3: Global Deviance = 668.3708 
 ## GAMLSS-RS iteration 4: Global Deviance = 668.1839 
 ## GAMLSS-RS iteration 5: Global Deviance = 668.1838&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
 Much better! Our estimates do not exhibit the same degree of bias as before. Moreover, the width of our credible intervals shrank across all players. This makes sense, given that we can now condition our prior estimates on inputs that explain variability in the field goal percentage. While there are other factors that might improve our model (e.g., did a player’s team have their home games in a dome?), this is a good starting point for answering our original question.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;from-parameters-to-points&#34; class=&#34;section level3&#34;&gt;
@@ -1190,7 +1190,7 @@ names(est_outcomes) &amp;lt;- est_active$name&lt;/code&gt;&lt;/pre&gt;
        subtitle = &amp;#39;Drafing any kicker is fine&amp;#39;
        ) + 
   theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Wait! We went all this way for you to tell me that the status quo is probably right? Yes, I did. But we still haven’t quantified how much better or worse drafting the best or worst kicker is in terms of fantasy points. A simple way is to count the number of seasons where Justin Tucker (the best kicker) scored more points than Andrew Franks (the worst kicker).&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;jt_pts &amp;lt;- 
   pt_simulation %&amp;gt;% 
@@ -1220,7 +1220,7 @@ print(str_glue(&amp;#39;PCT greater: {pct_greater * 100}%&amp;#39;))&lt;/code&gt
        title = &amp;#39;The best kicker should score about 10 more points per season compared to the worst&amp;#39;,
        subtitle = &amp;#39;Estimate based on 27 FG attempts per season with each FG worth 3.5 points&amp;#39;
        )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
 If we spread this estimate out across 16 regular-season games, it comes out to less than a single point per game.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;conclusion&#34; class=&#34;section level3&#34;&gt;
@@ -1232,13 +1232,13 @@ If we spread this estimate out across 16 regular-season games, it comes out to l
     
     <item>
       <title>Choosing a Fantasy Football Quarterback</title>
-      <link>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
+      <link>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
       <pubDate>Sun, 10 Sep 2017 21:13:14 -0500</pubDate>
-      <guid>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
+      <guid>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Understanding a new concept is all about connecting it with something you already know. I don’t know much, but I do know Fantasy Football. Thus, when I come across new concepts, I often think to myself, “How can I use this information to beat my friend Steve in Fantasy Football”? This very question was the impetus for putting these words and figures together in a post, which will introduce the idea of using the Beta Distribution to determine your weekly starter. I’ll explain this approach in the context of my 2015 Fantasy Football season.&lt;/p&gt;

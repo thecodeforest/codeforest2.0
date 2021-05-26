@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Mark LeBoeuf | The Code Forest</title>
-    <link>/author/mark-leboeuf/</link>
-      <atom:link href="/author/mark-leboeuf/index.xml" rel="self" type="application/rss+xml" />
+    <link>http://example.org/author/mark-leboeuf/</link>
+      <atom:link href="http://example.org/author/mark-leboeuf/index.xml" rel="self" type="application/rss+xml" />
     <description>Mark LeBoeuf</description>
     <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Sun, 07 Apr 2019 00:00:00 +0000</lastBuildDate>
     <image>
-      <url>/author/mark-leboeuf/avatar_hu95484a0837f0832a1e8242074628a955_46074_270x270_fill_q75_lanczos_center.jpg</url>
+      <url>http://example.org/author/mark-leboeuf/avatar_hu95484a0837f0832a1e8242074628a955_46074_270x270_fill_q75_lanczos_center.jpg</url>
       <title>Mark LeBoeuf</title>
-      <link>/author/mark-leboeuf/</link>
+      <link>http://example.org/author/mark-leboeuf/</link>
     </image>
     
     <item>
       <title>An example preprint / working paper</title>
-      <link>/publication/preprint/</link>
+      <link>http://example.org/publication/preprint/</link>
       <pubDate>Sun, 07 Apr 2019 00:00:00 +0000</pubDate>
-      <guid>/publication/preprint/</guid>
+      <guid>http://example.org/publication/preprint/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Create your slides in Markdown - click the &lt;em&gt;Slides&lt;/em&gt; button to check out the example.
@@ -28,9 +28,9 @@
     
     <item>
       <title>An example journal article</title>
-      <link>/publication/journal-article/</link>
+      <link>http://example.org/publication/journal-article/</link>
       <pubDate>Tue, 01 Sep 2015 00:00:00 +0000</pubDate>
-      <guid>/publication/journal-article/</guid>
+      <guid>http://example.org/publication/journal-article/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Click the &lt;em&gt;Cite&lt;/em&gt; button above to demo the feature to enable visitors to import publication metadata into their reference management software.
@@ -47,9 +47,9 @@
     
     <item>
       <title>An example conference paper</title>
-      <link>/publication/conference-paper/</link>
+      <link>http://example.org/publication/conference-paper/</link>
       <pubDate>Mon, 01 Jul 2013 00:00:00 +0000</pubDate>
-      <guid>/publication/conference-paper/</guid>
+      <guid>http://example.org/publication/conference-paper/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Click the &lt;em&gt;Cite&lt;/em&gt; button above to demo the feature to enable visitors to import publication metadata into their reference management software.

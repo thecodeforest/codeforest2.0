@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>The Code Forest</title>
-    <link>/</link>
-      <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <link>http://example.org/</link>
+      <atom:link href="http://example.org/index.xml" rel="self" type="application/rss+xml" />
     <description>The Code Forest</description>
     <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Sat, 01 Jun 2030 13:00:00 +0000</lastBuildDate>
     <image>
-      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
       <title>The Code Forest</title>
-      <link>/</link>
+      <link>http://example.org/</link>
     </image>
     
     <item>
       <title>Python basics</title>
-      <link>/courses/example/python/</link>
+      <link>http://example.org/courses/example/python/</link>
       <pubDate>Fri, 01 Jan 2021 00:00:00 +0000</pubDate>
-      <guid>/courses/example/python/</guid>
+      <guid>http://example.org/courses/example/python/</guid>
       <description>&lt;p&gt;Build a foundation in Python.&lt;/p&gt;
 &lt;p&gt;
   &lt;i class=&#34;fas fa-clock  pr-1 fa-fw&#34;&gt;&lt;/i&gt; 1-2 hours per week, for 8 weeks&lt;/p&gt;
@@ -51,9 +51,9 @@
     
     <item>
       <title>Visualization</title>
-      <link>/courses/example/visualization/</link>
+      <link>http://example.org/courses/example/visualization/</link>
       <pubDate>Fri, 01 Jan 2021 00:00:00 +0000</pubDate>
-      <guid>/courses/example/visualization/</guid>
+      <guid>http://example.org/courses/example/visualization/</guid>
       <description>&lt;p&gt;Learn how to visualize data with Plotly.&lt;/p&gt;
 &lt;p&gt;
   &lt;i class=&#34;fas fa-clock  pr-1 fa-fw&#34;&gt;&lt;/i&gt; 1-2 hours per week, for 8 weeks&lt;/p&gt;
@@ -81,9 +81,9 @@ fig.show()
     
     <item>
       <title>Statistics</title>
-      <link>/courses/example/stats/</link>
+      <link>http://example.org/courses/example/stats/</link>
       <pubDate>Fri, 01 Jan 2021 00:00:00 +0000</pubDate>
-      <guid>/courses/example/stats/</guid>
+      <guid>http://example.org/courses/example/stats/</guid>
       <description>&lt;p&gt;Introduction to statistics for data science.&lt;/p&gt;
 &lt;p&gt;
   &lt;i class=&#34;fas fa-clock  pr-1 fa-fw&#34;&gt;&lt;/i&gt; 1-2 hours per week, for 8 weeks&lt;/p&gt;
@@ -109,9 +109,9 @@ The variance of the distribution is $\sigma^{2}$.
     
     <item>
       <title>Example Talk</title>
-      <link>/talk/example-talk/</link>
+      <link>http://example.org/talk/example-talk/</link>
       <pubDate>Sat, 01 Jun 2030 13:00:00 +0000</pubDate>
-      <guid>/talk/example-talk/</guid>
+      <guid>http://example.org/talk/example-talk/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Click on the &lt;strong&gt;Slides&lt;/strong&gt; button above to view the built-in slides feature.
@@ -129,13 +129,13 @@ The variance of the distribution is $\sigma^{2}$.
     
     <item>
       <title>Scalable Time-Series Forecasting in Python</title>
-      <link>/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</link>
+      <link>http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</link>
       <pubDate>Mon, 29 Mar 2021 21:13:14 -0500</pubDate>
-      <guid>/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</guid>
+      <guid>http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/header_image.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/header_image.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel.&lt;/p&gt;
@@ -143,9 +143,9 @@ The variance of the distribution is $\sigma^{2}$.
 &lt;div id=&#34;getting-started&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Getting Started&lt;/h3&gt;
 &lt;p&gt;We’ll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast&#34;&gt;Codeforest Repository&lt;/a&gt;. Before diving into the details, let’s briefly review the key modules and files.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;300&#34; height=&#34;75&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;300&#34; height=&#34;75&#34; /&gt;
 &lt;strong&gt;conf.json&lt;/strong&gt; - A configuration file that defines various parameters for our job. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
-&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/config_file.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
+&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/config_file.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
 &lt;strong&gt;pyspark_fcast.py&lt;/strong&gt; - Our main module, or where the forecasting gets done. We’ll cover this in detail below.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;fcast_data_frame.py&lt;/strong&gt; - A class responsible for common pre-forecasting data transformations. These include filling in missing values, filtering time-series with only a few observations, or log transforming our outcome variable. Visit &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/blob/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast/fcast_helpers/fcast_data_frame.py&#34;&gt;here&lt;/a&gt; for access to all methods.&lt;/p&gt;
 &lt;p&gt;You’ll also need to import the following packages to follow along with the tutorial.&lt;/p&gt;
@@ -2570,7 +2570,7 @@ fcast_df %&amp;gt;%
         strip.text.y = element_text(size = 12),
         plot.title = element_text(size = 14)
         )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-25-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-25-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
@@ -2578,90 +2578,94 @@ fcast_df %&amp;gt;%
     
     <item>
       <title>Causal Inference with Propensity Scores</title>
-      <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
+      <link>http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/</link>
       <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
-      <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
+      <guid>http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Causal inference attempts to answer “what-if” questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention – a change in wages or a targeted marketing campaign – on an outcome – increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of &lt;em&gt;prescriptive&lt;/em&gt; analytics and can inform decision-making in the face of multiple possible actions.&lt;/p&gt;
-&lt;p&gt;However, most analytics efforts are applied to either &lt;em&gt;describing&lt;/em&gt; or &lt;em&gt;predicting&lt;/em&gt; an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to &lt;em&gt;describe&lt;/em&gt; how sales of cheese have changed over the past year. Or perhaps you want to &lt;em&gt;predict&lt;/em&gt; how much cheese will sell over the next 12 months. Descriptive analytics highlights if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. In contrast, predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). Note that none of these applications provide insight about the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.&lt;/p&gt;
-&lt;p&gt;Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real-world to guide decision-making.&lt;/p&gt;
+&lt;p&gt;However, most analytics efforts are applied to either &lt;em&gt;describing&lt;/em&gt; or &lt;em&gt;predicting&lt;/em&gt; an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to &lt;em&gt;describe&lt;/em&gt; how sales of cheese have changed over the past year. Or perhaps you want to &lt;em&gt;predict&lt;/em&gt; how much cheese will sell over the next 12 months. Descriptive analytics can reveal if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. Predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). While all of the applications can provide valuable answers to different questions, none can provide insight into the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.&lt;/p&gt;
+&lt;p&gt;Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;causal-inference-propensity-scores&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Causal Inference &amp;amp; Propensity Scores&lt;/h3&gt;
 &lt;p&gt;When people hear the words “causal inference”, they often think “A/B Test”. Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.&lt;/p&gt;
-&lt;p&gt;While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on customer retention, you cannot assign customers to be a member or non-member; customers choose to enroll in the program under their own volition. Further, customers who chose to enroll as members are probably more interested in the product than those who chose not to enroll. This fact “confounds” the relationship between the effect of our member program on retention.&lt;/p&gt;
-&lt;p&gt;Propensity score matching attempts to address this issue, known as &lt;em&gt;selection bias&lt;/em&gt;, by adjusting for factors that relate both to the treatment and outcome. A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score would indicate the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of churning.&lt;/p&gt;
-&lt;p&gt;Each individual in our sample would receive a propensity score. The score is a single number that attempts to capture all factors that contribute to churn that aren’t related to membership but have an effect on our outcome variable. Such factors are known as &lt;em&gt;latent variables&lt;/em&gt; and could include prior spend, willingness to provide personal information, or how long the individual has been a customer. Formalizing how these variables relate to one another is the topic of the next section.&lt;/p&gt;
+&lt;p&gt;While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on future purchasing behavior, you cannot assign customers to be a member or non-member; customers would enroll in the program under their own volition. Further, customers who enrolled as members are probably more interested in the product than those who did not enroll. This fact “confounds” the relationship between the effect of our member program on purchasing behavior.&lt;/p&gt;
+&lt;p&gt;Propensity score matching attempts to address this issue, known as &lt;em&gt;selection bias&lt;/em&gt;, by adjusting for factors that relate both to the treatment and outcome (i.e., confounding variables). A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score indicates the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of making a future purchase. Formalizing the roles of individual variables that increase/decrease membership enrollment and their interrelations is the topic of the next section.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;causal-graphs&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Causal Graphs&lt;/h3&gt;
-&lt;p&gt;We can formalize our beliefs and assumptions about observational data through a &lt;em&gt;causal graph&lt;/em&gt;. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit. For example, we &lt;em&gt;assume&lt;/em&gt; that membership should influence churn, not that churn influences membership, and we encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we &lt;em&gt;assume&lt;/em&gt; these variables do not directly or indirectly affect churn or membership.&lt;/p&gt;
-&lt;p&gt;All of these assumptions can be examined. If we assume that the age of our customer has an effect on churn, we can stratify our customers by age (i.e,., 20-29, 30-39) and test if churn rates differ between age groups. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the outcome.&lt;/p&gt;
+&lt;p&gt;We can codify our beliefs and assumptions about observational data through a &lt;em&gt;causal graph&lt;/em&gt;. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit.&lt;/p&gt;
+&lt;p&gt;In the context of the current example, we assume that a customer in enrolling as a member influences future purchase behavior, not that future purchase behavior influences enrollment in membership. We can then encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we assume these variables do not directly or indirectly affect purchase frequency or membership.&lt;/p&gt;
+&lt;p&gt;These assumptions can and should be verified. If we believe a customer’s age affects purchase frequency and membership enrollment, we can stratify our customers by age (i.e,., 20-29, 30-39) and test both hypotheses. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the treatment and outcome.&lt;/p&gt;
 &lt;p&gt;This is a contrived example, so we’ll keep things simple and formalize the main components of our analysis as follows:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Churn&lt;/strong&gt; - if a customer has made at least one purchase six months following the launch of our membership program. This is our outcome variable.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Purchase Frequency&lt;/strong&gt; - the total number of purchases six months following the launch of our membership program. This is our outcome variable.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Membership&lt;/strong&gt; - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Brand Interest&lt;/strong&gt; - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total dollars spent over the past year, as a proxy for &lt;strong&gt;Brand Interest&lt;/strong&gt;. Our assumption is that customers who are more interested in the brand will spend more money. We also assume that this (partially) motivates enrollment in membership. Engaged customers will not only spend more but also be more interested in exclusive offers and discounts – a few benefits often provided to members – relative to customers that have historically spent less.&lt;/p&gt;
-&lt;p&gt;The image above was created via the &lt;a href=&#34;http://dagitty.net/&#34;&gt;daggity website&lt;/a&gt;, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from &lt;strong&gt;Interest in Brand&lt;/strong&gt; to &lt;strong&gt;Churn&lt;/strong&gt;. This addresses the issue of &lt;em&gt;selection bias&lt;/em&gt;, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias &lt;em&gt;strongly ignorable&lt;/em&gt;, similar to a randomized experiment.&lt;/p&gt;
-&lt;p&gt;Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally we have at least a few months to see what happens. Second, membership offers and the quality may change over time, just as the consumers relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.&lt;/p&gt;
-&lt;p&gt;Last, we want to time-bound the meaning of “historical spend”. Some customers may have spent a lot in the past but have not been active for several years. These customers have may have already churned, and we want to ensure that all customers in our sample have at least some chance of being exposed to the treatment. Thus, we could apply some simple logic to narrow our consideration set, such as “all customers that made at least one purchase 12 months prior to the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Engagement&lt;/strong&gt; - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total number of purchases in the six months before the launch of the membership program. This variable will serve as a proxy for Engagement. We assume that customers who have made more purchases in the past six months will be inclined to make more purchases in the future – that is, more engaged in the past translates into more engaged in the future. We also assume that this (partially) motivates membership enrollment. Engaged customers will not only purchase more frequently but also be more interested in exclusive offers and discounts – a few benefits provided to members – relative to customers that have historically purchased infrequently.&lt;/p&gt;
+&lt;p&gt;The image above was created via the &lt;a href=&#34;http://dagitty.net/&#34;&gt;daggity website&lt;/a&gt;, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from &lt;strong&gt;Engagement&lt;/strong&gt; to &lt;strong&gt;Purchase Frequency&lt;/strong&gt;. This addresses the issue of &lt;em&gt;selection bias&lt;/em&gt;, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias &lt;em&gt;strongly ignorable&lt;/em&gt;, similar to a randomized experiment.&lt;/p&gt;
+&lt;p&gt;Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally a few months have elapsed so we can see what happens. Second, membership offers and the quality may change over time, just as the consumer’s relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.&lt;/p&gt;
+&lt;p&gt;Last, we want to time-bound prior purchase history. Some customers may have frequently purchased in the past but have not been active for several years (or churned completely). We want to ensure that all customers in our sample have a chance of being exposed to the treatment. Thus, we could apply simple logic to narrow our consideration set, such as “all customers that have engaged with the brand in some capacity (e.g., made a purchase, browsed the website, or opened a marketing communication) since the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;estimating-the-effect-of-membership-on-churn&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Estimating the Effect of Membership on Churn&lt;/h3&gt;
+&lt;div id=&#34;estimating-the-effect-of-membership-on-purchase-frequency&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Estimating the Effect of Membership on Purchase Frequency&lt;/h3&gt;
 &lt;p&gt;Now that we have a solid conceptual foundation, let’s continue to work through our membership example by generating some contrived data.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
 library(broom)
-library(rsample)&lt;/code&gt;&lt;/pre&gt;
+library(rsample)
+library(janitor)
+# set base theme as black &amp;amp; white
+theme_set(theme_bw())&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2021)
-# sample size
+# sample size of members and non-members
 n = 5000
-enrolled_in_membership &amp;lt;- c(rep(0, n), rep(1, n))
-membership_effect_size = 0.05
-churn_prob_non_member = 0.5
-churn_prob_member = churn_prob_non_member - membership_effect_size
-churned_member &amp;lt;- c(rbinom(n, 1, prob=churn_prob_non_member),
-                    rbinom(n, 1, prob=churn_prob_member))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;In the code block above, we are saying that the effect size of membership on churn is 0.05, such that 50% of non-members will churn after six months, while only 45% of members will churn over the same time period. This establishes the effect size of membership on churn.&lt;/p&gt;
-&lt;p&gt;Next, we’ll define the historical differences in total spend via the &lt;code&gt;gamma&lt;/code&gt; distribution. The gamma distribution is useful for continuous data that is right-skewed and always positive. The two parameters - alpha (shape) and beta (rate) - determine the skew and how “stretched” the range of values are for the distribution, respectively. It also approximates aggregate spending patterns in the real-world, such that most consumers spend a little, while a few spend a lot. Let’s visualize what this looks like, under the assumption that members tend to spend more than non-members, after bringing all the data together.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape = 1
-rate_member &amp;lt;- 0.005
-rate_non_member &amp;lt;- rate_member + 0.005
-member_spend_hist &amp;lt;- rgamma(n=n, 
-                            shape=shape, 
-                            rate = rate_member)
-non_member_spend_hist &amp;lt;- rgamma(n=n, 
-                                shape=shape, 
-                                rate = rate_non_member)
-prior_spend = c(non_member_spend_hist, member_spend_hist)
+# expected purchase frequency
+base_lambda = .75
+# purchase frequency effect size for &amp;quot;more engaged&amp;quot; customers 
+engagement_effect_size = .25
 
-df &amp;lt;- tibble(member = enrolled_in_membership,
-             churned_member = churned_member,
-             prior_spend = prior_spend
-             )&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;spend_summary &amp;lt;- df %&amp;gt;% 
-  group_by(member) %&amp;gt;% 
-  summarise(avg_prior_spend = mean(prior_spend))
+less_engaged = rpois(n=n, lambda = base_lambda)
+more_engaged = rpois(n=n, lambda = base_lambda + engagement_effect_size)
+# create tibble with number of previous purchases for each customer
+purchase_df &amp;lt;- tibble(n_purchase_pre = c(less_engaged, more_engaged))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In the code block above, we expect “less engaged” customers to make 0.75 purchases (on average) over six months, and “more engaged” customers to make one purchase over the same period. The difference in purchase frequency between our customer types is ascribed to our latent variable of Engagement. We assume the data generating process for historical purchase frequency can be represented by the Poisson distribution. Recall that the Poisson distribution models the number of events expected to occur within a given period. It also approximates consumer purchase frequency patterns in the real world, such that most customers make a small number of purchases, while a few customers make a large number of purchases.&lt;/p&gt;
+&lt;p&gt;We established our expected purchase frequency and engagement effect size above,so let’s simulate the effect of Engagement on Membership. We’ll create three bins and assign a probability of enrolling as a member within each bin, such that higher bins (i.e., the top 33% of customers) have a higher probability of enrolling relative to lower bins (i.e., the bottom 33% of customers).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_sim &amp;lt;- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.2))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.3))
+  } else {
+    return(rbinom(1, 1, prob = 0.4))
+  }
+}
 
-df %&amp;gt;% 
-  inner_join(spend_summary) %&amp;gt;% 
-  mutate(member = as.factor(member)) %&amp;gt;% 
-  ggplot(aes(prior_spend, fill = member)) + 
-  geom_histogram(alpha = 0.75) + 
-  geom_vline(data = spend_summary, aes(xintercept = avg_prior_spend),
-             size = 2, lty = 4, alpha = 0.5) + 
-  facet_grid(member ~ .) + 
+purchase_df &amp;lt;- purchase_df %&amp;gt;% 
+  mutate(bin = ntile(n_purchase_pre, 3),
+         member_enrolled = map_int(bin, membership_sim)
+         ) %&amp;gt;% 
+  select(-bin)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;While we know the true effect size (given that we generated the numbers), let’s verify the assumption that our proxy for engagement (Prior Purchases) exhibits the hypothesized effect on membership.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;purchase_df %&amp;gt;% 
+  mutate(n_purchase_pre = fct_lump(as.factor(n_purchase_pre), 
+                                   n=2,
+                                   other_level = &amp;#39;2 or More&amp;#39;
+                                   )) %&amp;gt;% 
+  group_by(n_purchase_pre) %&amp;gt;% 
+  summarise(pct_member = mean(member_enrolled)) %&amp;gt;% 
+  ggplot(aes(n_purchase_pre, pct_member)) + 
   theme_bw() + 
-  scale_x_continuous(labels = scales::dollar_format(),
-                     breaks = seq(0, 2000, 100)
-                     ) + 
-  labs(x = &amp;#39;Total Previous Spend&amp;#39;) + 
-  theme(legend.position = &amp;quot;top&amp;quot;,
-    axis.text.x = element_text(size = 12, angle = 90),
+  geom_col() + 
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  labs(x = &amp;#39;N Prior Purchases&amp;#39;,
+       y = &amp;#39;Percent Enrolled as Members&amp;#39;
+       ) + 
+  theme(axis.text.x = element_text(size = 12, angle = 90),
     axis.text.y = element_text(size = 14),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
@@ -2669,113 +2673,178 @@ df %&amp;gt;%
     legend.title = element_text(size = 16),
     strip.text.y = element_text(size = 14)
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;On average, members spent ~$100 more relative to non-members. This is a simple yet effective way for validating our initial assumption that members exhibit different behavior than non-members.&lt;/p&gt;
-&lt;p&gt;Next, we’ll establish the relationship between historical spend and churn. Let’s create five bins and assign a probability of churn within each bin, such that higher bins (i.e., the top 20% of spenders) have a lower probability of churning relative to lower bins (i.e., the bottom 20% of spenders). We’ll then create the joint effect of treatment (membership) and our single covariate (prior spend) on our outcome (churned).&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;churn_simulator &amp;lt;- function(bin){
-  if(bin == 1){
-    return(rbinom(1, 1, prob = 0.5))
-  } else if (bin == 2){
-    return(rbinom(1, 1, prob = 0.4))
-  } else if (bin == 3){
-    return(rbinom(1, 1, prob = 0.3))
-  } else if (bin == 4){
-    return(rbinom(1, 1, prob = 0.2))
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Now that we have validated the relationship between these variables, we’ll create the joint effect of treatment (Membership) and our single covariate (Engagement) on our outcome (Purchase Frequency).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;purchase_sim &amp;lt;- function(n_purchase_pre, member_enrolled){
+  membership_effect_size = .1
+  if(member_enrolled == 1){
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre + membership_effect_size)
+    return(post_purchase_freq)
   } else {
-    return(rbinom(1, 1, prob = 0.1))
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre)
+    return(post_purchase_freq)
   }
 }
 
-df &amp;lt;- df %&amp;gt;% 
-  mutate(bin = ntile(prior_spend, 5), 
-         churned_spend = map_int(bin, churn_simulator),
-         churned = ifelse(churned_member + churned_spend &amp;gt; 0, 1, 0)
+purchase_df &amp;lt;- purchase_df %&amp;gt;% 
+  mutate(n_purchase_post = map2_int(n_purchase_pre, 
+                                member_enrolled, 
+                                purchase_sim)
          )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We can verify that our simulated relationship between churn and historical spend matches our expectations. Note we’ll scale our &lt;code&gt;prior_spend&lt;/code&gt; field to be per $100 dollars spent instead of per $1 dollar spent. This makes interpreting the resulting coefficient more intuitive.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;glm(churned ~ prior_spend, 
-    data = df %&amp;gt;% mutate(prior_spend = prior_spend / 100),
-    family = binomial()
-) %&amp;gt;% 
-  tidy(exponentiate = TRUE) %&amp;gt;% 
-  filter(term == &amp;#39;prior_spend&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 5
-##   term        estimate std.error statistic  p.value
-##   &amp;lt;chr&amp;gt;          &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;    &amp;lt;dbl&amp;gt;
-## 1 prior_spend    0.860    0.0129     -11.7 1.73e-31&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The estimated coefficient indicates that for each additional $100 of historical spend, the odds of churn decrease by ~14%. Now that we have verified the assumed relationships between our variables, we’ll generate propensity scores an in effort to create more “balance” between our control and treatment groups.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;purchase_sim&lt;/code&gt; function accounts for the number of prior purchases as well as if the customer has enrolled as a member. If they have enrolled, the true effect size is .1, in that enrolling a customer as a member leads to .1 additional purchases (on average) during the six months.&lt;/p&gt;
+&lt;p&gt;Below, we’ll confirm that members have made more purchases relative to non-members.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;avg_purchase_freq &amp;lt;- purchase_df %&amp;gt;% 
+  group_by(member_enrolled) %&amp;gt;% 
+  summarise(avg_post_purchase = mean(n_purchase_post),
+            se = sqrt(mean(n_purchase_post) / n())
+            ) %&amp;gt;% 
+  mutate(is_member = str_to_title(ifelse(member_enrolled == 1, 
+                                         &amp;#39;member&amp;#39;, 
+                                         &amp;#39;non-member&amp;#39;)),
+         is_member = fct_reorder(is_member, avg_post_purchase),
+         lb = avg_post_purchase - 1.96 * se,
+         ub = avg_post_purchase + 1.96 * se
+         )
+
+avg_purchase_freq %&amp;gt;% 
+  ggplot(aes(is_member, avg_post_purchase, fill = is_member)) + 
+  geom_col(color = &amp;#39;black&amp;#39;) + 
+  geom_errorbar(aes(ymin = lb, ymax=ub), width=0.4) + 
+  coord_flip() + 
+  labs(x = NULL,
+       y = &amp;#39;Average Number of Purchases&amp;#39;,
+       fill = &amp;#39;Membership Status&amp;#39;
+  ) + 
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16),
+        legend.position = &amp;#39;top&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Indeed, this confirms that the data aligns with our expectations. We could reach the same conclusion by fitting a regression model and then considering the magnitude of the coefficient for membership.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;incorrect_fit &amp;lt;- glm(n_purchase_post ~ member_enrolled,
+                     data = purchase_df,
+                     family = &amp;quot;poisson&amp;quot;
+                     )
+
+incorrect_fit_coef &amp;lt;- tidy(incorrect_fit)
+
+intercept &amp;lt;- incorrect_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;(Intercept)&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+member_est &amp;lt;- incorrect_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;member_enrolled&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+effect_size_est &amp;lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&amp;#39;Estimated Difference: {effect_size_est}&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Estimated Difference: 0.402&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that if we did not adjust for any confounding variables, we would &lt;strong&gt;mistakenly conclude&lt;/strong&gt; that membership leads to ~.3 extra purchases per customer. That is, we would overestimate the effect size of membership on customer purchase behaviors because we know that Engagement affects both Membership and Purchase Frequency. In the following section, we’ll generate propensity scores to create more balance between our control and treatment groups on our confounding variables.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;propensity-scores&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Propensity Scores&lt;/h3&gt;
-&lt;p&gt;The most common approaches for creating comparison groups are (1) &lt;em&gt;propensity score matching&lt;/em&gt; and (2) &lt;em&gt;inverse probability of treatment weighting (IPTW)&lt;/em&gt;. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If the groups are different sizes, the number of non-treated observations are reduced to the size of the treated condition, as each treated observation is matched with a single non-treated observation. In contrast, weighting includes all observations but places &lt;em&gt;more weight&lt;/em&gt; on observations with a high propensity scores and less weight on observations with low propensity scores.&lt;/p&gt;
-&lt;p&gt;This post will use weighting. While both approaches may yield similar results, I prefer weighting because you are not discarding data. Our simulated data does not suffer from an imbalance, but in most real-world situations you’ll have a lot fewer observations in your treatment group relative to your control group. Additionally, the quality of your matching will depend mostly on how well you’ve specified your model and accounted for unobserved covariates.&lt;/p&gt;
-&lt;p&gt;With that in mind, we’ll specify our model for generating propensity scores.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify model for estimating P(treatment | prior_spend)
-model_spec &amp;lt;- as.formula(member ~ prior_spend)
-member_model &amp;lt;- glm(model_spec, data = df, family = binomial())
+&lt;p&gt;Two common approaches for creating comparison groups with observational data are (1) &lt;em&gt;propensity score matching&lt;/em&gt; and (2) &lt;em&gt;inverse probability of treatment weighting (IPTW)&lt;/em&gt;. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If groups are different sizes, the number of non-treated observations is reduced to the size of the treated condition, as each treated observation is matched with a non-treated observation. In contrast, weighting includes all observations but places more weight on observations with high propensity scores and less weight on observations with low propensity scores. While both approaches can yield similar results, I prefer weighting because you are not discarding any data.&lt;/p&gt;
+&lt;p&gt;Below, we’ll specify our model for generating propensity scores.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify model for estimating P(treatment | Previous Purchases)
+model_spec &amp;lt;- as.formula(member_enrolled ~ n_purchase_pre)
+member_model &amp;lt;- glm(model_spec, 
+                    data = purchase_df, 
+                    family = binomial())
 member_prop_df &amp;lt;- member_model %&amp;gt;% 
-  augment(type.predict = &amp;#39;response&amp;#39;, data = df) %&amp;gt;% 
-  select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
-  mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;A few things to note now we’ve generated our propensity scores. First, we used logistic regression as a way to estimate membership probability. However, any classification model can be used to generate a score. If you suspect non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.
-Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.&lt;/p&gt;
+  augment(type.predict = &amp;#39;response&amp;#39;, data = purchase_df) %&amp;gt;% 
+  select(member_enrolled, n_purchase_pre, n_purchase_post, member_prob = .fitted) %&amp;gt;% 
+  mutate(iptw = 1 / ifelse(member_enrolled == 0, 1 - member_prob, member_prob))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;A few things to note since we’ve created our propensity scores. First, we used logistic regression to estimate membership probability. However, any classification model can generate a propensity score. If there are non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.&lt;/p&gt;
+&lt;p&gt;Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;iptw_pct_99 &amp;lt;- quantile(member_prop_df %&amp;gt;% pull(iptw), 0.99)[[1]]
 member_prop_df &amp;lt;- member_prop_df %&amp;gt;% 
   mutate(iptw = ifelse(iptw &amp;gt; iptw_pct_99, iptw_pct_99, iptw))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Now that we’ve addressed some common pre-modeling isues, let’s generate an initial estimate of the effect of membership on churn.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_effect &amp;lt;- glm(churned ~ member,
+&lt;p&gt;Now that we’ve addressed some common pre-modeling issues, let’s generate an initial estimate of the effect of Membership on Purchase Frequency.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_fit &amp;lt;- glm(n_purchase_post ~ member_enrolled,
               data = member_prop_df,
-              family = binomial(),
+              family = &amp;#39;poisson&amp;#39;,
               weights = iptw
-              ) %&amp;gt;% 
-  tidy(exponentiate = TRUE) %&amp;gt;% 
-  filter(term == &amp;#39;member&amp;#39;) %&amp;gt;% 
-  pull(estimate)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;print(membership_effect)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## [1] 0.8870706&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Our initial estimate indicates that membership leads to a 11% reduction in churn, which in the real-world would be fairly significant effect! However, we are also interested in the uncertainty of our estimate; that is, what is best-case and worst-case of our effect size? The above-approach has been known to provide biased estimates of our standard error, which in turn results in confidence intervals that are too narrow. This means we over-confident in our ability to accurately estimate our causal effect.
-To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better capture the uncertainty in our estimate.&lt;/p&gt;
+              )
+membership_fit_coef &amp;lt;- tidy(membership_fit)
+
+intercept &amp;lt;- membership_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;(Intercept)&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+member_est &amp;lt;- membership_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;member_enrolled&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+effect_size_est_adj &amp;lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&amp;#39;Estimated Difference: {effect_size_est_adj}&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Estimated Difference: 0.097&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Our initial estimate indicates that membership leads to ~.1 extra purchases, which matches perfectly with the true effect size! This is a great start, but we also need to consider certainty in the estimate. In our example, we have a fairly large sample size, there is only one covariate, and the distribution of treatment (members vs. non-members) is relatively even between groups. Real world data sets, on the other hand, are often small, present a high degree of skew between groups, or exhibit intricate causal structures. The presence of these factors affects how accurately we can estimate a true effect, and using the method above to create a confidence interval can lead to incorrect estimates of our standard error (too small).
+To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better quantify uncertainty in our estimate.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;member_fit_bootstrap &amp;lt;- function(split){
   temp_df &amp;lt;- analysis(split)
-  temp_model &amp;lt;- glm(member ~ prior_spend,
+  
+  temp_model &amp;lt;- glm(member_enrolled ~ n_purchase_pre,
                     family = binomial(),
                     data = temp_df
                   )
+  
   temp_df &amp;lt;- temp_model %&amp;gt;% 
     augment(type.predict = &amp;#39;response&amp;#39;, data = temp_df) %&amp;gt;% 
-    select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
-    mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))
-  temp_iptw_pct_99 &amp;lt;- quantile(temp_df %&amp;gt;% pull(iptw), 0.99)[[1]]
-  temp_df &amp;lt;- temp_df %&amp;gt;% 
-    mutate(iptw = ifelse(iptw &amp;gt; temp_iptw_pct_99, temp_iptw_pct_99, iptw))
-  temp_ret_df &amp;lt;- glm(churned ~ member,
-                data = temp_df,
-                family = binomial(),
-                weights = iptw) %&amp;gt;% 
-    tidy(exponentiate = TRUE)
+    select(member_enrolled, n_purchase_pre, 
+           n_purchase_post, member_prob = .fitted) %&amp;gt;% 
+    mutate(iptw = 1 / ifelse(member_enrolled == 0, 
+                             1 - member_prob, 
+                             member_prob))
   
+  temp_iptw_pct_99 &amp;lt;- quantile(temp_df %&amp;gt;% pull(iptw), 0.99)[[1]]
+  
+  temp_df &amp;lt;- temp_df %&amp;gt;% 
+    mutate(iptw = ifelse(iptw &amp;gt; temp_iptw_pct_99, 
+                         temp_iptw_pct_99, 
+                         iptw))
+  
+  temp_ret_df &amp;lt;- glm(n_purchase_post ~ member_enrolled,
+                data = temp_df,
+                family = &amp;#39;poisson&amp;#39;,
+                weights = iptw) %&amp;gt;% 
+    tidy()
   return(temp_ret_df)
 }&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;n_boot = 500
-boot_results &amp;lt;- bootstraps(df, n_boot, apparent = TRUE) %&amp;gt;% 
+boot_results &amp;lt;- bootstraps(purchase_df, n_boot, apparent = TRUE) %&amp;gt;% 
   mutate(results = map(splits, member_fit_bootstrap))&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;boot_results &amp;lt;- boot_results %&amp;gt;% 
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;boot_results_unnest &amp;lt;- 
+  boot_results %&amp;gt;% 
   select(-splits) %&amp;gt;% 
-  unnest(cols=results) %&amp;gt;% 
-  filter(term == &amp;#39;member&amp;#39;)
+  unnest(cols=results)
 
-boot_summary &amp;lt;- boot_results %&amp;gt;%
-  summarise(lb = quantile(estimate, 0.025),
-            mdn = quantile(estimate, 0.5),
-            ub = quantile(estimate, 0.975)
-            ) %&amp;gt;%
+boot_results_est &amp;lt;- 
+  boot_results_unnest %&amp;gt;% 
+  select(id, term, estimate) %&amp;gt;% 
+  pivot_wider(names_from = term, 
+              values_from = estimate
+              ) %&amp;gt;% 
+  clean_names() %&amp;gt;% 
+  mutate(est_effect = exp(member_enrolled + intercept) - exp(intercept))
+
+
+boot_results_summary &amp;lt;- boot_results_est %&amp;gt;%
+  summarise(lb = quantile(est_effect, 0.025),
+            mdn = quantile(est_effect, 0.5),
+            ub = quantile(est_effect, 0.975)
+  ) %&amp;gt;%
   pivot_longer(everything())&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;lb_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;lb&amp;#39;) %&amp;gt;% pull(value)
-ub_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;ub&amp;#39;) %&amp;gt;% pull(value)
-effect_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;mdn&amp;#39;) %&amp;gt;% pull(value)
-boot_results %&amp;gt;% 
-  ggplot(aes(x=estimate)) + 
-  geom_histogram(fill = &amp;#39;orange&amp;#39;) + 
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;lb_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;lb&amp;#39;) %&amp;gt;% pull(value)
+ub_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;ub&amp;#39;) %&amp;gt;% pull(value)
+effect_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;mdn&amp;#39;) %&amp;gt;% pull(value)
+boot_results_est %&amp;gt;% 
+  ggplot(aes(x=est_effect)) + 
+  geom_histogram(fill=&amp;#39;grey90&amp;#39;, color = &amp;#39;black&amp;#39;) + 
   theme_bw() + 
   geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
   geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
@@ -2790,22 +2859,22 @@ boot_results %&amp;gt;%
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14)
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;Our final estimate is that membership reduces the odds customer churn by somewhere between 0.04 and 0.18. confidence intervals aren’t actually that much different from those in the original model. The primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. Again, in real data sets, the confidence intervals following bootstrapping will typically be wider than those provided by OLS.&lt;/p&gt;
-&lt;p&gt;Hopefully this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that comes in handy when you are able to run a true a/b test. Until then, happy experimenting!&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Our final estimate of the causal effect of membership on purchase frequency is between 0.06 and 0.14. Note that these confidence intervals aren’t much different from those in the original, non-bootstrapped approach. As mentioned previously, the primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. However, in many instances, confidence intervals following bootstrapping will be wider – and more accurate – than those provided by OLS.&lt;/p&gt;
+&lt;p&gt;Hopefully, this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that come in handy when you can run a true A/B test. Until then, happy experimenting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
     
     <item>
       <title>Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</title>
-      <link>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
+      <link>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
       <pubDate>Mon, 26 Aug 2019 21:13:14 -0500</pubDate>
-      <guid>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
+      <guid>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;In less than two weeks, Fantasy Football will once again resume for the 2019 NFL season! While I’m looking forward to the impending draft, the start of the season brings back memories of a not-so-distant loss that left me one game shy of the championship. The loss stemmed from a missed field goal, leaving my team two points shy of victory. Of course, a myriad of factors beyond that missed field goal contributed to my fantasy demise, but those two points reinvigorated a question I’ve wondered about for the past few years: Why are kickers drafted in the last round?&lt;/p&gt;
@@ -3349,7 +3418,7 @@ glimpse(stats_raw)&lt;/code&gt;&lt;/pre&gt;
        y = &amp;#39;Distance (Yards)&amp;#39;
        ) + 
     theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Looks good! Each point represents the field goal percentage for a player-season-distance combination. As the distance increases, the make rate gradually shifts to left, which is exactly what we’d expect. We’ll do a bit more cleaning below before proceeding.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed &amp;lt;- 
   stats_raw %&amp;gt;%
@@ -3854,7 +3923,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
        title = &amp;#39;Estimated field goal percentage amongst active NFL kickers&amp;#39;,
        subtitle = &amp;#39;Black dot represents estimate while red dot is actual. Note the bias in our estimates.&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Let’s talk through this figure by comparing the field goal percentage estimates for Adam Vinatieri, who has made 530 of 629 fields goals throughout his career, to Chris Boswell, who has made 50 of 57 field goals. While Vinatieri has a lower actual make rate than Boswell (84.2% vs. 87.7%), we consider him to be a better field goal kicker. The seemingly incongruent finding is based on the fact that we have more evidence for Vinatieri (629 FG attempts vs. 57 FG attempts) than Boswell. It’s like saying, “Chris Boswell is good kicker, maybe better than Vinatieri, but we don’t have enough evidence (yet) to believe he is that much better than an average kicker, a number represented by our prior”. Indeed, if we also consider the width of the credible intervals surrounding these two players, Adam Vinatieri’s interval is considerably smaller than Chris Boswell’s interval.&lt;/p&gt;
 &lt;p&gt;While this is a good way to gain an intuition for what’s happening under the hood, we see an immediate problem – all of our estimates are biased! The actual field goal percentage is above every single estimate. Luckily, there is a solution: we can create conditional estimates of our prior. One way to do this is to create features that explain variability between our players. For example, &lt;a href=&#34;https://fivethirtyeight.com/features/kickers-are-forever/&#34;&gt;field goal percentages have improved dramatically over the past 50 years&lt;/a&gt;. Let’s consider our own data and map out this pattern from the 1970s to the 2010s.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -3871,7 +3940,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
     y = &amp;quot;Field Goal Percentage&amp;quot;,
     title = &amp;#39;Kicker performance has improved over time&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
 The best kicker in 1970s has a lower field goal percentage than the worst kicker in the 2010s. Including the decade of a kicker’s rookie season allows us to create a more informed prior. Thus, if we use the median field goal percentage of all kickers who debuted as rookies in 2010+, our best guess would be about 84%, whereas a kicker who debuted in the 1970s would be somewhere around 64%. This explains why the estimates from our null model were biased.&lt;/p&gt;
 &lt;p&gt;The second factor to consider is the number of field goal attempts per player, because better players have more opportunities to kick field goals. This makes intuitive sense and is captured in the following plot.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -3885,7 +3954,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
     y = &amp;quot;Field Goal percentage&amp;quot;,
     title = &amp;quot;Better kickers have more opportunities&amp;quot;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Below we’ll use the same model except this time we’ll account for the number of field goal attempts and a player’s rookie decade.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_complete &amp;lt;- 
   gamlss(cbind(fg_made, fg_attempted - fg_made) ~ log2(fg_attempted) + rookie_decade,
@@ -3897,7 +3966,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
 ## GAMLSS-RS iteration 3: Global Deviance = 668.3708 
 ## GAMLSS-RS iteration 4: Global Deviance = 668.1839 
 ## GAMLSS-RS iteration 5: Global Deviance = 668.1838&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
 Much better! Our estimates do not exhibit the same degree of bias as before. Moreover, the width of our credible intervals shrank across all players. This makes sense, given that we can now condition our prior estimates on inputs that explain variability in the field goal percentage. While there are other factors that might improve our model (e.g., did a player’s team have their home games in a dome?), this is a good starting point for answering our original question.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;from-parameters-to-points&#34; class=&#34;section level3&#34;&gt;
@@ -3975,7 +4044,7 @@ names(est_outcomes) &amp;lt;- est_active$name&lt;/code&gt;&lt;/pre&gt;
        subtitle = &amp;#39;Drafing any kicker is fine&amp;#39;
        ) + 
   theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Wait! We went all this way for you to tell me that the status quo is probably right? Yes, I did. But we still haven’t quantified how much better or worse drafting the best or worst kicker is in terms of fantasy points. A simple way is to count the number of seasons where Justin Tucker (the best kicker) scored more points than Andrew Franks (the worst kicker).&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;jt_pts &amp;lt;- 
   pt_simulation %&amp;gt;% 
@@ -4005,7 +4074,7 @@ print(str_glue(&amp;#39;PCT greater: {pct_greater * 100}%&amp;#39;))&lt;/code&gt
        title = &amp;#39;The best kicker should score about 10 more points per season compared to the worst&amp;#39;,
        subtitle = &amp;#39;Estimate based on 27 FG attempts per season with each FG worth 3.5 points&amp;#39;
        )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
 If we spread this estimate out across 16 regular-season games, it comes out to less than a single point per game.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;conclusion&#34; class=&#34;section level3&#34;&gt;
@@ -4017,9 +4086,9 @@ If we spread this estimate out across 16 regular-season games, it comes out to l
     
     <item>
       <title>An example preprint / working paper</title>
-      <link>/publication/preprint/</link>
+      <link>http://example.org/publication/preprint/</link>
       <pubDate>Sun, 07 Apr 2019 00:00:00 +0000</pubDate>
-      <guid>/publication/preprint/</guid>
+      <guid>http://example.org/publication/preprint/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Create your slides in Markdown - click the &lt;em&gt;Slides&lt;/em&gt; button to check out the example.
@@ -4031,9 +4100,9 @@ If we spread this estimate out across 16 regular-season games, it comes out to l
     
     <item>
       <title>Slides</title>
-      <link>/slides/example/</link>
+      <link>http://example.org/slides/example/</link>
       <pubDate>Tue, 05 Feb 2019 00:00:00 +0000</pubDate>
-      <guid>/slides/example/</guid>
+      <guid>http://example.org/slides/example/</guid>
       <description>&lt;h1 id=&#34;create-slides-in-markdown-with-wowchemy&#34;&gt;Create slides in Markdown with Wowchemy&lt;/h1&gt;
 &lt;p&gt;&lt;a href=&#34;https://wowchemy.com/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Wowchemy&lt;/a&gt; | &lt;a href=&#34;https://owchemy.com/docs/managing-content/#create-slides&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Documentation&lt;/a&gt;&lt;/p&gt;
 &lt;hr&gt;
@@ -4160,22 +4229,22 @@ Three
     
     <item>
       <title></title>
-      <link>/terms/</link>
+      <link>http://example.org/terms/</link>
       <pubDate>Thu, 28 Jun 2018 00:00:00 +0100</pubDate>
-      <guid>/terms/</guid>
+      <guid>http://example.org/terms/</guid>
       <description>&lt;p&gt;&amp;hellip;&lt;/p&gt;
 </description>
     </item>
     
     <item>
       <title>Choosing a Fantasy Football Quarterback</title>
-      <link>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
+      <link>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
       <pubDate>Sun, 10 Sep 2017 21:13:14 -0500</pubDate>
-      <guid>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
+      <guid>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Understanding a new concept is all about connecting it with something you already know. I don’t know much, but I do know Fantasy Football. Thus, when I come across new concepts, I often think to myself, “How can I use this information to beat my friend Steve in Fantasy Football”? This very question was the impetus for putting these words and figures together in a post, which will introduce the idea of using the Beta Distribution to determine your weekly starter. I’ll explain this approach in the context of my 2015 Fantasy Football season.&lt;/p&gt;
@@ -4225,17 +4294,17 @@ quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)
     
     <item>
       <title>External Project</title>
-      <link>/project/external-project/</link>
+      <link>http://example.org/project/external-project/</link>
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
-      <guid>/project/external-project/</guid>
+      <guid>http://example.org/project/external-project/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Internal Project</title>
-      <link>/project/internal-project/</link>
+      <link>http://example.org/project/internal-project/</link>
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
-      <guid>/project/internal-project/</guid>
+      <guid>http://example.org/project/internal-project/</guid>
       <description>&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis posuere tellus ac convallis placerat. Proin tincidunt magna sed ex sollicitudin condimentum. Sed ac faucibus dolor, scelerisque sollicitudin nisi. Cras purus urna, suscipit quis sapien eu, pulvinar tempor diam. Quisque risus orci, mollis id ante sit amet, gravida egestas nisl. Sed ac tempus magna. Proin in dui enim. Donec condimentum, sem id dapibus fringilla, tellus enim condimentum arcu, nec volutpat est felis vel metus. Vestibulum sit amet erat at nulla eleifend gravida.&lt;/p&gt;
 &lt;p&gt;Nullam vel molestie justo. Curabitur vitae efficitur leo. In hac habitasse platea dictumst. Sed pulvinar mauris dui, eget varius purus congue ac. Nulla euismod, lorem vel elementum dapibus, nunc justo porta mi, sed tempus est est vel tellus. Nam et enim eleifend, laoreet sem sit amet, elementum sem. Morbi ut leo congue, maximus velit ut, finibus arcu. In et libero cursus, rutrum risus non, molestie leo. Nullam congue quam et volutpat malesuada. Sed risus tortor, pulvinar et dictum nec, sodales non mi. Phasellus lacinia commodo laoreet. Nam mollis, erat in feugiat consectetur, purus eros egestas tellus, in auctor urna odio at nibh. Mauris imperdiet nisi ac magna convallis, at rhoncus ligula cursus.&lt;/p&gt;
 &lt;p&gt;Cras aliquam rhoncus ipsum, in hendrerit nunc mattis vitae. Duis vitae efficitur metus, ac tempus leo. Cras nec fringilla lacus. Quisque sit amet risus at ipsum pharetra commodo. Sed aliquam mauris at consequat eleifend. Praesent porta, augue sed viverra bibendum, neque ante euismod ante, in vehicula justo lorem ac eros. Suspendisse augue libero, venenatis eget tincidunt ut, malesuada at lorem. Donec vitae bibendum arcu. Aenean maximus nulla non pretium iaculis. Quisque imperdiet, nulla in pulvinar aliquet, velit quam ultrices quam, sit amet fringilla leo sem vel nunc. Mauris in lacinia lacus.&lt;/p&gt;
@@ -4246,9 +4315,9 @@ quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)
     
     <item>
       <title>An example journal article</title>
-      <link>/publication/journal-article/</link>
+      <link>http://example.org/publication/journal-article/</link>
       <pubDate>Tue, 01 Sep 2015 00:00:00 +0000</pubDate>
-      <guid>/publication/journal-article/</guid>
+      <guid>http://example.org/publication/journal-article/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Click the &lt;em&gt;Cite&lt;/em&gt; button above to demo the feature to enable visitors to import publication metadata into their reference management software.
@@ -4265,9 +4334,9 @@ quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)
     
     <item>
       <title>An example conference paper</title>
-      <link>/publication/conference-paper/</link>
+      <link>http://example.org/publication/conference-paper/</link>
       <pubDate>Mon, 01 Jul 2013 00:00:00 +0000</pubDate>
-      <guid>/publication/conference-paper/</guid>
+      <guid>http://example.org/publication/conference-paper/</guid>
       <description>&lt;div class=&#34;alert alert-note&#34;&gt;
   &lt;div&gt;
     Click the &lt;em&gt;Cite&lt;/em&gt; button above to demo the feature to enable visitors to import publication metadata into their reference management software.
@@ -4284,49 +4353,400 @@ quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)
     
     <item>
       <title></title>
-      <link>/admin/config.yml</link>
+      <link>http://example.org/admin/config.yml</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>/admin/config.yml</guid>
+      <guid>http://example.org/admin/config.yml</guid>
       <description></description>
     </item>
     
     <item>
-      <title>running_alert_aws_lambda</title>
-      <link>/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</link>
+      <title>Time to Run with AWS</title>
+      <link>http://example.org/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</guid>
+      <guid>http://example.org/post/2021-04-20-running-alert-aws-lambda/running_alert_aws_lambda/</guid>
       <description>
 
 
-&lt;p&gt;AWS solves one of the biggest problems within analytics: The Last Mile. This is basically “I developed something that works locally or in a cloud-based Sandbox environment” to “This is going to be accessible to others in the real-world”. The key about analytics is that value is only realized in the second stage, yet very little time is spent on it. Thus, the goal of this to highlight an AWS service that I’ve found to have many helpful applications - Lambda - through an real-life use-case.&lt;/p&gt;
-&lt;div id=&#34;why-i-dont-plan-a-run-on-weather-forecasts&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Why I don’t plan a run on weather forecasts&lt;/h3&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;As a runner, I’ve always enjoyed the pursuit of pacing faster today relative to yesterday. With the advent of apps like &lt;a href=&#34;https://www.strava.com/&#34;&gt;Strava&lt;/a&gt; that track your performance (among many other metrics), it’s easy to measure if you are running faster over time and, perhaps more importantly, which factors affect your run pace. Indeed, based on my historical running data, I’ve noticed two factors that moderate my run times: time of day and weather. My fastest runs usually happen between 12 PM - 7 PM, and slower runs occurred with high winds, cold weather (less than 30°F ), hot weather (greater than 90°F), or rain (being wet makes me miserable). On these “bad weather” days, I’d prefer to run inside on the treadmill and wait until more optimal running conditions.&lt;/p&gt;
+&lt;p&gt;With these criteria in mind, I would begin most mornings by deciding if it was an “inside” or “outside” running day by executing the following mental steps:&lt;/p&gt;
+&lt;p&gt;☁️ Log on to weather.com at 7AM&lt;br /&gt;
+☁️ Check the hourly forecast between 12PM and 5PM&lt;br /&gt;
+☁️ Check the temperature, wind-speed, and chance of precipitation&lt;br /&gt;
+☁️ Make a “Yes” or “No” decision to run outside based on the forecast&lt;/p&gt;
+&lt;p&gt;While it isn’t a huge inconvenience to repeat these steps each day, it required a few minutes of the morning. Perhaps more importantly, though, it was yet another decision that needed attention. I make lots of decisions in a day, and each decision requires thought and energy. Thus, if I could automate one of those decisions by creating a “rules engine,” it would save me the time and cognition required to plan my daily run.&lt;/p&gt;
+&lt;p&gt;The journey of automating this process is what inspired the following post, which will cover a few key concepts, including:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Scheduling a workflow using AWS Event Bridge&lt;/li&gt;
+&lt;li&gt;Building Lambda functions&lt;/li&gt;
+&lt;li&gt;Sending emails via AWS SES&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;These concepts can be generalized to any reoccurring process. Perhaps it’s a daily forecast that planners use to manage a store’s inventory. Or maybe it’s a marketing email sent to new customers after making their first purchase. Extracting data from a database/API, applying some business logic, and then socializing the results through an Email is a standard analytics workflow. Read on to learn more about how I leveraged this approach to identify the best times to run each day, save myself a few minutes, and remove one more decision from my day.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;part-1&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Part 1:&lt;/h3&gt;
+&lt;div id=&#34;be-the-algorithm&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Be The Algorithm&lt;/h3&gt;
+&lt;p&gt;Before diving into the solution, I wanted to quickly discuss a technique I’ve found helpful when automating a decision-making process. Before writing code or building queries, it’s good to step through the process manually that you are trying to automate. That is, you want to assume the role of the computer or algorithm. Repeating the steps above each day made it clear how I would automate the decision-making process by identifying:&lt;/p&gt;
+&lt;ol style=&#34;list-style-type: decimal&#34;&gt;
+&lt;li&gt;The information I needed to make a decision&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;The timing and frequency of the decision&lt;/li&gt;
+&lt;li&gt;The values of the criteria that would lead to an “inside” or “outside” run decision&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;You could easily sub in a machine learning model to discover the rules, but the overall process flow will be essentially unchanged. Keep this in mind next time you go to create a process that automates a decision.&lt;br /&gt;
+In the next section, we’ll cover the technical specifics.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;configuring-environment&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Configuring Environment&lt;/h3&gt;
-&lt;p&gt;Functions -&amp;gt; Configuration -&amp;gt; Environment Variables
-“use image add_environment_variables”&lt;/p&gt;
-&lt;p&gt;Change how long you want the lambda to run for. 3 seconds is very fast. If you are accessing an API you’ll likely need longer :)&lt;/p&gt;
+&lt;div id=&#34;architecture-overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Architecture Overview&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/architecture_flow.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;br /&gt;
+No post on AWS would be complete without a diagram outlining how data flows through our system. Accordingly, the figure above depicts the order of operations and each service’s role in our decision workflow. Each service is described in greater detail below.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Event Bridge&lt;/strong&gt; - this is our scheduler. Each day at Noon PST, Amazon Event Bridge initiates the first Lambda function (TimeToRun).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Lambda (TimeToRun)&lt;/strong&gt; - TimeToRun connects to the OpenWeather API, extracts weather forecasts for my latitude and longitude, and formats the resulting data. The forecasts are then saved to an S3 bucket.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Lambda (SendRunningEmail)&lt;/strong&gt; - SendRunningEmail is triggered by any action in the S3 bucket containing the hourly weather forecasts. In this case, when a new object lands in the bucket, the Lambda function automatically starts and retrieves the data from the S3 bucket.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Amazon SES&lt;/strong&gt; - While this service is part of the SendRunningEmail Lambda, I separated it since it’s such a helpful service. Sending emails through Python can be tricky, and I’ve found the approach using AWS SES to be much easier. You import the service, define the message contents, add a bit of HTML (to make it look pretty, of course), and send the message to a set of desired email addresses. It’s that simple.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Personal Gmail&lt;/strong&gt; - this is where the resulting message lands, alerting me if it is an “inside” or “outside” running day.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In the following sections, we’ll cover the two Lambda functions that comprise this workflow. We’ll also cover a few “gotchas” that come up frequently when working with Lambda for the first time.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;adding-layers&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Adding Layers&lt;/h3&gt;
-&lt;p&gt;here is how you do it&lt;/p&gt;
+&lt;div id=&#34;part-1-timetorun&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Part 1: TimeToRun&lt;/h3&gt;
+&lt;p&gt;The first part will cover the data collection process, which briefly entails:&lt;br /&gt;
+1. Scheduling&lt;br /&gt;
+2. Extracting hourly forecasts from OpenWeather API&lt;br /&gt;
+3. Saving the forecasts to an S3 bucket&lt;/p&gt;
+&lt;p&gt;We’ll use EventBridge for scheduling, which you can see in the diagram on the left below.
+&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/eventbridge.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+To connect Lambda with EventBridge, you add a trigger and then indicate how frequently you want it to execute. The desired cadence for the hourly weather forecasts was every weekday at 7 PM GMT (or noon PST), expressed via Cron below.
+&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/cron_expression.png&#34; width=&#34;200&#34; height=&#34;200&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Now that we’ve scheduled our Lambda function, the next step is to add logic that collects the forecasts and saves them to S3.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import os
+import sys
+from typing import List
+import json
+from datetime import datetime
+import logging
+
+import pytz
+import requests
+import boto3
+
+S3_BUCKET = &amp;quot;running-weather-data&amp;quot;
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def retrieve_weather_data(units_of_measure: str) -&amp;gt; dict:
+    api_key = os.environ[&amp;quot;WEATHER_API_KEY&amp;quot;]
+    lat = os.environ[&amp;quot;LOCATION_LATITUDE&amp;quot;]
+    lon = os.environ[&amp;quot;LOCATION_LONGITUDE&amp;quot;]
+    base_url = &amp;quot;https://api.openweathermap.org/data/2.5/onecall?&amp;quot;
+    url = f&amp;quot;{base_url}lat={lat}&amp;amp;lon={lon}&amp;amp;appid={api_key}&amp;amp;units={units_of_measure}&amp;quot;
+    response = requests.get(url)
+    weather_data = json.loads(response.text)
+    return weather_data
+
+
+def parse_weather_data(weather_hour: dict) -&amp;gt; dict:
+    hour = datetime.fromtimestamp(
+        weather_hour[&amp;quot;dt&amp;quot;], pytz.timezone(&amp;quot;America/Los_Angeles&amp;quot;)
+    ).hour
+    temp = weather_hour[&amp;quot;temp&amp;quot;]
+    wind_speed = weather_hour[&amp;quot;wind_speed&amp;quot;]
+    weather_status = weather_hour[&amp;quot;weather&amp;quot;][0]
+    status = weather_status[&amp;quot;main&amp;quot;]
+    return {&amp;quot;hour&amp;quot;: hour, &amp;quot;temp&amp;quot;: temp, &amp;quot;wind_speed&amp;quot;: wind_speed, &amp;quot;status&amp;quot;: status}
+
+
+def is_today_weather(weather_hour: dict, timezone: str = &amp;quot;America/Los_Angeles&amp;quot;) -&amp;gt; bool:
+    weather_fmt = &amp;quot;%Y-%m-%d&amp;quot;
+    today_dt = datetime.now().strftime(weather_fmt)
+    weather_dt = datetime.fromtimestamp(weather_hour[&amp;quot;dt&amp;quot;], pytz.timezone(timezone))
+    if weather_dt.strftime(weather_fmt) == today_dt:
+        return True
+    else:
+        return False
+
+
+def _generate_s3_path() -&amp;gt; str:
+    year, month, day = datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;).split(&amp;quot;-&amp;quot;)
+    s3_path = f&amp;quot;data/{year}-{month}-{day}-running-times.json&amp;quot;
+    return s3_path
+
+
+def save_json_to_s3(json_data: dict, s3_bucket: str) -&amp;gt; None:
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    response = s3.Object(s3_bucket, _generate_s3_path()).put(
+        Body=(bytes(json.dumps(json_data).encode(&amp;quot;UTF-8&amp;quot;)))
+    )
+    if response.get(&amp;quot;HTTPStatusCode&amp;quot;) == 200:
+        print(f&amp;quot;Data successfully landed&amp;quot;)
+
+
+def lambda_handler(event, context):
+    try:
+        # retrieve weather forecast from OpenWeatherAPI
+        weather_data = retrieve_weather_data(units_of_measure=&amp;quot;imperial&amp;quot;)
+        # extract hourly forecast
+        hourly_data = weather_data[&amp;quot;hourly&amp;quot;]
+        # filter to only today&amp;#39;s forecast
+        today_weather_bool = [is_today_weather(x) for x in hourly_data if x]
+        # extract fields relevant to deciding if run outside
+        hourly_data = [parse_weather_data(x) for x in hourly_data]
+        # filter to today&amp;#39;s hourly data
+        today_hourly_data = [
+            today_weather
+            for (today_weather, is_today) in zip(hourly_data, today_weather_bool)
+            if is_today
+        ]
+        # convert all data to dictionary
+        hourly_data_dict = {&amp;quot;weather_data&amp;quot;: today_hourly_data}
+        # save hourly weather data to S3 Bucket as .json
+        save_json_to_s3(json_data=json.dumps(hourly_data_dict), s3_bucket=S3_BUCKET)
+        return {&amp;quot;statusCode&amp;quot;: 200, &amp;quot;body&amp;quot;: json.dumps(hourly_data_dict)}
+    except Exception as exp:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        err_msg = json.dumps(
+            {&amp;quot;errorType&amp;quot;: exception_type.__name__, &amp;quot;errorMessage&amp;quot;: str(exception_value)}
+        )
+        logger.error(err_msg)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This entire block of code is what get’s triggered daily, landing a single &lt;em&gt;.json&lt;/em&gt; file in the desired S3 Bucket. While this looks straightforward, it’s not as simple as copy-pasting your code and hitting play. Like most things in the AWS ecosystem, getting everything to work takes a few tries. The subsections below highlight areas that are potential sources of confusion when starting with Lambda.&lt;/p&gt;
+&lt;div id=&#34;configuring-environment-variables&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Configuring Environment Variables&lt;/h4&gt;
+&lt;p&gt;Environmental variables store sensitive information, such as API keys, passwords, or other private values. In this case, I’ve stored the OpenWeather API key and Latitude/Longitude of where I want the daily forecasts. The image below depicts how to add these variables via the console.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/environment_variables.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;br /&gt;
+And this is where these variables are accessed in the Lambda code.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def retrieve_weather_data(units_of_measure: str) -&amp;gt; dict:
+    api_key = os.environ[&amp;quot;WEATHER_API_KEY&amp;quot;]
+    lat = os.environ[&amp;quot;LOCATION_LATITUDE&amp;quot;]
+    lon = os.environ[&amp;quot;LOCATION_LONGITUDE&amp;quot;]
+    base_url = &amp;quot;https://api.openweathermap.org/data/2.5/onecall?&amp;quot;
+    url = f&amp;quot;{base_url}lat={lat}&amp;amp;lon={lon}&amp;amp;appid={api_key}&amp;amp;units={units_of_measure}&amp;quot;
+    response = requests.get(url)
+    weather_data = json.loads(response.text)
+    return weather_data&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that this approach to managing keys and constants is sufficient for smaller projects and prototypes. However, for larger projects where you are collaborating with other developers and stakeholders, configuration data will likely be stored in a way that allows for versioning and tracking.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;adding-permissions&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Adding Permissions&lt;/h3&gt;
-&lt;p&gt;Configuration -&amp;gt; Execution Role -&amp;gt; Permissions -&amp;gt; Attach Policies
-* AmazonS3FullAccess - allows lambda to access S3
-* AmazonSES FullAccess - allows lambda to send emails&lt;/p&gt;
+&lt;div id=&#34;adding-layers&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Adding Layers&lt;/h4&gt;
+&lt;p&gt;A layer is a .zip file that includes additional code or data. If you noticed in the &lt;code&gt;retrieve_weather_data&lt;/code&gt; function, we use the &lt;em&gt;requests&lt;/em&gt; package to access the OpenWeather API. &lt;em&gt;Requests&lt;/em&gt; is not part of the Python Standard Library, so we must include it as part of a layer (there is no way to &lt;code&gt;pip install requests&lt;/code&gt; or any other third-party libraries). While a full explanation of adding a layer is beyond the scope of this post, &lt;a href=&#34;https://towardsdatascience.com/how-to-install-python-packages-for-aws-lambda-layer-74e193c76a91&#34;&gt;the following article&lt;/a&gt; nicely summarizes how to incorporate third-party libraries on Lambda.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;creating-an-s3-bucket-to-land-data&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Creating an S3 Bucket to land data&lt;/h3&gt;
+&lt;div id=&#34;adding-permissions&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Adding Permissions&lt;/h4&gt;
+&lt;p&gt;Any time you set up a service through AWS, the default is to have minimal permissions in place. Among other activities, permissions allow your lambda function to interact with other AWS services. For example, the &lt;strong&gt;TimeToRun&lt;/strong&gt; Lambda function writes the weather forecasts to an S3 bucket. The ability to interact with S3 is not setup by default, so you’ll have to attach a policy. Below I’ve enabled &lt;em&gt;AmazonS3FullAccess&lt;/em&gt;, which allows access to S3. You’ll need to do the same for the second lambda function as well.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/s3_permissions_access.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+If you ever receive an error message like “…is not authorized to perform…”, it usually can be solved by updating the permissions for a given service.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;setting-up-triggers&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Setting up Triggers&lt;/h3&gt;
-&lt;p&gt;&lt;code&gt;arn:aws:sts::371410071971:assumed-role/time-to-run/SendRunningEmail&#39; is not authorized to perform&lt;/code&gt;ses:SendEmail’&lt;/p&gt;
+&lt;div id=&#34;run-time-limit&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Run Time Limit&lt;/h4&gt;
+&lt;p&gt;A second default setting that might not be immediately obvious is the standard run-time limit. This setting indicates how long AWS will let a Lambda run before terminating. The default is set to three seconds. Depending on the processing time, I’ll usually increase the limit to 30 seconds and then gradually go down or up from there. The image below indicates where you can adjust the run-time or memory for more compute-heavy tasks.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/run_time_limit.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+If you’ve successfully implemented all of the steps above, you should receive something that looks like this when testing the function:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/test_success.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;This response indicates that everything ran smoothly and you are ready to move on to Part 2!&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&#34;part-2-sendrunningemail-lambda&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Part 2: SendRunningEmail Lambda&lt;/h3&gt;
+&lt;p&gt;The second part of this post covers the data formatting and transmission process in four steps:&lt;/p&gt;
+&lt;ol style=&#34;list-style-type: decimal&#34;&gt;
+&lt;li&gt;Extract data from S3&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Determine if “inside” or “outside” running day&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Format the decision, so it looks nice&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Send the decision to the desired email address(es)&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import sys
+import boto3
+import json
+import logging
+from datetime import datetime
+from typing import List
+
+S3_BUCKET = &amp;quot;&amp;lt;weather-data-bucket-name&amp;gt;&amp;quot;
+SENDER = &amp;quot;&amp;lt;sender-email-address&amp;gt;&amp;quot;
+RECIPIENT = &amp;quot;&amp;lt;recipient-email-addresses&amp;gt;&amp;quot;
+AWS_REGION = &amp;quot;us-west-2&amp;quot;
+SUBJECT = &amp;quot;Best Times to Run Today&amp;quot;
+CHARSET = &amp;quot;UTF-8&amp;quot;
+RUNNING_CONDS = {
+    &amp;quot;hour&amp;quot;: {&amp;quot;min_hour&amp;quot;: 13, &amp;quot;max_hour&amp;quot;: 19},
+    &amp;quot;status&amp;quot;: [&amp;quot;Rain&amp;quot;, &amp;quot;Snow&amp;quot;, &amp;quot;Smoke&amp;quot;],
+    &amp;quot;wind_speed&amp;quot;: {&amp;quot;min_speed&amp;quot;: 0, &amp;quot;max_speed&amp;quot;: 30},
+    &amp;quot;temp&amp;quot;: {&amp;quot;min_temp&amp;quot;: 30, &amp;quot;max_temp&amp;quot;: 90},
+}
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def find_most_recent_data_path(s3_bucket: str) -&amp;gt; str:
+    today_dt = datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;)
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    bucket = s3.Bucket(s3_bucket)
+    existing_data = [
+        x.key
+        for x in bucket.objects.all()
+        if str(x.key).startswith(&amp;quot;data&amp;quot;) and str(x.key).endswith(&amp;quot;-running-times.json&amp;quot;)
+    ]
+    most_recent_dt = max(
+        [x.split(&amp;quot;/&amp;quot;)[-1].replace(&amp;quot;-running-times.json&amp;quot;, &amp;quot;&amp;quot;) for x in existing_data]
+    )
+    assert most_recent_dt == today_dt, &amp;quot;No Data Found for Today&amp;#39;s Date&amp;quot;
+    s3_key = [x for x in existing_data if most_recent_dt in x][0]
+    return s3_key
+
+
+def read_json_from_s3(s3_bucket: str, s3_key: str) -&amp;gt; str:
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    obj = s3.Object(s3_bucket, s3_key)
+    file_content = obj.get()[&amp;quot;Body&amp;quot;].read().decode(&amp;quot;utf-8&amp;quot;)
+    json_content = json.loads(file_content)
+    return json_content
+
+
+def _convert_to_12hr_format(hr: int) -&amp;gt; str:
+    return datetime.strptime(str(hr), &amp;quot;%H&amp;quot;).strftime(&amp;quot;%I:%M %p&amp;quot;).strip(&amp;quot;0&amp;quot;)
+
+
+def format_run_times(run_times: List[dict]) -&amp;gt; str:
+    if run_times:
+        hour_fmt = [
+            f&amp;quot;&amp;lt;b&amp;gt;{_convert_to_12hr_format(x.get(&amp;#39;hour&amp;#39;))}:&amp;lt;/b&amp;gt;&amp;quot; for x in run_times
+        ]
+        temp_fmt = [f&amp;quot;{round(x.get(&amp;#39;temp&amp;#39;))}F with&amp;quot; for x in run_times]
+        wind_speed_fmt = [
+            f&amp;quot;wind at {round(x.get(&amp;#39;wind_speed&amp;#39;))} mph&amp;quot; for x in run_times
+        ]
+        status_fmt = [f&amp;quot;and {x.get(&amp;#39;status&amp;#39;).lower()}&amp;quot; for x in run_times]
+        fmt_msg = zip(hour_fmt, temp_fmt, wind_speed_fmt, status_fmt)
+        fmt_msg_list = [&amp;quot; &amp;quot;.join(x) for x in fmt_msg]
+        return fmt_msg_list
+    else:
+        return [&amp;quot;No Times to Run Today!&amp;quot;]
+
+
+def is_time_for_run(weather_hour: dict) -&amp;gt; bool:
+    is_time = (
+        RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;min_hour&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;hour&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;max_hour&amp;quot;]
+    )
+    is_temp = (
+        RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;min_temp&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;temp&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;max_temp&amp;quot;]
+    )
+    is_wind = (
+        RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;min_speed&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;wind_speed&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;max_speed&amp;quot;]
+    )
+    is_status = weather_hour[&amp;quot;status&amp;quot;] not in RUNNING_CONDS[&amp;quot;status&amp;quot;]
+    if all([is_time, is_temp, is_wind, is_status]):
+        return True
+    else:
+        return False
+
+
+def lambda_handler(event, context):
+    # generate s3 key for most recent weather data
+    running_data_path = find_most_recent_data_path(s3_bucket=S3_BUCKET)
+    # read as str
+    hourly_weather_data = read_json_from_s3(
+        s3_bucket=S3_BUCKET, s3_key=running_data_path
+    )
+    # convert to dict and extract weather data
+    hourly_data_dict = eval(hourly_weather_data)[&amp;quot;weather_data&amp;quot;]
+
+    # True or False filter based on hour, temperature, windspeed criteria
+    run_time_bool = [is_time_for_run(x) for x in hourly_data_dict]
+
+    # applies weather criteria and filters only to hours where critera are met
+    run_times = [
+        time
+        for (time, time_to_run) in zip(hourly_data_dict, run_time_bool)
+        if time_to_run
+    ]
+    running_msg_lst = format_run_times(run_times)
+    running_msg_str = &amp;quot;&amp;lt;p&amp;gt;&amp;quot; + &amp;quot;&amp;lt;br/&amp;gt;&amp;quot;.join(running_msg_lst) + &amp;quot;&amp;lt;/p&amp;gt;&amp;quot;
+    running_msg = f&amp;quot;&amp;quot;&amp;quot;&amp;lt;html&amp;gt;
+                        &amp;lt;head&amp;gt;&amp;lt;/head&amp;gt;
+                        &amp;lt;body&amp;gt;
+                        &amp;lt;h1&amp;gt;Best Times to Run&amp;lt;/h1&amp;gt;
+                        {running_msg_str}
+                        &amp;lt;/body&amp;gt;
+                        &amp;lt;/html&amp;gt;
+                        &amp;quot;&amp;quot;&amp;quot;
+    try:
+        client = boto3.client(&amp;quot;ses&amp;quot;, region_name=AWS_REGION)
+        response = client.send_email(
+            Destination={
+                &amp;quot;ToAddresses&amp;quot;: [
+                    RECIPIENT,
+                ]
+            },
+            Message={
+                &amp;quot;Body&amp;quot;: {
+                    &amp;quot;Html&amp;quot;: {
+                        &amp;quot;Charset&amp;quot;: CHARSET,
+                        &amp;quot;Data&amp;quot;: running_msg,
+                    },
+                },
+                &amp;quot;Subject&amp;quot;: {
+                    &amp;quot;Charset&amp;quot;: CHARSET,
+                    &amp;quot;Data&amp;quot;: SUBJECT,
+                },
+            },
+            Source=SENDER,
+        )
+    except Exception as exp:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        err_msg = json.dumps(
+            {&amp;quot;errorType&amp;quot;: exception_type.__name__, &amp;quot;errorMessage&amp;quot;: str(exception_value)}
+        )
+        logger.error(err_msg)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Most of the logic is concerned with accessing and formatting the data we collected in the first part. However, this is where we determine an inside or outside run. The two sections highlighted below are responsible for making this decision.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;RUNNING_CONDS = {
+    &amp;quot;hour&amp;quot;: {&amp;quot;min_hour&amp;quot;: 13, &amp;quot;max_hour&amp;quot;: 19},
+    &amp;quot;status&amp;quot;: [&amp;quot;Rain&amp;quot;, &amp;quot;Snow&amp;quot;, &amp;quot;Smoke&amp;quot;],
+    &amp;quot;wind_speed&amp;quot;: {&amp;quot;min_speed&amp;quot;: 0, &amp;quot;max_speed&amp;quot;: 30},
+    &amp;quot;temp&amp;quot;: {&amp;quot;min_temp&amp;quot;: 30, &amp;quot;max_temp&amp;quot;: 90},
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;These are all of the criteria - time, status (I probably don’t want to run if there’s a 🔥wildfire🔥), wind speed, and temperature - and their limits used in making the running decision. The &lt;code&gt;is_time_for_run&lt;/code&gt; function ensures that the forecast data satisfies all four conditions.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def is_time_for_run(weather_hour: dict) -&amp;gt; bool:
+    is_time = (
+        RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;min_hour&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;hour&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;max_hour&amp;quot;]
+    )
+    is_temp = (
+        RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;min_temp&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;temp&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;max_temp&amp;quot;]
+    )
+    is_wind = (
+        RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;min_speed&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;wind_speed&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;max_speed&amp;quot;]
+    )
+    is_status = weather_hour[&amp;quot;status&amp;quot;] not in RUNNING_CONDS[&amp;quot;status&amp;quot;]
+    if all([is_time, is_temp, is_wind, is_status]):
+        return True
+    else:
+        return False&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I’ll receive a message (like the one below) in my inbox every weekday at Noon when these conditions are met.
+&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/running_email.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+Otherwise, I’ll receive the message below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-20-running-alert-aws-lambda/images/no_run_message.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Overall, it looks like a solid day for a run. The one thing to note is that 3 PM and 4 PM do not have any information. The absence of data at these times indicates that at least one of the criteria was not met. Indeed, the local weather forecast showed rain for those times, so they were automatically filtered out in the message, leaving only times that met all four criteria. Portland, Oregon (Where I Live) is a rainy place, and this sort of granular information is beneficial for those days where you get a brief window of dryness to go run.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;parting-thoughts&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Parting Thoughts&lt;/h3&gt;
+&lt;p&gt;I hope this was a helpful introduction to setting up and running a basic Lambda workflow. It is a useful service, and I’ve found numerous applications in my day-to-day life beyond just helping me plan my daily run. Please feel free to comment below if you have any thoughts or questions. Until next time, happy coding!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>

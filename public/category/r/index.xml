@@ -2,102 +2,106 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>R | The Code Forest</title>
-    <link>/category/r/</link>
-      <atom:link href="/category/r/index.xml" rel="self" type="application/rss+xml" />
+    <link>http://example.org/category/r/</link>
+      <atom:link href="http://example.org/category/r/index.xml" rel="self" type="application/rss+xml" />
     <description>R</description>
     <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Mon, 15 Mar 2021 21:13:14 -0500</lastBuildDate>
     <image>
-      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
       <title>R</title>
-      <link>/category/r/</link>
+      <link>http://example.org/category/r/</link>
     </image>
     
     <item>
       <title>Causal Inference with Propensity Scores</title>
-      <link>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</link>
+      <link>http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/</link>
       <pubDate>Mon, 15 Mar 2021 21:13:14 -0500</pubDate>
-      <guid>/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1/</guid>
+      <guid>http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Causal inference attempts to answer “what-if” questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention – a change in wages or a targeted marketing campaign – on an outcome – increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of &lt;em&gt;prescriptive&lt;/em&gt; analytics and can inform decision-making in the face of multiple possible actions.&lt;/p&gt;
-&lt;p&gt;However, most analytics efforts are applied to either &lt;em&gt;describing&lt;/em&gt; or &lt;em&gt;predicting&lt;/em&gt; an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to &lt;em&gt;describe&lt;/em&gt; how sales of cheese have changed over the past year. Or perhaps you want to &lt;em&gt;predict&lt;/em&gt; how much cheese will sell over the next 12 months. Descriptive analytics highlights if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. In contrast, predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). Note that none of these applications provide insight about the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.&lt;/p&gt;
-&lt;p&gt;Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real-world to guide decision-making.&lt;/p&gt;
+&lt;p&gt;However, most analytics efforts are applied to either &lt;em&gt;describing&lt;/em&gt; or &lt;em&gt;predicting&lt;/em&gt; an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to &lt;em&gt;describe&lt;/em&gt; how sales of cheese have changed over the past year. Or perhaps you want to &lt;em&gt;predict&lt;/em&gt; how much cheese will sell over the next 12 months. Descriptive analytics can reveal if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. Predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). While all of the applications can provide valuable answers to different questions, none can provide insight into the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.&lt;/p&gt;
+&lt;p&gt;Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;causal-inference-propensity-scores&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Causal Inference &amp;amp; Propensity Scores&lt;/h3&gt;
 &lt;p&gt;When people hear the words “causal inference”, they often think “A/B Test”. Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.&lt;/p&gt;
-&lt;p&gt;While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on customer retention, you cannot assign customers to be a member or non-member; customers choose to enroll in the program under their own volition. Further, customers who chose to enroll as members are probably more interested in the product than those who chose not to enroll. This fact “confounds” the relationship between the effect of our member program on retention.&lt;/p&gt;
-&lt;p&gt;Propensity score matching attempts to address this issue, known as &lt;em&gt;selection bias&lt;/em&gt;, by adjusting for factors that relate both to the treatment and outcome. A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score would indicate the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of churning.&lt;/p&gt;
-&lt;p&gt;Each individual in our sample would receive a propensity score. The score is a single number that attempts to capture all factors that contribute to churn that aren’t related to membership but have an effect on our outcome variable. Such factors are known as &lt;em&gt;latent variables&lt;/em&gt; and could include prior spend, willingness to provide personal information, or how long the individual has been a customer. Formalizing how these variables relate to one another is the topic of the next section.&lt;/p&gt;
+&lt;p&gt;While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on future purchasing behavior, you cannot assign customers to be a member or non-member; customers would enroll in the program under their own volition. Further, customers who enrolled as members are probably more interested in the product than those who did not enroll. This fact “confounds” the relationship between the effect of our member program on purchasing behavior.&lt;/p&gt;
+&lt;p&gt;Propensity score matching attempts to address this issue, known as &lt;em&gt;selection bias&lt;/em&gt;, by adjusting for factors that relate both to the treatment and outcome (i.e., confounding variables). A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score indicates the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of making a future purchase. Formalizing the roles of individual variables that increase/decrease membership enrollment and their interrelations is the topic of the next section.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;causal-graphs&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Causal Graphs&lt;/h3&gt;
-&lt;p&gt;We can formalize our beliefs and assumptions about observational data through a &lt;em&gt;causal graph&lt;/em&gt;. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit. For example, we &lt;em&gt;assume&lt;/em&gt; that membership should influence churn, not that churn influences membership, and we encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we &lt;em&gt;assume&lt;/em&gt; these variables do not directly or indirectly affect churn or membership.&lt;/p&gt;
-&lt;p&gt;All of these assumptions can be examined. If we assume that the age of our customer has an effect on churn, we can stratify our customers by age (i.e,., 20-29, 30-39) and test if churn rates differ between age groups. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the outcome.&lt;/p&gt;
+&lt;p&gt;We can codify our beliefs and assumptions about observational data through a &lt;em&gt;causal graph&lt;/em&gt;. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit.&lt;/p&gt;
+&lt;p&gt;In the context of the current example, we assume that a customer in enrolling as a member influences future purchase behavior, not that future purchase behavior influences enrollment in membership. We can then encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we assume these variables do not directly or indirectly affect purchase frequency or membership.&lt;/p&gt;
+&lt;p&gt;These assumptions can and should be verified. If we believe a customer’s age affects purchase frequency and membership enrollment, we can stratify our customers by age (i.e,., 20-29, 30-39) and test both hypotheses. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the treatment and outcome.&lt;/p&gt;
 &lt;p&gt;This is a contrived example, so we’ll keep things simple and formalize the main components of our analysis as follows:&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Churn&lt;/strong&gt; - if a customer has made at least one purchase six months following the launch of our membership program. This is our outcome variable.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-15-causal-inference-pt-1/images/dag.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Purchase Frequency&lt;/strong&gt; - the total number of purchases six months following the launch of our membership program. This is our outcome variable.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Membership&lt;/strong&gt; - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Brand Interest&lt;/strong&gt; - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total dollars spent over the past year, as a proxy for &lt;strong&gt;Brand Interest&lt;/strong&gt;. Our assumption is that customers who are more interested in the brand will spend more money. We also assume that this (partially) motivates enrollment in membership. Engaged customers will not only spend more but also be more interested in exclusive offers and discounts – a few benefits often provided to members – relative to customers that have historically spent less.&lt;/p&gt;
-&lt;p&gt;The image above was created via the &lt;a href=&#34;http://dagitty.net/&#34;&gt;daggity website&lt;/a&gt;, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from &lt;strong&gt;Interest in Brand&lt;/strong&gt; to &lt;strong&gt;Churn&lt;/strong&gt;. This addresses the issue of &lt;em&gt;selection bias&lt;/em&gt;, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias &lt;em&gt;strongly ignorable&lt;/em&gt;, similar to a randomized experiment.&lt;/p&gt;
-&lt;p&gt;Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally we have at least a few months to see what happens. Second, membership offers and the quality may change over time, just as the consumers relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.&lt;/p&gt;
-&lt;p&gt;Last, we want to time-bound the meaning of “historical spend”. Some customers may have spent a lot in the past but have not been active for several years. These customers have may have already churned, and we want to ensure that all customers in our sample have at least some chance of being exposed to the treatment. Thus, we could apply some simple logic to narrow our consideration set, such as “all customers that made at least one purchase 12 months prior to the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Engagement&lt;/strong&gt; - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total number of purchases in the six months before the launch of the membership program. This variable will serve as a proxy for Engagement. We assume that customers who have made more purchases in the past six months will be inclined to make more purchases in the future – that is, more engaged in the past translates into more engaged in the future. We also assume that this (partially) motivates membership enrollment. Engaged customers will not only purchase more frequently but also be more interested in exclusive offers and discounts – a few benefits provided to members – relative to customers that have historically purchased infrequently.&lt;/p&gt;
+&lt;p&gt;The image above was created via the &lt;a href=&#34;http://dagitty.net/&#34;&gt;daggity website&lt;/a&gt;, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from &lt;strong&gt;Engagement&lt;/strong&gt; to &lt;strong&gt;Purchase Frequency&lt;/strong&gt;. This addresses the issue of &lt;em&gt;selection bias&lt;/em&gt;, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias &lt;em&gt;strongly ignorable&lt;/em&gt;, similar to a randomized experiment.&lt;/p&gt;
+&lt;p&gt;Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally a few months have elapsed so we can see what happens. Second, membership offers and the quality may change over time, just as the consumer’s relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.&lt;/p&gt;
+&lt;p&gt;Last, we want to time-bound prior purchase history. Some customers may have frequently purchased in the past but have not been active for several years (or churned completely). We want to ensure that all customers in our sample have a chance of being exposed to the treatment. Thus, we could apply simple logic to narrow our consideration set, such as “all customers that have engaged with the brand in some capacity (e.g., made a purchase, browsed the website, or opened a marketing communication) since the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.&lt;/p&gt;
 &lt;/div&gt;
-&lt;div id=&#34;estimating-the-effect-of-membership-on-churn&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;Estimating the Effect of Membership on Churn&lt;/h3&gt;
+&lt;div id=&#34;estimating-the-effect-of-membership-on-purchase-frequency&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Estimating the Effect of Membership on Purchase Frequency&lt;/h3&gt;
 &lt;p&gt;Now that we have a solid conceptual foundation, let’s continue to work through our membership example by generating some contrived data.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(tidyverse)
 library(broom)
-library(rsample)&lt;/code&gt;&lt;/pre&gt;
+library(rsample)
+library(janitor)
+# set base theme as black &amp;amp; white
+theme_set(theme_bw())&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(2021)
-# sample size
+# sample size of members and non-members
 n = 5000
-enrolled_in_membership &amp;lt;- c(rep(0, n), rep(1, n))
-membership_effect_size = 0.05
-churn_prob_non_member = 0.5
-churn_prob_member = churn_prob_non_member - membership_effect_size
-churned_member &amp;lt;- c(rbinom(n, 1, prob=churn_prob_non_member),
-                    rbinom(n, 1, prob=churn_prob_member))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;In the code block above, we are saying that the effect size of membership on churn is 0.05, such that 50% of non-members will churn after six months, while only 45% of members will churn over the same time period. This establishes the effect size of membership on churn.&lt;/p&gt;
-&lt;p&gt;Next, we’ll define the historical differences in total spend via the &lt;code&gt;gamma&lt;/code&gt; distribution. The gamma distribution is useful for continuous data that is right-skewed and always positive. The two parameters - alpha (shape) and beta (rate) - determine the skew and how “stretched” the range of values are for the distribution, respectively. It also approximates aggregate spending patterns in the real-world, such that most consumers spend a little, while a few spend a lot. Let’s visualize what this looks like, under the assumption that members tend to spend more than non-members, after bringing all the data together.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;shape = 1
-rate_member &amp;lt;- 0.005
-rate_non_member &amp;lt;- rate_member + 0.005
-member_spend_hist &amp;lt;- rgamma(n=n, 
-                            shape=shape, 
-                            rate = rate_member)
-non_member_spend_hist &amp;lt;- rgamma(n=n, 
-                                shape=shape, 
-                                rate = rate_non_member)
-prior_spend = c(non_member_spend_hist, member_spend_hist)
+# expected purchase frequency
+base_lambda = .75
+# purchase frequency effect size for &amp;quot;more engaged&amp;quot; customers 
+engagement_effect_size = .25
 
-df &amp;lt;- tibble(member = enrolled_in_membership,
-             churned_member = churned_member,
-             prior_spend = prior_spend
-             )&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;spend_summary &amp;lt;- df %&amp;gt;% 
-  group_by(member) %&amp;gt;% 
-  summarise(avg_prior_spend = mean(prior_spend))
+less_engaged = rpois(n=n, lambda = base_lambda)
+more_engaged = rpois(n=n, lambda = base_lambda + engagement_effect_size)
+# create tibble with number of previous purchases for each customer
+purchase_df &amp;lt;- tibble(n_purchase_pre = c(less_engaged, more_engaged))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In the code block above, we expect “less engaged” customers to make 0.75 purchases (on average) over six months, and “more engaged” customers to make one purchase over the same period. The difference in purchase frequency between our customer types is ascribed to our latent variable of Engagement. We assume the data generating process for historical purchase frequency can be represented by the Poisson distribution. Recall that the Poisson distribution models the number of events expected to occur within a given period. It also approximates consumer purchase frequency patterns in the real world, such that most customers make a small number of purchases, while a few customers make a large number of purchases.&lt;/p&gt;
+&lt;p&gt;We established our expected purchase frequency and engagement effect size above,so let’s simulate the effect of Engagement on Membership. We’ll create three bins and assign a probability of enrolling as a member within each bin, such that higher bins (i.e., the top 33% of customers) have a higher probability of enrolling relative to lower bins (i.e., the bottom 33% of customers).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_sim &amp;lt;- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.2))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.3))
+  } else {
+    return(rbinom(1, 1, prob = 0.4))
+  }
+}
 
-df %&amp;gt;% 
-  inner_join(spend_summary) %&amp;gt;% 
-  mutate(member = as.factor(member)) %&amp;gt;% 
-  ggplot(aes(prior_spend, fill = member)) + 
-  geom_histogram(alpha = 0.75) + 
-  geom_vline(data = spend_summary, aes(xintercept = avg_prior_spend),
-             size = 2, lty = 4, alpha = 0.5) + 
-  facet_grid(member ~ .) + 
+purchase_df &amp;lt;- purchase_df %&amp;gt;% 
+  mutate(bin = ntile(n_purchase_pre, 3),
+         member_enrolled = map_int(bin, membership_sim)
+         ) %&amp;gt;% 
+  select(-bin)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;While we know the true effect size (given that we generated the numbers), let’s verify the assumption that our proxy for engagement (Prior Purchases) exhibits the hypothesized effect on membership.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;purchase_df %&amp;gt;% 
+  mutate(n_purchase_pre = fct_lump(as.factor(n_purchase_pre), 
+                                   n=2,
+                                   other_level = &amp;#39;2 or More&amp;#39;
+                                   )) %&amp;gt;% 
+  group_by(n_purchase_pre) %&amp;gt;% 
+  summarise(pct_member = mean(member_enrolled)) %&amp;gt;% 
+  ggplot(aes(n_purchase_pre, pct_member)) + 
   theme_bw() + 
-  scale_x_continuous(labels = scales::dollar_format(),
-                     breaks = seq(0, 2000, 100)
-                     ) + 
-  labs(x = &amp;#39;Total Previous Spend&amp;#39;) + 
-  theme(legend.position = &amp;quot;top&amp;quot;,
-    axis.text.x = element_text(size = 12, angle = 90),
+  geom_col() + 
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  labs(x = &amp;#39;N Prior Purchases&amp;#39;,
+       y = &amp;#39;Percent Enrolled as Members&amp;#39;
+       ) + 
+  theme(axis.text.x = element_text(size = 12, angle = 90),
     axis.text.y = element_text(size = 14),
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14),
@@ -105,113 +109,178 @@ df %&amp;gt;%
     legend.title = element_text(size = 16),
     strip.text.y = element_text(size = 14)
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;On average, members spent ~$100 more relative to non-members. This is a simple yet effective way for validating our initial assumption that members exhibit different behavior than non-members.&lt;/p&gt;
-&lt;p&gt;Next, we’ll establish the relationship between historical spend and churn. Let’s create five bins and assign a probability of churn within each bin, such that higher bins (i.e., the top 20% of spenders) have a lower probability of churning relative to lower bins (i.e., the bottom 20% of spenders). We’ll then create the joint effect of treatment (membership) and our single covariate (prior spend) on our outcome (churned).&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;churn_simulator &amp;lt;- function(bin){
-  if(bin == 1){
-    return(rbinom(1, 1, prob = 0.5))
-  } else if (bin == 2){
-    return(rbinom(1, 1, prob = 0.4))
-  } else if (bin == 3){
-    return(rbinom(1, 1, prob = 0.3))
-  } else if (bin == 4){
-    return(rbinom(1, 1, prob = 0.2))
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Now that we have validated the relationship between these variables, we’ll create the joint effect of treatment (Membership) and our single covariate (Engagement) on our outcome (Purchase Frequency).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;purchase_sim &amp;lt;- function(n_purchase_pre, member_enrolled){
+  membership_effect_size = .1
+  if(member_enrolled == 1){
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre + membership_effect_size)
+    return(post_purchase_freq)
   } else {
-    return(rbinom(1, 1, prob = 0.1))
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre)
+    return(post_purchase_freq)
   }
 }
 
-df &amp;lt;- df %&amp;gt;% 
-  mutate(bin = ntile(prior_spend, 5), 
-         churned_spend = map_int(bin, churn_simulator),
-         churned = ifelse(churned_member + churned_spend &amp;gt; 0, 1, 0)
+purchase_df &amp;lt;- purchase_df %&amp;gt;% 
+  mutate(n_purchase_post = map2_int(n_purchase_pre, 
+                                member_enrolled, 
+                                purchase_sim)
          )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We can verify that our simulated relationship between churn and historical spend matches our expectations. Note we’ll scale our &lt;code&gt;prior_spend&lt;/code&gt; field to be per $100 dollars spent instead of per $1 dollar spent. This makes interpreting the resulting coefficient more intuitive.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;glm(churned ~ prior_spend, 
-    data = df %&amp;gt;% mutate(prior_spend = prior_spend / 100),
-    family = binomial()
-) %&amp;gt;% 
-  tidy(exponentiate = TRUE) %&amp;gt;% 
-  filter(term == &amp;#39;prior_spend&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 5
-##   term        estimate std.error statistic  p.value
-##   &amp;lt;chr&amp;gt;          &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;    &amp;lt;dbl&amp;gt;
-## 1 prior_spend    0.860    0.0129     -11.7 1.73e-31&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The estimated coefficient indicates that for each additional $100 of historical spend, the odds of churn decrease by ~14%. Now that we have verified the assumed relationships between our variables, we’ll generate propensity scores an in effort to create more “balance” between our control and treatment groups.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;purchase_sim&lt;/code&gt; function accounts for the number of prior purchases as well as if the customer has enrolled as a member. If they have enrolled, the true effect size is .1, in that enrolling a customer as a member leads to .1 additional purchases (on average) during the six months.&lt;/p&gt;
+&lt;p&gt;Below, we’ll confirm that members have made more purchases relative to non-members.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;avg_purchase_freq &amp;lt;- purchase_df %&amp;gt;% 
+  group_by(member_enrolled) %&amp;gt;% 
+  summarise(avg_post_purchase = mean(n_purchase_post),
+            se = sqrt(mean(n_purchase_post) / n())
+            ) %&amp;gt;% 
+  mutate(is_member = str_to_title(ifelse(member_enrolled == 1, 
+                                         &amp;#39;member&amp;#39;, 
+                                         &amp;#39;non-member&amp;#39;)),
+         is_member = fct_reorder(is_member, avg_post_purchase),
+         lb = avg_post_purchase - 1.96 * se,
+         ub = avg_post_purchase + 1.96 * se
+         )
+
+avg_purchase_freq %&amp;gt;% 
+  ggplot(aes(is_member, avg_post_purchase, fill = is_member)) + 
+  geom_col(color = &amp;#39;black&amp;#39;) + 
+  geom_errorbar(aes(ymin = lb, ymax=ub), width=0.4) + 
+  coord_flip() + 
+  labs(x = NULL,
+       y = &amp;#39;Average Number of Purchases&amp;#39;,
+       fill = &amp;#39;Membership Status&amp;#39;
+  ) + 
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16),
+        legend.position = &amp;#39;top&amp;#39;
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Indeed, this confirms that the data aligns with our expectations. We could reach the same conclusion by fitting a regression model and then considering the magnitude of the coefficient for membership.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;incorrect_fit &amp;lt;- glm(n_purchase_post ~ member_enrolled,
+                     data = purchase_df,
+                     family = &amp;quot;poisson&amp;quot;
+                     )
+
+incorrect_fit_coef &amp;lt;- tidy(incorrect_fit)
+
+intercept &amp;lt;- incorrect_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;(Intercept)&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+member_est &amp;lt;- incorrect_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;member_enrolled&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+effect_size_est &amp;lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&amp;#39;Estimated Difference: {effect_size_est}&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Estimated Difference: 0.402&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that if we did not adjust for any confounding variables, we would &lt;strong&gt;mistakenly conclude&lt;/strong&gt; that membership leads to ~.3 extra purchases per customer. That is, we would overestimate the effect size of membership on customer purchase behaviors because we know that Engagement affects both Membership and Purchase Frequency. In the following section, we’ll generate propensity scores to create more balance between our control and treatment groups on our confounding variables.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;propensity-scores&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Propensity Scores&lt;/h3&gt;
-&lt;p&gt;The most common approaches for creating comparison groups are (1) &lt;em&gt;propensity score matching&lt;/em&gt; and (2) &lt;em&gt;inverse probability of treatment weighting (IPTW)&lt;/em&gt;. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If the groups are different sizes, the number of non-treated observations are reduced to the size of the treated condition, as each treated observation is matched with a single non-treated observation. In contrast, weighting includes all observations but places &lt;em&gt;more weight&lt;/em&gt; on observations with a high propensity scores and less weight on observations with low propensity scores.&lt;/p&gt;
-&lt;p&gt;This post will use weighting. While both approaches may yield similar results, I prefer weighting because you are not discarding data. Our simulated data does not suffer from an imbalance, but in most real-world situations you’ll have a lot fewer observations in your treatment group relative to your control group. Additionally, the quality of your matching will depend mostly on how well you’ve specified your model and accounted for unobserved covariates.&lt;/p&gt;
-&lt;p&gt;With that in mind, we’ll specify our model for generating propensity scores.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify model for estimating P(treatment | prior_spend)
-model_spec &amp;lt;- as.formula(member ~ prior_spend)
-member_model &amp;lt;- glm(model_spec, data = df, family = binomial())
+&lt;p&gt;Two common approaches for creating comparison groups with observational data are (1) &lt;em&gt;propensity score matching&lt;/em&gt; and (2) &lt;em&gt;inverse probability of treatment weighting (IPTW)&lt;/em&gt;. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If groups are different sizes, the number of non-treated observations is reduced to the size of the treated condition, as each treated observation is matched with a non-treated observation. In contrast, weighting includes all observations but places more weight on observations with high propensity scores and less weight on observations with low propensity scores. While both approaches can yield similar results, I prefer weighting because you are not discarding any data.&lt;/p&gt;
+&lt;p&gt;Below, we’ll specify our model for generating propensity scores.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify model for estimating P(treatment | Previous Purchases)
+model_spec &amp;lt;- as.formula(member_enrolled ~ n_purchase_pre)
+member_model &amp;lt;- glm(model_spec, 
+                    data = purchase_df, 
+                    family = binomial())
 member_prop_df &amp;lt;- member_model %&amp;gt;% 
-  augment(type.predict = &amp;#39;response&amp;#39;, data = df) %&amp;gt;% 
-  select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
-  mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;A few things to note now we’ve generated our propensity scores. First, we used logistic regression as a way to estimate membership probability. However, any classification model can be used to generate a score. If you suspect non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.
-Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.&lt;/p&gt;
+  augment(type.predict = &amp;#39;response&amp;#39;, data = purchase_df) %&amp;gt;% 
+  select(member_enrolled, n_purchase_pre, n_purchase_post, member_prob = .fitted) %&amp;gt;% 
+  mutate(iptw = 1 / ifelse(member_enrolled == 0, 1 - member_prob, member_prob))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;A few things to note since we’ve created our propensity scores. First, we used logistic regression to estimate membership probability. However, any classification model can generate a propensity score. If there are non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.&lt;/p&gt;
+&lt;p&gt;Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;iptw_pct_99 &amp;lt;- quantile(member_prop_df %&amp;gt;% pull(iptw), 0.99)[[1]]
 member_prop_df &amp;lt;- member_prop_df %&amp;gt;% 
   mutate(iptw = ifelse(iptw &amp;gt; iptw_pct_99, iptw_pct_99, iptw))&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Now that we’ve addressed some common pre-modeling isues, let’s generate an initial estimate of the effect of membership on churn.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_effect &amp;lt;- glm(churned ~ member,
+&lt;p&gt;Now that we’ve addressed some common pre-modeling issues, let’s generate an initial estimate of the effect of Membership on Purchase Frequency.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;membership_fit &amp;lt;- glm(n_purchase_post ~ member_enrolled,
               data = member_prop_df,
-              family = binomial(),
+              family = &amp;#39;poisson&amp;#39;,
               weights = iptw
-              ) %&amp;gt;% 
-  tidy(exponentiate = TRUE) %&amp;gt;% 
-  filter(term == &amp;#39;member&amp;#39;) %&amp;gt;% 
-  pull(estimate)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;print(membership_effect)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## [1] 0.8870706&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Our initial estimate indicates that membership leads to a 11% reduction in churn, which in the real-world would be fairly significant effect! However, we are also interested in the uncertainty of our estimate; that is, what is best-case and worst-case of our effect size? The above-approach has been known to provide biased estimates of our standard error, which in turn results in confidence intervals that are too narrow. This means we over-confident in our ability to accurately estimate our causal effect.
-To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better capture the uncertainty in our estimate.&lt;/p&gt;
+              )
+membership_fit_coef &amp;lt;- tidy(membership_fit)
+
+intercept &amp;lt;- membership_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;(Intercept)&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+member_est &amp;lt;- membership_fit_coef %&amp;gt;% 
+  filter(term == &amp;#39;member_enrolled&amp;#39;) %&amp;gt;% 
+  pull(estimate)
+
+effect_size_est_adj &amp;lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&amp;#39;Estimated Difference: {effect_size_est_adj}&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Estimated Difference: 0.097&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Our initial estimate indicates that membership leads to ~.1 extra purchases, which matches perfectly with the true effect size! This is a great start, but we also need to consider certainty in the estimate. In our example, we have a fairly large sample size, there is only one covariate, and the distribution of treatment (members vs. non-members) is relatively even between groups. Real world data sets, on the other hand, are often small, present a high degree of skew between groups, or exhibit intricate causal structures. The presence of these factors affects how accurately we can estimate a true effect, and using the method above to create a confidence interval can lead to incorrect estimates of our standard error (too small).
+To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better quantify uncertainty in our estimate.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;member_fit_bootstrap &amp;lt;- function(split){
   temp_df &amp;lt;- analysis(split)
-  temp_model &amp;lt;- glm(member ~ prior_spend,
+  
+  temp_model &amp;lt;- glm(member_enrolled ~ n_purchase_pre,
                     family = binomial(),
                     data = temp_df
                   )
+  
   temp_df &amp;lt;- temp_model %&amp;gt;% 
     augment(type.predict = &amp;#39;response&amp;#39;, data = temp_df) %&amp;gt;% 
-    select(member, churned, prior_spend, member_prob = .fitted) %&amp;gt;% 
-    mutate(iptw = 1 / ifelse(member == 0, 1 - member_prob, member_prob))
-  temp_iptw_pct_99 &amp;lt;- quantile(temp_df %&amp;gt;% pull(iptw), 0.99)[[1]]
-  temp_df &amp;lt;- temp_df %&amp;gt;% 
-    mutate(iptw = ifelse(iptw &amp;gt; temp_iptw_pct_99, temp_iptw_pct_99, iptw))
-  temp_ret_df &amp;lt;- glm(churned ~ member,
-                data = temp_df,
-                family = binomial(),
-                weights = iptw) %&amp;gt;% 
-    tidy(exponentiate = TRUE)
+    select(member_enrolled, n_purchase_pre, 
+           n_purchase_post, member_prob = .fitted) %&amp;gt;% 
+    mutate(iptw = 1 / ifelse(member_enrolled == 0, 
+                             1 - member_prob, 
+                             member_prob))
   
+  temp_iptw_pct_99 &amp;lt;- quantile(temp_df %&amp;gt;% pull(iptw), 0.99)[[1]]
+  
+  temp_df &amp;lt;- temp_df %&amp;gt;% 
+    mutate(iptw = ifelse(iptw &amp;gt; temp_iptw_pct_99, 
+                         temp_iptw_pct_99, 
+                         iptw))
+  
+  temp_ret_df &amp;lt;- glm(n_purchase_post ~ member_enrolled,
+                data = temp_df,
+                family = &amp;#39;poisson&amp;#39;,
+                weights = iptw) %&amp;gt;% 
+    tidy()
   return(temp_ret_df)
 }&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;n_boot = 500
-boot_results &amp;lt;- bootstraps(df, n_boot, apparent = TRUE) %&amp;gt;% 
+boot_results &amp;lt;- bootstraps(purchase_df, n_boot, apparent = TRUE) %&amp;gt;% 
   mutate(results = map(splits, member_fit_bootstrap))&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;boot_results &amp;lt;- boot_results %&amp;gt;% 
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;boot_results_unnest &amp;lt;- 
+  boot_results %&amp;gt;% 
   select(-splits) %&amp;gt;% 
-  unnest(cols=results) %&amp;gt;% 
-  filter(term == &amp;#39;member&amp;#39;)
+  unnest(cols=results)
 
-boot_summary &amp;lt;- boot_results %&amp;gt;%
-  summarise(lb = quantile(estimate, 0.025),
-            mdn = quantile(estimate, 0.5),
-            ub = quantile(estimate, 0.975)
-            ) %&amp;gt;%
+boot_results_est &amp;lt;- 
+  boot_results_unnest %&amp;gt;% 
+  select(id, term, estimate) %&amp;gt;% 
+  pivot_wider(names_from = term, 
+              values_from = estimate
+              ) %&amp;gt;% 
+  clean_names() %&amp;gt;% 
+  mutate(est_effect = exp(member_enrolled + intercept) - exp(intercept))
+
+
+boot_results_summary &amp;lt;- boot_results_est %&amp;gt;%
+  summarise(lb = quantile(est_effect, 0.025),
+            mdn = quantile(est_effect, 0.5),
+            ub = quantile(est_effect, 0.975)
+  ) %&amp;gt;%
   pivot_longer(everything())&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;lb_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;lb&amp;#39;) %&amp;gt;% pull(value)
-ub_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;ub&amp;#39;) %&amp;gt;% pull(value)
-effect_est &amp;lt;- boot_summary %&amp;gt;% filter(name==&amp;#39;mdn&amp;#39;) %&amp;gt;% pull(value)
-boot_results %&amp;gt;% 
-  ggplot(aes(x=estimate)) + 
-  geom_histogram(fill = &amp;#39;orange&amp;#39;) + 
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;lb_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;lb&amp;#39;) %&amp;gt;% pull(value)
+ub_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;ub&amp;#39;) %&amp;gt;% pull(value)
+effect_est &amp;lt;- boot_results_summary %&amp;gt;% filter(name==&amp;#39;mdn&amp;#39;) %&amp;gt;% pull(value)
+boot_results_est %&amp;gt;% 
+  ggplot(aes(x=est_effect)) + 
+  geom_histogram(fill=&amp;#39;grey90&amp;#39;, color = &amp;#39;black&amp;#39;) + 
   theme_bw() + 
   geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
   geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
@@ -226,22 +295,22 @@ boot_results %&amp;gt;%
     axis.title.x = element_text(size = 14),
     axis.title.y = element_text(size = 14)
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-15-causal-inference-pt-1/causal_inference_part_1_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;Our final estimate is that membership reduces the odds customer churn by somewhere between 0.04 and 0.18. confidence intervals aren’t actually that much different from those in the original model. The primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. Again, in real data sets, the confidence intervals following bootstrapping will typically be wider than those provided by OLS.&lt;/p&gt;
-&lt;p&gt;Hopefully this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that comes in handy when you are able to run a true a/b test. Until then, happy experimenting!&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Our final estimate of the causal effect of membership on purchase frequency is between 0.06 and 0.14. Note that these confidence intervals aren’t much different from those in the original, non-bootstrapped approach. As mentioned previously, the primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. However, in many instances, confidence intervals following bootstrapping will be wider – and more accurate – than those provided by OLS.&lt;/p&gt;
+&lt;p&gt;Hopefully, this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that come in handy when you can run a true A/B test. Until then, happy experimenting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
     
     <item>
       <title>Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</title>
-      <link>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
+      <link>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</link>
       <pubDate>Mon, 26 Aug 2019 21:13:14 -0500</pubDate>
-      <guid>/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
+      <guid>http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/images/header_image.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;In less than two weeks, Fantasy Football will once again resume for the 2019 NFL season! While I’m looking forward to the impending draft, the start of the season brings back memories of a not-so-distant loss that left me one game shy of the championship. The loss stemmed from a missed field goal, leaving my team two points shy of victory. Of course, a myriad of factors beyond that missed field goal contributed to my fantasy demise, but those two points reinvigorated a question I’ve wondered about for the past few years: Why are kickers drafted in the last round?&lt;/p&gt;
@@ -785,7 +854,7 @@ glimpse(stats_raw)&lt;/code&gt;&lt;/pre&gt;
        y = &amp;#39;Distance (Yards)&amp;#39;
        ) + 
     theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Looks good! Each point represents the field goal percentage for a player-season-distance combination. As the distance increases, the make rate gradually shifts to left, which is exactly what we’d expect. We’ll do a bit more cleaning below before proceeding.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_processed &amp;lt;- 
   stats_raw %&amp;gt;%
@@ -1290,7 +1359,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
        title = &amp;#39;Estimated field goal percentage amongst active NFL kickers&amp;#39;,
        subtitle = &amp;#39;Black dot represents estimate while red dot is actual. Note the bias in our estimates.&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Let’s talk through this figure by comparing the field goal percentage estimates for Adam Vinatieri, who has made 530 of 629 fields goals throughout his career, to Chris Boswell, who has made 50 of 57 field goals. While Vinatieri has a lower actual make rate than Boswell (84.2% vs. 87.7%), we consider him to be a better field goal kicker. The seemingly incongruent finding is based on the fact that we have more evidence for Vinatieri (629 FG attempts vs. 57 FG attempts) than Boswell. It’s like saying, “Chris Boswell is good kicker, maybe better than Vinatieri, but we don’t have enough evidence (yet) to believe he is that much better than an average kicker, a number represented by our prior”. Indeed, if we also consider the width of the credible intervals surrounding these two players, Adam Vinatieri’s interval is considerably smaller than Chris Boswell’s interval.&lt;/p&gt;
 &lt;p&gt;While this is a good way to gain an intuition for what’s happening under the hood, we see an immediate problem – all of our estimates are biased! The actual field goal percentage is above every single estimate. Luckily, there is a solution: we can create conditional estimates of our prior. One way to do this is to create features that explain variability between our players. For example, &lt;a href=&#34;https://fivethirtyeight.com/features/kickers-are-forever/&#34;&gt;field goal percentages have improved dramatically over the past 50 years&lt;/a&gt;. Let’s consider our own data and map out this pattern from the 1970s to the 2010s.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -1307,7 +1376,7 @@ stats_processed &amp;lt;- inner_join(stats_processed,df_time_stats)&lt;/code&gt;
     y = &amp;quot;Field Goal Percentage&amp;quot;,
     title = &amp;#39;Kicker performance has improved over time&amp;#39;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;1152&#34; /&gt;
 The best kicker in 1970s has a lower field goal percentage than the worst kicker in the 2010s. Including the decade of a kicker’s rookie season allows us to create a more informed prior. Thus, if we use the median field goal percentage of all kickers who debuted as rookies in 2010+, our best guess would be about 84%, whereas a kicker who debuted in the 1970s would be somewhere around 64%. This explains why the estimates from our null model were biased.&lt;/p&gt;
 &lt;p&gt;The second factor to consider is the number of field goal attempts per player, because better players have more opportunities to kick field goals. This makes intuitive sense and is captured in the following plot.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;stats_agg %&amp;gt;%
@@ -1321,7 +1390,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
     y = &amp;quot;Field Goal percentage&amp;quot;,
     title = &amp;quot;Better kickers have more opportunities&amp;quot;
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Below we’ll use the same model except this time we’ll account for the number of field goal attempts and a player’s rookie decade.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;fit_complete &amp;lt;- 
   gamlss(cbind(fg_made, fg_attempted - fg_made) ~ log2(fg_attempted) + rookie_decade,
@@ -1333,7 +1402,7 @@ The best kicker in 1970s has a lower field goal percentage than the worst kicker
 ## GAMLSS-RS iteration 3: Global Deviance = 668.3708 
 ## GAMLSS-RS iteration 4: Global Deviance = 668.1839 
 ## GAMLSS-RS iteration 5: Global Deviance = 668.1838&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-18-1.png&#34; width=&#34;1152&#34; /&gt;
 Much better! Our estimates do not exhibit the same degree of bias as before. Moreover, the width of our credible intervals shrank across all players. This makes sense, given that we can now condition our prior estimates on inputs that explain variability in the field goal percentage. While there are other factors that might improve our model (e.g., did a player’s team have their home games in a dome?), this is a good starting point for answering our original question.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;from-parameters-to-points&#34; class=&#34;section level3&#34;&gt;
@@ -1411,7 +1480,7 @@ names(est_outcomes) &amp;lt;- est_active$name&lt;/code&gt;&lt;/pre&gt;
        subtitle = &amp;#39;Drafing any kicker is fine&amp;#39;
        ) + 
   theme(legend.position = &amp;#39;none&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-21-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Wait! We went all this way for you to tell me that the status quo is probably right? Yes, I did. But we still haven’t quantified how much better or worse drafting the best or worst kicker is in terms of fantasy points. A simple way is to count the number of seasons where Justin Tucker (the best kicker) scored more points than Andrew Franks (the worst kicker).&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;jt_pts &amp;lt;- 
   pt_simulation %&amp;gt;% 
@@ -1441,7 +1510,7 @@ print(str_glue(&amp;#39;PCT greater: {pct_greater * 100}%&amp;#39;))&lt;/code&gt
        title = &amp;#39;The best kicker should score about 10 more points per season compared to the worst&amp;#39;,
        subtitle = &amp;#39;Estimate based on 27 FG attempts per season with each FG worth 3.5 points&amp;#39;
        )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;1152&#34; /&gt;
 If we spread this estimate out across 16 regular-season games, it comes out to less than a single point per game.&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;conclusion&#34; class=&#34;section level3&#34;&gt;
@@ -1453,13 +1522,13 @@ If we spread this estimate out across 16 regular-season games, it comes out to l
     
     <item>
       <title>Choosing a Fantasy Football Quarterback</title>
-      <link>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
+      <link>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
       <pubDate>Sun, 10 Sep 2017 21:13:14 -0500</pubDate>
-      <guid>/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
+      <guid>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/mariota.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Understanding a new concept is all about connecting it with something you already know. I don’t know much, but I do know Fantasy Football. Thus, when I come across new concepts, I often think to myself, “How can I use this information to beat my friend Steve in Fantasy Football”? This very question was the impetus for putting these words and figures together in a post, which will introduce the idea of using the Beta Distribution to determine your weekly starter. I’ll explain this approach in the context of my 2015 Fantasy Football season.&lt;/p&gt;

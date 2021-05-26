@@ -1,0 +1,1378 @@
+<!DOCTYPE html><html lang="en-us" >
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  
+  
+  
+    <meta name="generator" content="Wowchemy 5.1.0 for Hugo" />
+  
+
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+  
+  
+
+  <meta name="author" content="Mark LeBoeuf" />
+
+  
+  
+  
+    
+  
+  <meta name="description" content="This post highlights one approach to generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making" />
+
+  
+  <link rel="alternate" hreflang="en-us" href="http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/" />
+
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+
+  
+  
+  
+    <meta name="theme-color" content="#1565c0" />
+  
+
+  
+  
+
+  
+  
+  
+  
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" integrity="sha256-FMvZuGapsJLjouA6k7Eo2lusoAX9i0ShlWFG6qt7SLc=" crossorigin="anonymous">
+
+    
+    
+
+    
+    
+    
+      
+    
+    
+      
+      
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/tomorrow-night-eighties.min.css" crossorigin="anonymous" title="hl-light" media="print" onload="this.media='all'">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/tomorrow-night-eighties.min.css" crossorigin="anonymous" title="hl-dark" media="print" onload="this.media='all'" disabled>
+      
+    
+
+    
+    
+    
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" integrity="sha512-1xoFisiGdy9nvho8EgXuXvnpR5GAMSjFwp40gSRE3NwdUdIMIKuPa7bqoUhLD0O/5tPNhteAsE5XyyMi5reQVA==" crossorigin="anonymous" media="print" onload="this.media='all'">
+    
+
+    
+
+    
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+        
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+      
+      
+
+      
+      
+
+      
+    
+  
+
+  
+  
+  
+    
+      
+      <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap" media="print" onload="this.media='all'">
+    
+  
+
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="/css/wowchemy.9a66e344a68eb664b392d406a3f80726.css" />
+
+  
+
+
+
+  
+
+  
+
+  
+
+
+
+
+  
+  
+  
+
+  
+
+  
+    <link rel="manifest" href="/index.webmanifest" />
+  
+
+  <link rel="icon" type="image/png" href="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_32x32_fill_lanczos_center_2.png" />
+  <link rel="apple-touch-icon" type="image/png" href="/media/icon_huc737709a4be44af6221d1cabfe197959_22580_180x180_fill_lanczos_center_2.png" />
+
+  <link rel="canonical" href="http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/" />
+
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+  
+  
+  <meta property="twitter:card" content="summary" />
+  
+  <meta property="og:site_name" content="The Code Forest" />
+  <meta property="og:url" content="http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/" />
+  <meta property="og:title" content="Causal Inference with Propensity Scores | The Code Forest" />
+  <meta property="og:description" content="This post highlights one approach to generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making" /><meta property="og:image" content="http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" />
+    <meta property="twitter:image" content="http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png" /><meta property="og:locale" content="en-us" />
+  
+    
+      <meta
+        property="article:published_time"
+        content="2021-03-15T21:13:14-05:00"
+      />
+    
+    <meta property="article:modified_time" content="2021-03-15T21:13:14-05:00">
+  
+
+  
+
+
+    
+
+
+
+
+
+
+  
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/"
+  },
+  "headline": "Causal Inference with Propensity Scores",
+  
+  "datePublished": "2021-03-15T21:13:14-05:00",
+  "dateModified": "2021-03-15T21:13:14-05:00",
+  
+  "author": {
+    "@type": "Person",
+    "name": "Mark LeBoeuf"
+  },
+  
+  "publisher": {
+    "@type": "Organization",
+    "name": "The Code Forest",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_192x192_fill_lanczos_center_2.png"
+    }
+  },
+  "description": "This post highlights one approach to generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making"
+}
+</script>
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+
+  <title>Causal Inference with Propensity Scores | The Code Forest</title>
+</head>
+
+
+<body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" class="page-wrapper   " data-wc-page-id="28912b7c365a0ae6dbcae7e8e96f7613" >
+
+  
+  
+  
+  
+  
+  
+  
+  
+  <script src="/js/wowchemy-init.min.226a9011996d125bf3fe4a5f22353a49.js"></script>
+
+  
+
+
+<aside class="search-modal" id="search">
+  <div class="container">
+    <section class="search-header">
+
+      <div class="row no-gutters justify-content-between mb-3">
+        <div class="col-6">
+          <h1>Search</h1>
+        </div>
+        <div class="col-6 col-search-close">
+          <a class="js-search" href="#" aria-label="Close"><i class="fas fa-times-circle text-muted" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <div id="search-box">
+        
+        <input name="q" id="search-query" placeholder="Search..." autocapitalize="off"
+        autocomplete="off" autocorrect="off" spellcheck="false" type="search" class="form-control"
+        aria-label="Search...">
+        
+      </div>
+
+      
+      
+
+      
+
+    </section>
+    <section class="section-search-results">
+
+      <div id="search-hits">
+        
+      </div>
+
+    </section>
+  </div>
+</aside>
+
+
+
+  <div class="page-header">
+    
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light compensate-for-scrollbar" id="navbar-main">
+  <div class="container-xl">
+
+    
+    <div class="d-none d-lg-inline-flex">
+      <a class="navbar-brand" href="/">The Code Forest</a>
+    </div>
+    
+
+    
+    <button type="button" class="navbar-toggler" data-toggle="collapse"
+            data-target="#navbar-content" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span><i class="fas fa-bars"></i></span>
+    </button>
+    
+
+    
+    <div class="navbar-brand-mobile-wrapper d-inline-flex d-lg-none">
+      <a class="navbar-brand" href="/">The Code Forest</a>
+    </div>
+    
+
+    
+    
+    <div class="navbar-collapse main-menu-item collapse justify-content-start" id="navbar-content">
+
+      
+      <ul class="navbar-nav d-md-inline-flex">
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+
+        
+        
+        
+        
+
+        
+          
+            
+            
+          
+          
+            
+            
+            
+              
+            
+            
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="/#posts"><span>Posts</span></a>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+
+        
+        
+        
+        
+
+        
+          
+            
+            
+          
+          
+            
+            
+            
+              
+            
+            
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="/#about"><span>About</span></a>
+        </li>
+
+        
+        
+
+      
+
+        
+      </ul>
+    </div>
+
+    <ul class="nav-icons navbar-nav flex-row ml-auto d-flex pl-md-2">
+
+      
+      
+        
+          
+          <li class="nav-item d-none d-lg-inline-flex">
+            <a class="nav-link" href="/"  aria-label="">
+              <i class="fas fa-" aria-hidden="true"></i>
+            </a>
+          </li>
+        
+      
+
+      
+      
+      <li class="nav-item">
+        <a class="nav-link js-search" href="#" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></a>
+      </li>
+      
+
+      
+      
+      <li class="nav-item dropdown theme-dropdown">
+        <a href="#" class="nav-link" data-toggle="dropdown" aria-haspopup="true" aria-label="Display preferences">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+        </a>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item js-set-theme-light">
+            <span>Light</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-dark">
+            <span>Dark</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-auto">
+            <span>Automatic</span>
+          </a>
+        </div>
+      </li>
+      
+
+      
+      
+
+    </ul>
+
+  </div>
+</nav>
+
+
+  </div>
+
+  <div class="page-body">
+    <article class="article">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+  
+<div class="article-container pt-3">
+  <h1>Causal Inference with Propensity Scores</h1>
+
+  
+
+  
+    
+
+
+<div class="article-metadata">
+
+  
+  
+
+  
+  <span class="article-date">
+    
+    
+      
+    
+    Mar 15, 2021
+  </span>
+  
+
+  
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    15 min read
+  </span>
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <span class="middot-divider"></span>
+  <span class="article-categories">
+    <i class="fas fa-folder mr-1"></i><a href="/category/causal-inference/">Causal Inference</a>, <a href="/category/propensity-scores/">Propensity Scores</a>, <a href="/category/r/">R</a></span>
+  
+
+</div>
+
+    
+
+
+
+
+
+  
+</div>
+
+
+
+  <div class="article-container">
+
+    <div class="article-style">
+      
+
+
+<p><img src="/post/2021-03-15-causal-inference-pt-1/images/dag.png" width="700" height="600" /></p>
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p>Causal inference attempts to answer “what-if” questions. For example, if the minimum wage were increased, what effect would it have on unemployment rates? Or if an entertainment company launched a marketing campaign for a new movie, what effect would it have on box-office sales? The objective in each of these examples is to quantify the impact of an intervention – a change in wages or a targeted marketing campaign – on an outcome – increasing employment or bolstering revenue. Estimating how a particular action can affect an end-state falls within the realm of <em>prescriptive</em> analytics and can inform decision-making in the face of multiple possible actions.</p>
+<p>However, most analytics efforts are applied to either <em>describing</em> or <em>predicting</em> an outcome rather than understanding what drives it. For example, imagine you work for a cheese shop. You might be asked to <em>describe</em> how sales of cheese have changed over the past year. Or perhaps you want to <em>predict</em> how much cheese will sell over the next 12 months. Descriptive analytics can reveal if existing operational or strategic decisions are impacting the business (i.e., cheese sales) as anticipated. Predictive analytics can inform operational planning (e.g., how much cheese to manufacture), improve consumer experiences (e.g., an online cheese recommendation system), or automate repetitive tasks (e.g., automatically detecting defective cheese wheels during production with computer vision). While all of the applications can provide valuable answers to different questions, none can provide insight into the source of variation or root cause(s) of change in an outcome. Without this knowledge, it can be difficult to know where resources should be focused or how to grow and improve the business.</p>
+<p>Accordingly, the goal of this post is to highlight one approach to conducting prescriptive analytics and generating causal inferences with observational data. We’ll first walk through some of the basics of causal inference and propensity scores, followed by a practical example that brings these concepts together. At the end of this post, you should have a solid understanding of how propensity scores can be used in the real world to guide decision-making.</p>
+</div>
+<div id="causal-inference-propensity-scores" class="section level3">
+<h3>Causal Inference &amp; Propensity Scores</h3>
+<p>When people hear the words “causal inference”, they often think “A/B Test”. Indeed, the traditional way of answering causal questions is to randomly assign individuals to a treatment or control condition. The treatment is exposed to the intervention, while the control is not. The average difference is then calculated between the two conditions on some measure of interest to understand if the intervention had the desired effect.</p>
+<p>While A/B testing is considered the most rigorous way of inferring causation, it is not practical or possible in many situations. For example, if you were interested in the effect of a membership program on future purchasing behavior, you cannot assign customers to be a member or non-member; customers would enroll in the program under their own volition. Further, customers who enrolled as members are probably more interested in the product than those who did not enroll. This fact “confounds” the relationship between the effect of our member program on purchasing behavior.</p>
+<p>Propensity score matching attempts to address this issue, known as <em>selection bias</em>, by adjusting for factors that relate both to the treatment and outcome (i.e., confounding variables). A propensity score is scaled from 0 - 1 and indicates the probability of receiving treatment. Continuing with our previous membership example, a propensity score indicates the probability that a customer joins our membership program after seeing a banner on our website or receiving a promotional email. It does not indicate their probability of making a future purchase. Formalizing the roles of individual variables that increase/decrease membership enrollment and their interrelations is the topic of the next section.</p>
+</div>
+<div id="causal-graphs" class="section level3">
+<h3>Causal Graphs</h3>
+<p>We can codify our beliefs and assumptions about observational data through a <em>causal graph</em>. This is normally the first step on our journey of causal inference, as it allows us to translate domain knowledge into a formal structure. By creating a diagram about potential confounding variables as well as the direction of causal influence, we make our assumptions about the data generating process explicit.</p>
+<p>In the context of the current example, we assume that a customer in enrolling as a member influences future purchase behavior, not that future purchase behavior influences enrollment in membership. We can then encode this assumption in our causal graph. The exclusion of certain variables from our graph (e.g., age, gender, what types of products someone has previously purchased, etc.) is also an assumption, such that we assume these variables do not directly or indirectly affect purchase frequency or membership.</p>
+<p>These assumptions can and should be verified. If we believe a customer’s age affects purchase frequency and membership enrollment, we can stratify our customers by age (i.e,., 20-29, 30-39) and test both hypotheses. If there were significant differences between groups, we would include an age variable in our graph and adjust for its influence on the treatment and outcome.</p>
+<p>This is a contrived example, so we’ll keep things simple and formalize the main components of our analysis as follows:</p>
+<p><img src="/post/2021-03-15-causal-inference-pt-1/images/dag.png" width="700" height="600" /></p>
+<p><strong>Purchase Frequency</strong> - the total number of purchases six months following the launch of our membership program. This is our outcome variable.</p>
+<p><strong>Membership</strong> - if a customer enrolled as a member since the launch of the membership program. This is our treatment variable.</p>
+<p><strong>Engagement</strong> - this is an example of a latent variable. We would use several variables in practice but, to keep things simple, we’ll only use prior purchase history, defined as the total number of purchases in the six months before the launch of the membership program. This variable will serve as a proxy for Engagement. We assume that customers who have made more purchases in the past six months will be inclined to make more purchases in the future – that is, more engaged in the past translates into more engaged in the future. We also assume that this (partially) motivates membership enrollment. Engaged customers will not only purchase more frequently but also be more interested in exclusive offers and discounts – a few benefits provided to members – relative to customers that have historically purchased infrequently.</p>
+<p>The image above was created via the <a href="http://dagitty.net/">daggity website</a>, which makes it easy to create Causal DAGs or Directed Acyclic Graphs. Note the goal of creating a propensity score is to block the arrow from <strong>Engagement</strong> to <strong>Purchase Frequency</strong>. This addresses the issue of <em>selection bias</em>, in that our customers can “select into” the member condition. By adjusting for this pre-existing difference, we are attempting to make this bias <em>strongly ignorable</em>, similar to a randomized experiment.</p>
+<p>Another aspect to consider is when an individual joined our membership program. We want to allow enough time for differences to emerge, so ideally a few months have elapsed so we can see what happens. Second, membership offers and the quality may change over time, just as the consumer’s relationship with our brand changes. By narrowing the time frame of analysis, we can further control for time-related factors.</p>
+<p>Last, we want to time-bound prior purchase history. Some customers may have frequently purchased in the past but have not been active for several years (or churned completely). We want to ensure that all customers in our sample have a chance of being exposed to the treatment. Thus, we could apply simple logic to narrow our consideration set, such as “all customers that have engaged with the brand in some capacity (e.g., made a purchase, browsed the website, or opened a marketing communication) since the start of our member program”. This is not a hard-and-fast rule but something to consider when deciding which individuals to include in your analysis.</p>
+</div>
+<div id="estimating-the-effect-of-membership-on-purchase-frequency" class="section level3">
+<h3>Estimating the Effect of Membership on Purchase Frequency</h3>
+<p>Now that we have a solid conceptual foundation, let’s continue to work through our membership example by generating some contrived data.</p>
+<pre class="r"><code>library(tidyverse)
+library(broom)
+library(rsample)
+library(janitor)
+# set base theme as black &amp; white
+theme_set(theme_bw())</code></pre>
+<pre class="r"><code>set.seed(2021)
+# sample size of members and non-members
+n = 5000
+# expected purchase frequency
+base_lambda = .75
+# purchase frequency effect size for &quot;more engaged&quot; customers 
+engagement_effect_size = .25
+
+less_engaged = rpois(n=n, lambda = base_lambda)
+more_engaged = rpois(n=n, lambda = base_lambda + engagement_effect_size)
+# create tibble with number of previous purchases for each customer
+purchase_df &lt;- tibble(n_purchase_pre = c(less_engaged, more_engaged))</code></pre>
+<p>In the code block above, we expect “less engaged” customers to make 0.75 purchases (on average) over six months, and “more engaged” customers to make one purchase over the same period. The difference in purchase frequency between our customer types is ascribed to our latent variable of Engagement. We assume the data generating process for historical purchase frequency can be represented by the Poisson distribution. Recall that the Poisson distribution models the number of events expected to occur within a given period. It also approximates consumer purchase frequency patterns in the real world, such that most customers make a small number of purchases, while a few customers make a large number of purchases.</p>
+<p>We established our expected purchase frequency and engagement effect size above,so let’s simulate the effect of Engagement on Membership. We’ll create three bins and assign a probability of enrolling as a member within each bin, such that higher bins (i.e., the top 33% of customers) have a higher probability of enrolling relative to lower bins (i.e., the bottom 33% of customers).</p>
+<pre class="r"><code>membership_sim &lt;- function(bin){
+  if(bin == 1){
+    return(rbinom(1, 1, prob = 0.2))
+  } else if (bin == 2){
+    return(rbinom(1, 1, prob = 0.3))
+  } else {
+    return(rbinom(1, 1, prob = 0.4))
+  }
+}
+
+purchase_df &lt;- purchase_df %&gt;% 
+  mutate(bin = ntile(n_purchase_pre, 3),
+         member_enrolled = map_int(bin, membership_sim)
+         ) %&gt;% 
+  select(-bin)</code></pre>
+<p>While we know the true effect size (given that we generated the numbers), let’s verify the assumption that our proxy for engagement (Prior Purchases) exhibits the hypothesized effect on membership.</p>
+<pre class="r"><code>purchase_df %&gt;% 
+  mutate(n_purchase_pre = fct_lump(as.factor(n_purchase_pre), 
+                                   n=2,
+                                   other_level = &#39;2 or More&#39;
+                                   )) %&gt;% 
+  group_by(n_purchase_pre) %&gt;% 
+  summarise(pct_member = mean(member_enrolled)) %&gt;% 
+  ggplot(aes(n_purchase_pre, pct_member)) + 
+  theme_bw() + 
+  geom_col() + 
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  labs(x = &#39;N Prior Purchases&#39;,
+       y = &#39;Percent Enrolled as Members&#39;
+       ) + 
+  theme(axis.text.x = element_text(size = 12, angle = 90),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    strip.text.y = element_text(size = 14)
+  )</code></pre>
+<p><img src="/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-4-1.png" width="1152" /></p>
+<p>Now that we have validated the relationship between these variables, we’ll create the joint effect of treatment (Membership) and our single covariate (Engagement) on our outcome (Purchase Frequency).</p>
+<pre class="r"><code>purchase_sim &lt;- function(n_purchase_pre, member_enrolled){
+  membership_effect_size = .1
+  if(member_enrolled == 1){
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre + membership_effect_size)
+    return(post_purchase_freq)
+  } else {
+    post_purchase_freq = rpois(n=1, lambda=n_purchase_pre)
+    return(post_purchase_freq)
+  }
+}
+
+purchase_df &lt;- purchase_df %&gt;% 
+  mutate(n_purchase_post = map2_int(n_purchase_pre, 
+                                member_enrolled, 
+                                purchase_sim)
+         )</code></pre>
+<p>The <code>purchase_sim</code> function accounts for the number of prior purchases as well as if the customer has enrolled as a member. If they have enrolled, the true effect size is .1, in that enrolling a customer as a member leads to .1 additional purchases (on average) during the six months.</p>
+<p>Below, we’ll confirm that members have made more purchases relative to non-members.</p>
+<pre class="r"><code>avg_purchase_freq &lt;- purchase_df %&gt;% 
+  group_by(member_enrolled) %&gt;% 
+  summarise(avg_post_purchase = mean(n_purchase_post),
+            se = sqrt(mean(n_purchase_post) / n())
+            ) %&gt;% 
+  mutate(is_member = str_to_title(ifelse(member_enrolled == 1, 
+                                         &#39;member&#39;, 
+                                         &#39;non-member&#39;)),
+         is_member = fct_reorder(is_member, avg_post_purchase),
+         lb = avg_post_purchase - 1.96 * se,
+         ub = avg_post_purchase + 1.96 * se
+         )
+
+avg_purchase_freq %&gt;% 
+  ggplot(aes(is_member, avg_post_purchase, fill = is_member)) + 
+  geom_col(color = &#39;black&#39;) + 
+  geom_errorbar(aes(ymin = lb, ymax=ub), width=0.4) + 
+  coord_flip() + 
+  labs(x = NULL,
+       y = &#39;Average Number of Purchases&#39;,
+       fill = &#39;Membership Status&#39;
+  ) + 
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 16),
+        legend.position = &#39;top&#39;
+  )</code></pre>
+<p><img src="/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-6-1.png" width="1152" /></p>
+<p>Indeed, this confirms that the data aligns with our expectations. We could reach the same conclusion by fitting a regression model and then considering the magnitude of the coefficient for membership.</p>
+<pre class="r"><code>incorrect_fit &lt;- glm(n_purchase_post ~ member_enrolled,
+                     data = purchase_df,
+                     family = &quot;poisson&quot;
+                     )
+
+incorrect_fit_coef &lt;- tidy(incorrect_fit)
+
+intercept &lt;- incorrect_fit_coef %&gt;% 
+  filter(term == &#39;(Intercept)&#39;) %&gt;% 
+  pull(estimate)
+
+member_est &lt;- incorrect_fit_coef %&gt;% 
+  filter(term == &#39;member_enrolled&#39;) %&gt;% 
+  pull(estimate)
+
+effect_size_est &lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&#39;Estimated Difference: {effect_size_est}&#39;))</code></pre>
+<pre><code>## Estimated Difference: 0.402</code></pre>
+<p>Note that if we did not adjust for any confounding variables, we would <strong>mistakenly conclude</strong> that membership leads to ~.3 extra purchases per customer. That is, we would overestimate the effect size of membership on customer purchase behaviors because we know that Engagement affects both Membership and Purchase Frequency. In the following section, we’ll generate propensity scores to create more balance between our control and treatment groups on our confounding variables.</p>
+</div>
+<div id="propensity-scores" class="section level3">
+<h3>Propensity Scores</h3>
+<p>Two common approaches for creating comparison groups with observational data are (1) <em>propensity score matching</em> and (2) <em>inverse probability of treatment weighting (IPTW)</em>. Both methods use a propensity score but create groups differently. Matching looks for individuals in the non-treated condition who have similar propensity scores to those in the treated condition. If groups are different sizes, the number of non-treated observations is reduced to the size of the treated condition, as each treated observation is matched with a non-treated observation. In contrast, weighting includes all observations but places more weight on observations with high propensity scores and less weight on observations with low propensity scores. While both approaches can yield similar results, I prefer weighting because you are not discarding any data.</p>
+<p>Below, we’ll specify our model for generating propensity scores.</p>
+<pre class="r"><code># specify model for estimating P(treatment | Previous Purchases)
+model_spec &lt;- as.formula(member_enrolled ~ n_purchase_pre)
+member_model &lt;- glm(model_spec, 
+                    data = purchase_df, 
+                    family = binomial())
+member_prop_df &lt;- member_model %&gt;% 
+  augment(type.predict = &#39;response&#39;, data = purchase_df) %&gt;% 
+  select(member_enrolled, n_purchase_pre, n_purchase_post, member_prob = .fitted) %&gt;% 
+  mutate(iptw = 1 / ifelse(member_enrolled == 0, 1 - member_prob, member_prob))</code></pre>
+<p>A few things to note since we’ve created our propensity scores. First, we used logistic regression to estimate membership probability. However, any classification model can generate a propensity score. If there are non-linearities between your covariates and treatment variable, using a model that can better capture these relationships, such as a tree-based model, may yield better estimates.</p>
+<p>Second, we’ll need to be cognizant of the resulting weights. If certain observations receive very large weights, they will have an outsized influence on our coefficient estimates. It is a common practice to truncate large weights at 10 (why 10 I’m not sure). I’d prefer to use a point from our actual distribution, so we’ll assign any value above the 99th percentile to the value at the 99th percentile.</p>
+<pre class="r"><code>iptw_pct_99 &lt;- quantile(member_prop_df %&gt;% pull(iptw), 0.99)[[1]]
+member_prop_df &lt;- member_prop_df %&gt;% 
+  mutate(iptw = ifelse(iptw &gt; iptw_pct_99, iptw_pct_99, iptw))</code></pre>
+<p>Now that we’ve addressed some common pre-modeling issues, let’s generate an initial estimate of the effect of Membership on Purchase Frequency.</p>
+<pre class="r"><code>membership_fit &lt;- glm(n_purchase_post ~ member_enrolled,
+              data = member_prop_df,
+              family = &#39;poisson&#39;,
+              weights = iptw
+              )
+membership_fit_coef &lt;- tidy(membership_fit)
+
+intercept &lt;- membership_fit_coef %&gt;% 
+  filter(term == &#39;(Intercept)&#39;) %&gt;% 
+  pull(estimate)
+
+member_est &lt;- membership_fit_coef %&gt;% 
+  filter(term == &#39;member_enrolled&#39;) %&gt;% 
+  pull(estimate)
+
+effect_size_est_adj &lt;- round(exp(intercept + member_est) - exp(intercept), 3)
+print(glue::glue(&#39;Estimated Difference: {effect_size_est_adj}&#39;))</code></pre>
+<pre><code>## Estimated Difference: 0.097</code></pre>
+<p>Our initial estimate indicates that membership leads to ~.1 extra purchases, which matches perfectly with the true effect size! This is a great start, but we also need to consider certainty in the estimate. In our example, we have a fairly large sample size, there is only one covariate, and the distribution of treatment (members vs. non-members) is relatively even between groups. Real world data sets, on the other hand, are often small, present a high degree of skew between groups, or exhibit intricate causal structures. The presence of these factors affects how accurately we can estimate a true effect, and using the method above to create a confidence interval can lead to incorrect estimates of our standard error (too small).
+To address this issue, we’ll bootstrap the entire process - from generating our propensity score weights to estimating our causal effect - and then use the resulting distribution to better quantify uncertainty in our estimate.</p>
+<pre class="r"><code>member_fit_bootstrap &lt;- function(split){
+  temp_df &lt;- analysis(split)
+  
+  temp_model &lt;- glm(member_enrolled ~ n_purchase_pre,
+                    family = binomial(),
+                    data = temp_df
+                  )
+  
+  temp_df &lt;- temp_model %&gt;% 
+    augment(type.predict = &#39;response&#39;, data = temp_df) %&gt;% 
+    select(member_enrolled, n_purchase_pre, 
+           n_purchase_post, member_prob = .fitted) %&gt;% 
+    mutate(iptw = 1 / ifelse(member_enrolled == 0, 
+                             1 - member_prob, 
+                             member_prob))
+  
+  temp_iptw_pct_99 &lt;- quantile(temp_df %&gt;% pull(iptw), 0.99)[[1]]
+  
+  temp_df &lt;- temp_df %&gt;% 
+    mutate(iptw = ifelse(iptw &gt; temp_iptw_pct_99, 
+                         temp_iptw_pct_99, 
+                         iptw))
+  
+  temp_ret_df &lt;- glm(n_purchase_post ~ member_enrolled,
+                data = temp_df,
+                family = &#39;poisson&#39;,
+                weights = iptw) %&gt;% 
+    tidy()
+  return(temp_ret_df)
+}</code></pre>
+<pre class="r"><code>n_boot = 500
+boot_results &lt;- bootstraps(purchase_df, n_boot, apparent = TRUE) %&gt;% 
+  mutate(results = map(splits, member_fit_bootstrap))</code></pre>
+<p>In the above code snippet, we created 500 boot-strapped replicates and then fit a model to each. Our next step is to look at the distribution of the resulting estimates.</p>
+<pre class="r"><code>boot_results_unnest &lt;- 
+  boot_results %&gt;% 
+  select(-splits) %&gt;% 
+  unnest(cols=results)
+
+boot_results_est &lt;- 
+  boot_results_unnest %&gt;% 
+  select(id, term, estimate) %&gt;% 
+  pivot_wider(names_from = term, 
+              values_from = estimate
+              ) %&gt;% 
+  clean_names() %&gt;% 
+  mutate(est_effect = exp(member_enrolled + intercept) - exp(intercept))
+
+
+boot_results_summary &lt;- boot_results_est %&gt;%
+  summarise(lb = quantile(est_effect, 0.025),
+            mdn = quantile(est_effect, 0.5),
+            ub = quantile(est_effect, 0.975)
+  ) %&gt;%
+  pivot_longer(everything())</code></pre>
+<pre class="r"><code>lb_est &lt;- boot_results_summary %&gt;% filter(name==&#39;lb&#39;) %&gt;% pull(value)
+ub_est &lt;- boot_results_summary %&gt;% filter(name==&#39;ub&#39;) %&gt;% pull(value)
+effect_est &lt;- boot_results_summary %&gt;% filter(name==&#39;mdn&#39;) %&gt;% pull(value)
+boot_results_est %&gt;% 
+  ggplot(aes(x=est_effect)) + 
+  geom_histogram(fill=&#39;grey90&#39;, color = &#39;black&#39;) + 
+  theme_bw() + 
+  geom_segment(aes(x=lb_est, xend = lb_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=effect_est, xend = effect_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  geom_segment(aes(x=ub_est, xend = ub_est), y = 0, yend = 10, lty = 3, size = 2) + 
+  annotate(geom=&#39;text&#39;, x=lb_est, y = 11, label = round(lb_est, 2), size = 8) + 
+  annotate(geom=&#39;text&#39;, x=effect_est, y = 11, label = round(effect_est, 2), size = 8) + 
+  annotate(geom=&#39;text&#39;, x=ub_est, y = 11, label = round(ub_est, 2), size = 8) + 
+  labs(x = &#39;Estimated Treatment Effect&#39;) + 
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14)
+  )</code></pre>
+<p><img src="/post/2021-05-01-propensity-scores/causal_inference_propensity_scores_files/figure-html/unnamed-chunk-14-1.png" width="1152" /></p>
+<p>Our final estimate of the causal effect of membership on purchase frequency is between 0.06 and 0.14. Note that these confidence intervals aren’t much different from those in the original, non-bootstrapped approach. As mentioned previously, the primary reason is that our sample size for both groups is fairly large and there is not a lot of variance in the determinants of membership, given that we generated the data. However, in many instances, confidence intervals following bootstrapping will be wider – and more accurate – than those provided by OLS.</p>
+<p>Hopefully, this provided a solid end-to-end walkthrough of how to generate causal inferences from observational data with propensity scores. In the next post, we’ll discuss an equally important topic – variance reduction methods – that come in handy when you can run a true A/B test. Until then, happy experimenting!</p>
+</div>
+
+    </div>
+
+    
+
+
+
+
+
+
+<div class="article-tags">
+  
+  <a class="badge badge-light" href="/tag/causal-inference/">Causal Inference</a>
+  
+  <a class="badge badge-light" href="/tag/propensity-scores/">Propensity Scores</a>
+  
+  <a class="badge badge-light" href="/tag/r/">R</a>
+  
+</div>
+
+
+
+<div class="share-box" aria-hidden="true">
+  <ul class="share">
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://twitter.com/intent/tweet?url=http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/&amp;text=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.facebook.com/sharer.php?u=http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/&amp;t=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="mailto:?subject=Causal%20Inference%20with%20Propensity%20Scores&amp;body=http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/" target="_blank" rel="noopener" class="share-btn-email">
+          <i class="fas fa-envelope"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.linkedin.com/shareArticle?url=http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/&amp;title=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-linkedin">
+          <i class="fab fa-linkedin-in"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="whatsapp://send?text=Causal%20Inference%20with%20Propensity%20Scores%20http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://service.weibo.com/share/share.php?url=http://example.org/post/2021-05-01-propensity-scores/causal_inference_propensity_scores/&amp;title=Causal%20Inference%20with%20Propensity%20Scores" target="_blank" rel="noopener" class="share-btn-weibo">
+          <i class="fab fa-weibo"></i>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+  
+  
+    
+  
+  
+  
+  <div class="media author-card content-widget-hr">
+    
+      
+      <a href="http://example.org/"><img class="avatar mr-3 avatar-circle" src="/author/mark-leboeuf/avatar_hu95484a0837f0832a1e8242074628a955_46074_270x270_fill_q75_lanczos_center.jpg" alt="Mark LeBoeuf"></a>
+    
+
+    <div class="media-body">
+      <h5 class="card-title"><a href="http://example.org/">Mark LeBoeuf</a></h5>
+      <h6 class="card-subtitle">Data Scientist</h6>
+      
+      <ul class="network-icon" aria-hidden="true">
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="/" >
+        <i class="fas fa-"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://github.com/thecodeforest" target="_blank" rel="noopener">
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://www.linkedin.com/in/markleboeuf/" target="_blank" rel="noopener">
+        <i class="fab fa-linkedin"></i>
+      </a>
+    </li>
+  
+</ul>
+
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <div class="article-widget content-widget-hr">
+    <h3>Related</h3>
+    <ul>
+      
+      <li><a href="/post/2019-08-29-fantasy-football-kickers/fantasy_football_kickers/">Choosing a Fantasy Football Kicker with Emperical Bayes Estimation</a></li>
+      
+      <li><a href="/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/">Choosing a Fantasy Football Quarterback</a></li>
+      
+    </ul>
+  </div>
+  
+
+
+
+
+
+  </div>
+</article>
+  </div>
+
+  <div class="page-footer">
+    
+    
+    <div class="container">
+      <footer class="site-footer">
+
+  
+
+  
+  <p class="powered-by">
+    
+    
+      
+      <a href="/terms/"></a>
+    
+  </p>
+  
+
+  <p class="powered-by">
+    Mark LeBoeuf
+  </p>
+
+  
+  
+
+
+
+
+
+
+  <p class="powered-by">
+    
+    
+    
+      
+      
+      
+      
+      
+      
+      Published with <a href="https://wowchemy.com/?utm_campaign=poweredby" target="_blank" rel="noopener">Wowchemy</a> — the free, <a href="https://github.com/wowchemy/wowchemy-hugo-modules" target="_blank" rel="noopener">open source</a> website builder that empowers creators.
+    
+  </p>
+</footer>
+
+    </div>
+    
+  </div>
+
+  
+<div id="modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cite</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre><code class="tex hljs"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-primary my-1 js-copy-cite" href="#" target="_blank">
+          <i class="fas fa-copy"></i> Copy
+        </a>
+        <a class="btn btn-outline-primary my-1 js-download-cite" href="#" target="_blank">
+          <i class="fas fa-download"></i> Download
+        </a>
+        <div id="modal-error"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      
+
+    
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/instant.page/5.1.0/instantpage.min.js" integrity="sha512-1+qUtKoh9XZW7j+6LhRMAyOrgSQKenQ4mluTR+cvxXjP1Z54RxZuzstR/H9kgPXQsVB8IW7DMDFUJpzLjvhGSQ==" crossorigin="anonymous"></script>
+
+      
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js" integrity="sha256-CBrpuqrMhXwcLLUd5tvQ4euBHCdh7wGlDfNz8vbu/iI=" crossorigin="anonymous"></script>
+      
+
+      
+      
+
+      
+
+      
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/highlight.min.js" integrity="sha512-TDKKr+IvoqZnPzc3l35hdjpHD0m+b2EC2SrLEgKDRWpxf2rFCxemkgvJ5kfU48ip+Y+m2XVKyOCD85ybtlZDmw==" crossorigin="anonymous"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/r.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/python.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/latex.min.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/languages/sql.min.js"></script>
+        
+      
+
+    
+
+    
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+    
+
+    
+    
+
+    
+    
+    
+      
+      <script id="search-hit-fuse-template" type="text/x-template">
+        <div class="search-hit" id="summary-{{key}}">
+          <div class="search-hit-content">
+            <div class="search-hit-name">
+              <a href="{{relpermalink}}">{{title}}</a>
+              <div class="article-metadata search-hit-type">{{type}}</div>
+              <p class="search-hit-description">{{snippet}}</p>
+            </div>
+          </div>
+        </div>
+      </script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.2.1/fuse.min.js" integrity="sha256-VzgmKYmhsGNNN4Ph1kMW+BjoYJM2jV5i4IlFoeZA9XI=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
+      
+    
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    <script src="/js/bootstrap.bundle.min.6aed84840afc03ab4d5750157f69c120.js"></script>
+
+    
+    
+      
+      
+      
+      
+      
+      
+      
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+      
+      
+    
+    
+    <script src="/en/js/wowchemy.min.b61a8f62b6e5c0cd322c8158c5b5dfb6.js"></script>
+
+    
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+
+
+
+</body>
+</html>

@@ -2,25 +2,25 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>PySpark | The Code Forest</title>
-    <link>/category/pyspark/</link>
-      <atom:link href="/category/pyspark/index.xml" rel="self" type="application/rss+xml" />
+    <link>http://example.org/category/pyspark/</link>
+      <atom:link href="http://example.org/category/pyspark/index.xml" rel="self" type="application/rss+xml" />
     <description>PySpark</description>
     <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Mon, 29 Mar 2021 21:13:14 -0500</lastBuildDate>
     <image>
-      <url>/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
       <title>PySpark</title>
-      <link>/category/pyspark/</link>
+      <link>http://example.org/category/pyspark/</link>
     </image>
     
     <item>
       <title>Scalable Time-Series Forecasting in Python</title>
-      <link>/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</link>
+      <link>http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</link>
       <pubDate>Mon, 29 Mar 2021 21:13:14 -0500</pubDate>
-      <guid>/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</guid>
+      <guid>http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting/</guid>
       <description>
 
 
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/header_image.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/header_image.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Overview&lt;/h3&gt;
 &lt;p&gt;Whether predicting daily demand for thousands of products or the number of workers to staff across many distribution centers, generating operational forecasts in parallel is a common task for data scientists. Accordingly, the goal of this post is to outline an approach for creating many forecasts via PySpark. We’ll cover some common data-cleaning steps that often precede forecasting, and then generate several thousand week-level demand predictions for a variety consumer products. Note that we will not cover how to implement this workflow in a cloud computing environment (which, in a real-world setting, would typically be the case). Nor will we delve into model tuning or selection. The goal is to provide a straightforward workflow for quickly generating many time-series forecasts in parallel.&lt;/p&gt;
@@ -28,9 +28,9 @@
 &lt;div id=&#34;getting-started&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Getting Started&lt;/h3&gt;
 &lt;p&gt;We’ll use data originally provided by Walmart that represents weekly demand for products at the store-department level. All code for this post is stored in the &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/tree/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast&#34;&gt;Codeforest Repository&lt;/a&gt;. Before diving into the details, let’s briefly review the key modules and files.&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;300&#34; height=&#34;75&#34; /&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/project_tree.png&#34; width=&#34;300&#34; height=&#34;75&#34; /&gt;
 &lt;strong&gt;conf.json&lt;/strong&gt; - A configuration file that defines various parameters for our job. It’s a good practice to keep these parameters outside of your actual code, as it makes it easier for others (or future you!) to adapt and extend to other use cases.
-&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/images/config_file.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
+&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/images/config_file.png&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;
 &lt;strong&gt;pyspark_fcast.py&lt;/strong&gt; - Our main module, or where the forecasting gets done. We’ll cover this in detail below.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;fcast_data_frame.py&lt;/strong&gt; - A class responsible for common pre-forecasting data transformations. These include filling in missing values, filtering time-series with only a few observations, or log transforming our outcome variable. Visit &lt;a href=&#34;https://github.com/thecodeforest/codeforest2.0/blob/main/content/post/2021-03-28-pyspark-forecasting/pyspark_fcast/fcast_helpers/fcast_data_frame.py&#34;&gt;here&lt;/a&gt; for access to all methods.&lt;/p&gt;
 &lt;p&gt;You’ll also need to import the following packages to follow along with the tutorial.&lt;/p&gt;
@@ -2455,7 +2455,7 @@ fcast_df %&amp;gt;%
         strip.text.y = element_text(size = 12),
         plot.title = element_text(size = 14)
         )&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-25-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-03-28-pyspark-forecasting/pyspark_time_series_forecasting_files/figure-html/unnamed-chunk-25-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Overall, the forecasts appear to capture changes in the trend and seasonal variation. A more formal approach to this problem is to do back-testing by holding out some historical data and generating forecasts against it. However, this is a great starting point from which to build more advanced models and incorporate external variables to further improve our forecasts. Hopefully this is enough to get you started on your way to forecasting at an enterprise scale. Until next time, happy forecasting!&lt;/p&gt;
 &lt;/div&gt;
 </description>
