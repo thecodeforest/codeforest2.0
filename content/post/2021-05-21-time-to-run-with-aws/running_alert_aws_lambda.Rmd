@@ -1,12 +1,25 @@
 ---
 title: "Time to Run with AWS"
-output: html_document
+date: '2021-05-20T21:13:14-05:00'
+summary: Learn how I built an AWS powered alert system that finds the perfect time to go running!
+tags:
+- AWS
+- Lambda
+- Python
+- Running
+categories:
+- AWS
+- Lambda
+- Python
+- Running
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(emo)
+library(emo) 
 ```
+
+![](/post/2021-05-21-time-to-run-with-aws/images/architecture_flow.png){width=700px height=600px}   
 
 ### Overview
 
@@ -42,7 +55,7 @@ In the next section, we'll cover the technical specifics.
 
 ### Architecture Overview
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/architecture_flow.png){width=700px height=600px}  
+![](/post/2021-05-21-time-to-run-with-aws/images/architecture_flow.png){width=700px height=600px}  
 No post on AWS would be complete without a diagram outlining how data flows through our system. Accordingly, the figure above depicts the order of operations and each service's role in our decision workflow. Each service is described in greater detail below. 
 
 - **Event Bridge** - this is our scheduler. Each day at Noon PST, Amazon Event Bridge initiates the first Lambda function (TimeToRun). 
@@ -66,9 +79,9 @@ The first part will cover the data collection process, which briefly entails:
 3. Saving the forecasts to an S3 bucket    
 
 We'll use EventBridge for scheduling, which you can see in the diagram on the left below. 
-![](/post/2021-04-20-running-alert-aws-lambda/images/eventbridge.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/eventbridge.png){width=700px height=600px}
 To connect Lambda with EventBridge, you add a trigger and then indicate how frequently you want it to execute. The desired cadence for the hourly weather forecasts was every weekday at 7 PM GMT (or noon PST), expressed via Cron below. 
-![](/post/2021-04-20-running-alert-aws-lambda/images/cron_expression.png){width=200px height=200px}
+![](/post/2021-05-21-time-to-run-with-aws/images/cron_expression.png){width=200px height=200px}
 
 Now that we've scheduled our Lambda function, the next step is to add logic that collects the forecasts and saves them to S3. 
 
@@ -167,12 +180,12 @@ def lambda_handler(event, context):
 
 ```
 
-This entire block of code is what get's triggered daily, landing a single *.json* file in the desired S3 Bucket. While this looks straightforward, it's not as simple as copy-pasting your code and hitting play. Like most things in the AWS ecosystem, getting everything to work takes a few tries. The subsections below highlight areas that are potential sources of confusion when starting with Lambda.
+This entire block of code is triggered daily, landing a single *.json* file in the desired S3 Bucket. While this looks straightforward, it's not as simple as copy-pasting your code and hitting play. Like most things in the AWS ecosystem, getting everything to work takes a few tries. The subsections below highlight areas that are potential sources of confusion when starting with Lambda.
 
 #### Configuring Environment Variables
-Environmental variables store sensitive information, such as API keys, passwords, or other private values. In this case, I've stored the OpenWeather API key and Latitude/Longitude of where I want the daily forecasts. The image below depicts how to add these variables via the console. 
+Environment variables store sensitive information, such as API keys, passwords, or other private values. In this case, I've stored the OpenWeather API key and Latitude/Longitude of where I want the daily forecasts. The image below depicts how to add these variables via the console. 
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/environment_variables.png){width=700px height=600px}  
+![](/post/2021-05-21-time-to-run-with-aws/images/environment_variables.png){width=700px height=600px}  
 And this is where these variables are accessed in the Lambda code. 
 ```{python, eval=FALSE}
 def retrieve_weather_data(units_of_measure: str) -> dict:
@@ -194,20 +207,20 @@ A layer is a .zip file that includes additional code or data. If you noticed in 
 
 
 #### Adding Permissions
-Any time you set up a service through AWS, the default is to have minimal permissions in place. Among other activities, permissions allow your lambda function to interact with other AWS services. For example, the **TimeToRun** Lambda function writes the weather forecasts to an S3 bucket. The ability to interact with S3 is not setup by default, so you'll have to attach a policy. Below I've enabled *AmazonS3FullAccess*, which allows access to S3. You'll need to do the same for the second lambda function as well. 
+Any time you set up a service through AWS, the default is to have minimal permissions in place. Among other activities, permissions allow your lambda function to interact with other AWS services. For example, the **TimeToRun** Lambda function writes the weather forecasts to an S3 bucket. The ability to interact with S3 is not setup by default, so you'll have to attach a policy. Below I've enabled *AmazonS3FullAccess*, which allows access to S3. You'll need to do the same for the second Lambda function as well. 
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/s3_permissions_access.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/s3_permissions_access.png){width=700px height=600px}
 If you ever receive an error message like "...is not authorized to perform...", it usually can be solved by updating the permissions for a given service. 
 
 #### Run Time Limit
 A second default setting that might not be immediately obvious is the standard run-time limit. This setting indicates how long AWS will let a Lambda run before terminating. The default is set to three seconds. Depending on the processing time, I'll usually increase the limit to 30 seconds and then gradually go down or up from there. The image below indicates where you can adjust the run-time or memory for more compute-heavy tasks.  
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/run_time_limit.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/run_time_limit.png){width=700px height=600px}
 If you've successfully implemented all of the steps above, you should receive something that looks like this when testing the function: 
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/test_success.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/test_success.png){width=700px height=600px}
 
-This response indicates that everything ran smoothly and you are ready to move on to Part 2!
+This response indicates that everything ran smoothly and you are ready for the next section!
 
 ### Part 2: SendRunningEmail Lambda
 
@@ -215,7 +228,7 @@ The second part of this post covers the data formatting and transmission process
 
 1. Extract data from S3  
 2. Determine if "inside" or "outside" running day   
-3. Format the decision, so it looks nice    
+3. Format the decision text (so it looks nice, of course)    
 4. Send the decision to the desired email address(es)
 
 ```{python, eval=FALSE}
@@ -321,16 +334,15 @@ def lambda_handler(event, context):
     )
     # convert to dict and extract weather data
     hourly_data_dict = eval(hourly_weather_data)["weather_data"]
-
     # True or False filter based on hour, temperature, windspeed criteria
     run_time_bool = [is_time_for_run(x) for x in hourly_data_dict]
-
     # applies weather criteria and filters only to hours where critera are met
     run_times = [
         time
         for (time, time_to_run) in zip(hourly_data_dict, run_time_bool)
         if time_to_run
     ]
+    # beautify the message with a sprinkle of HTML
     running_msg_lst = format_run_times(run_times)
     running_msg_str = "<p>" + "<br/>".join(running_msg_lst) + "</p>"
     running_msg = f"""<html>
@@ -369,7 +381,6 @@ def lambda_handler(event, context):
             {"errorType": exception_type.__name__, "errorMessage": str(exception_value)}
         )
         logger.error(err_msg)
-
 ```
 
 Most of the logic is concerned with accessing and formatting the data we collected in the first part. However, this is where we determine an inside or outside run. The two sections highlighted below are responsible for making this decision. 
@@ -382,7 +393,7 @@ RUNNING_CONDS = {
 }
 ```
 
-These are all of the criteria - time, status (I probably don't want to run if there's a `r emo::ji("fire")`wildfire`r emo::ji("fire")`), wind speed, and temperature - and their limits used in making the running decision. The `is_time_for_run` function ensures that the forecast data satisfies all four conditions. 
+These are all of the criteria - time, status (I probably don't want to run if there's a `r emo::ji("fire")`wildfire smoke `r emo::ji("fire")`), wind speed, and temperature - and their limits used in making the running decision. The `is_time_for_run` function ensures that the forecast data satisfies all four conditions. 
 
 ```{python, eval=FALSE}
 def is_time_for_run(weather_hour: dict) -> bool:
@@ -409,12 +420,12 @@ def is_time_for_run(weather_hour: dict) -> bool:
 ```
 
 I'll receive a message (like the one below) in my inbox every weekday at Noon when these conditions are met. 
-![](/post/2021-04-20-running-alert-aws-lambda/images/running_email.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/running_email.png){width=700px height=600px}
 Otherwise, I'll receive the message below: 
 
-![](/post/2021-04-20-running-alert-aws-lambda/images/no_run_message.png){width=700px height=600px}
+![](/post/2021-05-21-time-to-run-with-aws/images/no_run_message.png){width=700px height=600px}
 
-Overall, it looks like a solid day for a run. The one thing to note is that 3 PM and 4 PM do not have any information. The absence of data at these times indicates that at least one of the criteria was not met. Indeed, the local weather forecast showed rain for those times, so they were automatically filtered out in the message, leaving only times that met all four criteria. Portland, Oregon (Where I Live) is a rainy place, and this sort of granular information is beneficial for those days where you get a brief window of dryness to go run. 
+Overall, it looks like a solid day for a run. The one thing to note is that 3 PM and 4 PM do not have any information. The absence of data at these times indicates that at least one of the criteria was not met. Indeed, the local weather forecast showed rain for those times, so they were automatically filtered out in the message, leaving only times that met all four criteria. Portland, Oregon (my home) is a rainy place, and this sort of granular information is beneficial for those days where you get a brief window of dryness to go run. 
 
 ### Parting Thoughts
 I hope this was a helpful introduction to setting up and running a basic Lambda workflow. It is a useful service, and I've found numerous applications in my day-to-day life beyond just helping me plan my daily run. Please feel free to comment below if you have any thoughts or questions. Until next time, happy coding!

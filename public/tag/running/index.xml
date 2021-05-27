@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Running | The Code Forest</title>
+    <link>http://example.org/tag/running/</link>
+      <atom:link href="http://example.org/tag/running/index.xml" rel="self" type="application/rss+xml" />
+    <description>Running</description>
+    <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Thu, 20 May 2021 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <title>Running</title>
+      <link>http://example.org/tag/running/</link>
+    </image>
+    
+    <item>
+      <title>Time to Run with AWS</title>
+      <link>http://example.org/post/2021-05-21-time-to-run-with-aws/running_alert_aws_lambda/</link>
+      <pubDate>Thu, 20 May 2021 21:13:14 -0500</pubDate>
+      <guid>http://example.org/post/2021-05-21-time-to-run-with-aws/running_alert_aws_lambda/</guid>
+      <description>
+
+
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/architecture_flow.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;As a runner, I’ve always enjoyed the pursuit of pacing faster today relative to yesterday. With the advent of apps like &lt;a href=&#34;https://www.strava.com/&#34;&gt;Strava&lt;/a&gt; that track your performance (among many other metrics), it’s easy to measure if you are running faster over time and, perhaps more importantly, which factors affect your run pace. Indeed, based on my historical running data, I’ve noticed two factors that moderate my run times: time of day and weather. My fastest runs usually happen between 12 PM - 7 PM, and slower runs occurred with high winds, cold weather (less than 30°F ), hot weather (greater than 90°F), or rain (being wet makes me miserable). On these “bad weather” days, I’d prefer to run inside on the treadmill and wait until more optimal running conditions.&lt;/p&gt;
+&lt;p&gt;With these criteria in mind, I would begin most mornings by deciding if it was an “inside” or “outside” running day by executing the following mental steps:&lt;/p&gt;
+&lt;p&gt;☁️ Log on to weather.com at 7AM&lt;br /&gt;
+☁️ Check the hourly forecast between 12PM and 5PM&lt;br /&gt;
+☁️ Check the temperature, wind-speed, and chance of precipitation&lt;br /&gt;
+☁️ Make a “Yes” or “No” decision to run outside based on the forecast&lt;/p&gt;
+&lt;p&gt;While it isn’t a huge inconvenience to repeat these steps each day, it required a few minutes of the morning. Perhaps more importantly, though, it was yet another decision that needed attention. I make lots of decisions in a day, and each decision requires thought and energy. Thus, if I could automate one of those decisions by creating a “rules engine,” it would save me the time and cognition required to plan my daily run.&lt;/p&gt;
+&lt;p&gt;The journey of automating this process is what inspired the following post, which will cover a few key concepts, including:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Scheduling a workflow using AWS Event Bridge&lt;/li&gt;
+&lt;li&gt;Building Lambda functions&lt;/li&gt;
+&lt;li&gt;Sending emails via AWS SES&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;These concepts can be generalized to any reoccurring process. Perhaps it’s a daily forecast that planners use to manage a store’s inventory. Or maybe it’s a marketing email sent to new customers after making their first purchase. Extracting data from a database/API, applying some business logic, and then socializing the results through an Email is a standard analytics workflow. Read on to learn more about how I leveraged this approach to identify the best times to run each day, save myself a few minutes, and remove one more decision from my day.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;be-the-algorithm&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Be The Algorithm&lt;/h3&gt;
+&lt;p&gt;Before diving into the solution, I wanted to quickly discuss a technique I’ve found helpful when automating a decision-making process. Before writing code or building queries, it’s good to step through the process manually that you are trying to automate. That is, you want to assume the role of the computer or algorithm. Repeating the steps above each day made it clear how I would automate the decision-making process by identifying:&lt;/p&gt;
+&lt;ol style=&#34;list-style-type: decimal&#34;&gt;
+&lt;li&gt;The information I needed to make a decision&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;The timing and frequency of the decision&lt;/li&gt;
+&lt;li&gt;The values of the criteria that would lead to an “inside” or “outside” run decision&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;You could easily sub in a machine learning model to discover the rules, but the overall process flow will be essentially unchanged. Keep this in mind next time you go to create a process that automates a decision.&lt;br /&gt;
+In the next section, we’ll cover the technical specifics.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;architecture-overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Architecture Overview&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/architecture_flow.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;br /&gt;
+No post on AWS would be complete without a diagram outlining how data flows through our system. Accordingly, the figure above depicts the order of operations and each service’s role in our decision workflow. Each service is described in greater detail below.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Event Bridge&lt;/strong&gt; - this is our scheduler. Each day at Noon PST, Amazon Event Bridge initiates the first Lambda function (TimeToRun).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Lambda (TimeToRun)&lt;/strong&gt; - TimeToRun connects to the OpenWeather API, extracts weather forecasts for my latitude and longitude, and formats the resulting data. The forecasts are then saved to an S3 bucket.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Lambda (SendRunningEmail)&lt;/strong&gt; - SendRunningEmail is triggered by any action in the S3 bucket containing the hourly weather forecasts. In this case, when a new object lands in the bucket, the Lambda function automatically starts and retrieves the data from the S3 bucket.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Amazon SES&lt;/strong&gt; - While this service is part of the SendRunningEmail Lambda, I separated it since it’s such a helpful service. Sending emails through Python can be tricky, and I’ve found the approach using AWS SES to be much easier. You import the service, define the message contents, add a bit of HTML (to make it look pretty, of course), and send the message to a set of desired email addresses. It’s that simple.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Personal Gmail&lt;/strong&gt; - this is where the resulting message lands, alerting me if it is an “inside” or “outside” running day.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In the following sections, we’ll cover the two Lambda functions that comprise this workflow. We’ll also cover a few “gotchas” that come up frequently when working with Lambda for the first time.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;part-1-timetorun&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Part 1: TimeToRun&lt;/h3&gt;
+&lt;p&gt;The first part will cover the data collection process, which briefly entails:&lt;br /&gt;
+1. Scheduling&lt;br /&gt;
+2. Extracting hourly forecasts from OpenWeather API&lt;br /&gt;
+3. Saving the forecasts to an S3 bucket&lt;/p&gt;
+&lt;p&gt;We’ll use EventBridge for scheduling, which you can see in the diagram on the left below.
+&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/eventbridge.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+To connect Lambda with EventBridge, you add a trigger and then indicate how frequently you want it to execute. The desired cadence for the hourly weather forecasts was every weekday at 7 PM GMT (or noon PST), expressed via Cron below.
+&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/cron_expression.png&#34; width=&#34;200&#34; height=&#34;200&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Now that we’ve scheduled our Lambda function, the next step is to add logic that collects the forecasts and saves them to S3.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import os
+import sys
+from typing import List
+import json
+from datetime import datetime
+import logging
+
+import pytz
+import requests
+import boto3
+
+S3_BUCKET = &amp;quot;running-weather-data&amp;quot;
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def retrieve_weather_data(units_of_measure: str) -&amp;gt; dict:
+    api_key = os.environ[&amp;quot;WEATHER_API_KEY&amp;quot;]
+    lat = os.environ[&amp;quot;LOCATION_LATITUDE&amp;quot;]
+    lon = os.environ[&amp;quot;LOCATION_LONGITUDE&amp;quot;]
+    base_url = &amp;quot;https://api.openweathermap.org/data/2.5/onecall?&amp;quot;
+    url = f&amp;quot;{base_url}lat={lat}&amp;amp;lon={lon}&amp;amp;appid={api_key}&amp;amp;units={units_of_measure}&amp;quot;
+    response = requests.get(url)
+    weather_data = json.loads(response.text)
+    return weather_data
+
+
+def parse_weather_data(weather_hour: dict) -&amp;gt; dict:
+    hour = datetime.fromtimestamp(
+        weather_hour[&amp;quot;dt&amp;quot;], pytz.timezone(&amp;quot;America/Los_Angeles&amp;quot;)
+    ).hour
+    temp = weather_hour[&amp;quot;temp&amp;quot;]
+    wind_speed = weather_hour[&amp;quot;wind_speed&amp;quot;]
+    weather_status = weather_hour[&amp;quot;weather&amp;quot;][0]
+    status = weather_status[&amp;quot;main&amp;quot;]
+    return {&amp;quot;hour&amp;quot;: hour, &amp;quot;temp&amp;quot;: temp, &amp;quot;wind_speed&amp;quot;: wind_speed, &amp;quot;status&amp;quot;: status}
+
+
+def is_today_weather(weather_hour: dict, timezone: str = &amp;quot;America/Los_Angeles&amp;quot;) -&amp;gt; bool:
+    weather_fmt = &amp;quot;%Y-%m-%d&amp;quot;
+    today_dt = datetime.now().strftime(weather_fmt)
+    weather_dt = datetime.fromtimestamp(weather_hour[&amp;quot;dt&amp;quot;], pytz.timezone(timezone))
+    if weather_dt.strftime(weather_fmt) == today_dt:
+        return True
+    else:
+        return False
+
+
+def _generate_s3_path() -&amp;gt; str:
+    year, month, day = datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;).split(&amp;quot;-&amp;quot;)
+    s3_path = f&amp;quot;data/{year}-{month}-{day}-running-times.json&amp;quot;
+    return s3_path
+
+
+def save_json_to_s3(json_data: dict, s3_bucket: str) -&amp;gt; None:
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    response = s3.Object(s3_bucket, _generate_s3_path()).put(
+        Body=(bytes(json.dumps(json_data).encode(&amp;quot;UTF-8&amp;quot;)))
+    )
+    if response.get(&amp;quot;HTTPStatusCode&amp;quot;) == 200:
+        print(f&amp;quot;Data successfully landed&amp;quot;)
+
+
+def lambda_handler(event, context):
+    try:
+        # retrieve weather forecast from OpenWeatherAPI
+        weather_data = retrieve_weather_data(units_of_measure=&amp;quot;imperial&amp;quot;)
+        # extract hourly forecast
+        hourly_data = weather_data[&amp;quot;hourly&amp;quot;]
+        # filter to only today&amp;#39;s forecast
+        today_weather_bool = [is_today_weather(x) for x in hourly_data if x]
+        # extract fields relevant to deciding if run outside
+        hourly_data = [parse_weather_data(x) for x in hourly_data]
+        # filter to today&amp;#39;s hourly data
+        today_hourly_data = [
+            today_weather
+            for (today_weather, is_today) in zip(hourly_data, today_weather_bool)
+            if is_today
+        ]
+        # convert all data to dictionary
+        hourly_data_dict = {&amp;quot;weather_data&amp;quot;: today_hourly_data}
+        # save hourly weather data to S3 Bucket as .json
+        save_json_to_s3(json_data=json.dumps(hourly_data_dict), s3_bucket=S3_BUCKET)
+        return {&amp;quot;statusCode&amp;quot;: 200, &amp;quot;body&amp;quot;: json.dumps(hourly_data_dict)}
+    except Exception as exp:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        err_msg = json.dumps(
+            {&amp;quot;errorType&amp;quot;: exception_type.__name__, &amp;quot;errorMessage&amp;quot;: str(exception_value)}
+        )
+        logger.error(err_msg)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This entire block of code is triggered daily, landing a single &lt;em&gt;.json&lt;/em&gt; file in the desired S3 Bucket. While this looks straightforward, it’s not as simple as copy-pasting your code and hitting play. Like most things in the AWS ecosystem, getting everything to work takes a few tries. The subsections below highlight areas that are potential sources of confusion when starting with Lambda.&lt;/p&gt;
+&lt;div id=&#34;configuring-environment-variables&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Configuring Environment Variables&lt;/h4&gt;
+&lt;p&gt;Environment variables store sensitive information, such as API keys, passwords, or other private values. In this case, I’ve stored the OpenWeather API key and Latitude/Longitude of where I want the daily forecasts. The image below depicts how to add these variables via the console.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/environment_variables.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;br /&gt;
+And this is where these variables are accessed in the Lambda code.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def retrieve_weather_data(units_of_measure: str) -&amp;gt; dict:
+    api_key = os.environ[&amp;quot;WEATHER_API_KEY&amp;quot;]
+    lat = os.environ[&amp;quot;LOCATION_LATITUDE&amp;quot;]
+    lon = os.environ[&amp;quot;LOCATION_LONGITUDE&amp;quot;]
+    base_url = &amp;quot;https://api.openweathermap.org/data/2.5/onecall?&amp;quot;
+    url = f&amp;quot;{base_url}lat={lat}&amp;amp;lon={lon}&amp;amp;appid={api_key}&amp;amp;units={units_of_measure}&amp;quot;
+    response = requests.get(url)
+    weather_data = json.loads(response.text)
+    return weather_data&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that this approach to managing keys and constants is sufficient for smaller projects and prototypes. However, for larger projects where you are collaborating with other developers and stakeholders, configuration data will likely be stored in a way that allows for versioning and tracking.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;adding-layers&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Adding Layers&lt;/h4&gt;
+&lt;p&gt;A layer is a .zip file that includes additional code or data. If you noticed in the &lt;code&gt;retrieve_weather_data&lt;/code&gt; function, we use the &lt;em&gt;requests&lt;/em&gt; package to access the OpenWeather API. &lt;em&gt;Requests&lt;/em&gt; is not part of the Python Standard Library, so we must include it as part of a layer (there is no way to &lt;code&gt;pip install requests&lt;/code&gt; or any other third-party libraries). While a full explanation of adding a layer is beyond the scope of this post, &lt;a href=&#34;https://towardsdatascience.com/how-to-install-python-packages-for-aws-lambda-layer-74e193c76a91&#34;&gt;the following article&lt;/a&gt; nicely summarizes how to incorporate third-party libraries on Lambda.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;adding-permissions&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Adding Permissions&lt;/h4&gt;
+&lt;p&gt;Any time you set up a service through AWS, the default is to have minimal permissions in place. Among other activities, permissions allow your lambda function to interact with other AWS services. For example, the &lt;strong&gt;TimeToRun&lt;/strong&gt; Lambda function writes the weather forecasts to an S3 bucket. The ability to interact with S3 is not setup by default, so you’ll have to attach a policy. Below I’ve enabled &lt;em&gt;AmazonS3FullAccess&lt;/em&gt;, which allows access to S3. You’ll need to do the same for the second Lambda function as well.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/s3_permissions_access.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+If you ever receive an error message like “…is not authorized to perform…”, it usually can be solved by updating the permissions for a given service.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;run-time-limit&#34; class=&#34;section level4&#34;&gt;
+&lt;h4&gt;Run Time Limit&lt;/h4&gt;
+&lt;p&gt;A second default setting that might not be immediately obvious is the standard run-time limit. This setting indicates how long AWS will let a Lambda run before terminating. The default is set to three seconds. Depending on the processing time, I’ll usually increase the limit to 30 seconds and then gradually go down or up from there. The image below indicates where you can adjust the run-time or memory for more compute-heavy tasks.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/run_time_limit.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+If you’ve successfully implemented all of the steps above, you should receive something that looks like this when testing the function:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/test_success.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;This response indicates that everything ran smoothly and you are ready for the next section!&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&#34;part-2-sendrunningemail-lambda&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Part 2: SendRunningEmail Lambda&lt;/h3&gt;
+&lt;p&gt;The second part of this post covers the data formatting and transmission process in four steps:&lt;/p&gt;
+&lt;ol style=&#34;list-style-type: decimal&#34;&gt;
+&lt;li&gt;Extract data from S3&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Determine if “inside” or “outside” running day&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Format the decision text (so it looks nice, of course)&lt;br /&gt;
+&lt;/li&gt;
+&lt;li&gt;Send the decision to the desired email address(es)&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import sys
+import boto3
+import json
+import logging
+from datetime import datetime
+from typing import List
+
+S3_BUCKET = &amp;quot;&amp;lt;weather-data-bucket-name&amp;gt;&amp;quot;
+SENDER = &amp;quot;&amp;lt;sender-email-address&amp;gt;&amp;quot;
+RECIPIENT = &amp;quot;&amp;lt;recipient-email-addresses&amp;gt;&amp;quot;
+AWS_REGION = &amp;quot;us-west-2&amp;quot;
+SUBJECT = &amp;quot;Best Times to Run Today&amp;quot;
+CHARSET = &amp;quot;UTF-8&amp;quot;
+RUNNING_CONDS = {
+    &amp;quot;hour&amp;quot;: {&amp;quot;min_hour&amp;quot;: 13, &amp;quot;max_hour&amp;quot;: 19},
+    &amp;quot;status&amp;quot;: [&amp;quot;Rain&amp;quot;, &amp;quot;Snow&amp;quot;, &amp;quot;Smoke&amp;quot;],
+    &amp;quot;wind_speed&amp;quot;: {&amp;quot;min_speed&amp;quot;: 0, &amp;quot;max_speed&amp;quot;: 30},
+    &amp;quot;temp&amp;quot;: {&amp;quot;min_temp&amp;quot;: 30, &amp;quot;max_temp&amp;quot;: 90},
+}
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def find_most_recent_data_path(s3_bucket: str) -&amp;gt; str:
+    today_dt = datetime.now().strftime(&amp;quot;%Y-%m-%d&amp;quot;)
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    bucket = s3.Bucket(s3_bucket)
+    existing_data = [
+        x.key
+        for x in bucket.objects.all()
+        if str(x.key).startswith(&amp;quot;data&amp;quot;) and str(x.key).endswith(&amp;quot;-running-times.json&amp;quot;)
+    ]
+    most_recent_dt = max(
+        [x.split(&amp;quot;/&amp;quot;)[-1].replace(&amp;quot;-running-times.json&amp;quot;, &amp;quot;&amp;quot;) for x in existing_data]
+    )
+    assert most_recent_dt == today_dt, &amp;quot;No Data Found for Today&amp;#39;s Date&amp;quot;
+    s3_key = [x for x in existing_data if most_recent_dt in x][0]
+    return s3_key
+
+
+def read_json_from_s3(s3_bucket: str, s3_key: str) -&amp;gt; str:
+    s3 = boto3.resource(&amp;quot;s3&amp;quot;)
+    obj = s3.Object(s3_bucket, s3_key)
+    file_content = obj.get()[&amp;quot;Body&amp;quot;].read().decode(&amp;quot;utf-8&amp;quot;)
+    json_content = json.loads(file_content)
+    return json_content
+
+
+def _convert_to_12hr_format(hr: int) -&amp;gt; str:
+    return datetime.strptime(str(hr), &amp;quot;%H&amp;quot;).strftime(&amp;quot;%I:%M %p&amp;quot;).strip(&amp;quot;0&amp;quot;)
+
+
+def format_run_times(run_times: List[dict]) -&amp;gt; str:
+    if run_times:
+        hour_fmt = [
+            f&amp;quot;&amp;lt;b&amp;gt;{_convert_to_12hr_format(x.get(&amp;#39;hour&amp;#39;))}:&amp;lt;/b&amp;gt;&amp;quot; for x in run_times
+        ]
+        temp_fmt = [f&amp;quot;{round(x.get(&amp;#39;temp&amp;#39;))}F with&amp;quot; for x in run_times]
+        wind_speed_fmt = [
+            f&amp;quot;wind at {round(x.get(&amp;#39;wind_speed&amp;#39;))} mph&amp;quot; for x in run_times
+        ]
+        status_fmt = [f&amp;quot;and {x.get(&amp;#39;status&amp;#39;).lower()}&amp;quot; for x in run_times]
+        fmt_msg = zip(hour_fmt, temp_fmt, wind_speed_fmt, status_fmt)
+        fmt_msg_list = [&amp;quot; &amp;quot;.join(x) for x in fmt_msg]
+        return fmt_msg_list
+    else:
+        return [&amp;quot;No Times to Run Today!&amp;quot;]
+
+
+def is_time_for_run(weather_hour: dict) -&amp;gt; bool:
+    is_time = (
+        RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;min_hour&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;hour&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;max_hour&amp;quot;]
+    )
+    is_temp = (
+        RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;min_temp&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;temp&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;max_temp&amp;quot;]
+    )
+    is_wind = (
+        RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;min_speed&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;wind_speed&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;max_speed&amp;quot;]
+    )
+    is_status = weather_hour[&amp;quot;status&amp;quot;] not in RUNNING_CONDS[&amp;quot;status&amp;quot;]
+    if all([is_time, is_temp, is_wind, is_status]):
+        return True
+    else:
+        return False
+
+
+def lambda_handler(event, context):
+    # generate s3 key for most recent weather data
+    running_data_path = find_most_recent_data_path(s3_bucket=S3_BUCKET)
+    # read as str
+    hourly_weather_data = read_json_from_s3(
+        s3_bucket=S3_BUCKET, s3_key=running_data_path
+    )
+    # convert to dict and extract weather data
+    hourly_data_dict = eval(hourly_weather_data)[&amp;quot;weather_data&amp;quot;]
+    # True or False filter based on hour, temperature, windspeed criteria
+    run_time_bool = [is_time_for_run(x) for x in hourly_data_dict]
+    # applies weather criteria and filters only to hours where critera are met
+    run_times = [
+        time
+        for (time, time_to_run) in zip(hourly_data_dict, run_time_bool)
+        if time_to_run
+    ]
+    # beautify the message with a sprinkle of HTML
+    running_msg_lst = format_run_times(run_times)
+    running_msg_str = &amp;quot;&amp;lt;p&amp;gt;&amp;quot; + &amp;quot;&amp;lt;br/&amp;gt;&amp;quot;.join(running_msg_lst) + &amp;quot;&amp;lt;/p&amp;gt;&amp;quot;
+    running_msg = f&amp;quot;&amp;quot;&amp;quot;&amp;lt;html&amp;gt;
+                        &amp;lt;head&amp;gt;&amp;lt;/head&amp;gt;
+                        &amp;lt;body&amp;gt;
+                        &amp;lt;h1&amp;gt;Best Times to Run&amp;lt;/h1&amp;gt;
+                        {running_msg_str}
+                        &amp;lt;/body&amp;gt;
+                        &amp;lt;/html&amp;gt;
+                        &amp;quot;&amp;quot;&amp;quot;
+    try:
+        client = boto3.client(&amp;quot;ses&amp;quot;, region_name=AWS_REGION)
+        response = client.send_email(
+            Destination={
+                &amp;quot;ToAddresses&amp;quot;: [
+                    RECIPIENT,
+                ]
+            },
+            Message={
+                &amp;quot;Body&amp;quot;: {
+                    &amp;quot;Html&amp;quot;: {
+                        &amp;quot;Charset&amp;quot;: CHARSET,
+                        &amp;quot;Data&amp;quot;: running_msg,
+                    },
+                },
+                &amp;quot;Subject&amp;quot;: {
+                    &amp;quot;Charset&amp;quot;: CHARSET,
+                    &amp;quot;Data&amp;quot;: SUBJECT,
+                },
+            },
+            Source=SENDER,
+        )
+    except Exception as exp:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        err_msg = json.dumps(
+            {&amp;quot;errorType&amp;quot;: exception_type.__name__, &amp;quot;errorMessage&amp;quot;: str(exception_value)}
+        )
+        logger.error(err_msg)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Most of the logic is concerned with accessing and formatting the data we collected in the first part. However, this is where we determine an inside or outside run. The two sections highlighted below are responsible for making this decision.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;RUNNING_CONDS = {
+    &amp;quot;hour&amp;quot;: {&amp;quot;min_hour&amp;quot;: 13, &amp;quot;max_hour&amp;quot;: 19},
+    &amp;quot;status&amp;quot;: [&amp;quot;Rain&amp;quot;, &amp;quot;Snow&amp;quot;, &amp;quot;Smoke&amp;quot;],
+    &amp;quot;wind_speed&amp;quot;: {&amp;quot;min_speed&amp;quot;: 0, &amp;quot;max_speed&amp;quot;: 30},
+    &amp;quot;temp&amp;quot;: {&amp;quot;min_temp&amp;quot;: 30, &amp;quot;max_temp&amp;quot;: 90},
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;These are all of the criteria - time, status (I probably don’t want to run if there’s a 🔥wildfire smoke 🔥), wind speed, and temperature - and their limits used in making the running decision. The &lt;code&gt;is_time_for_run&lt;/code&gt; function ensures that the forecast data satisfies all four conditions.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;def is_time_for_run(weather_hour: dict) -&amp;gt; bool:
+    is_time = (
+        RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;min_hour&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;hour&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;hour&amp;quot;][&amp;quot;max_hour&amp;quot;]
+    )
+    is_temp = (
+        RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;min_temp&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;temp&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;temp&amp;quot;][&amp;quot;max_temp&amp;quot;]
+    )
+    is_wind = (
+        RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;min_speed&amp;quot;]
+        &amp;lt;= weather_hour[&amp;quot;wind_speed&amp;quot;]
+        &amp;lt;= RUNNING_CONDS[&amp;quot;wind_speed&amp;quot;][&amp;quot;max_speed&amp;quot;]
+    )
+    is_status = weather_hour[&amp;quot;status&amp;quot;] not in RUNNING_CONDS[&amp;quot;status&amp;quot;]
+    if all([is_time, is_temp, is_wind, is_status]):
+        return True
+    else:
+        return False&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I’ll receive a message (like the one below) in my inbox every weekday at Noon when these conditions are met.
+&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/running_email.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;
+Otherwise, I’ll receive the message below:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-05-21-time-to-run-with-aws/images/no_run_message.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Overall, it looks like a solid day for a run. The one thing to note is that 3 PM and 4 PM do not have any information. The absence of data at these times indicates that at least one of the criteria was not met. Indeed, the local weather forecast showed rain for those times, so they were automatically filtered out in the message, leaving only times that met all four criteria. Portland, Oregon (my home) is a rainy place, and this sort of granular information is beneficial for those days where you get a brief window of dryness to go run.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;parting-thoughts&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Parting Thoughts&lt;/h3&gt;
+&lt;p&gt;I hope this was a helpful introduction to setting up and running a basic Lambda workflow. It is a useful service, and I’ve found numerous applications in my day-to-day life beyond just helping me plan my daily run. Please feel free to comment below if you have any thoughts or questions. Until next time, happy coding!&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

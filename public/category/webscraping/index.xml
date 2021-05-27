@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Webscraping | The Code Forest</title>
+    <link>http://example.org/category/webscraping/</link>
+      <atom:link href="http://example.org/category/webscraping/index.xml" rel="self" type="application/rss+xml" />
+    <description>Webscraping</description>
+    <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Wed, 12 Jun 2019 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <title>Webscraping</title>
+      <link>http://example.org/category/webscraping/</link>
+    </image>
+    
+    <item>
+      <title>The State of Names in America</title>
+      <link>http://example.org/post/2019-06-12-state-of-names/state_of_names/</link>
+      <pubDate>Wed, 12 Jun 2019 21:13:14 -0500</pubDate>
+      <guid>http://example.org/post/2019-06-12-state-of-names/state_of_names/</guid>
+      <description>
+
+
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2019-06-12-state-of-names/images/header_img.jpg&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;Phil Karlton, a famous Netscape Developer (i.e., OG Google Chrome) once said, ‘There are two hard things in computer science: cache invalidation and naming things’. I haven’t done much cache invalidation, but I have named a few things – and naming a person is by far the hardest of them all! Indeed, having waited two days after my own son’s birth to finally settle on a name, I wondered to what extent other new parents encountered the same struggles. Are there shortcuts or heuristics that others use to simplify the decision-making process, specifically cues from their immediate surroundings to help guide their choices when choosing a baby name? This question motivated me to look into the nuances of naming conventions over the past century in America.&lt;/p&gt;
+&lt;p&gt;Accordingly, in this post, we’ll investigate the influence of one’s state of residence on the frequency with which certain names occur. We’ll also explore possible reasons for why some states have more variety in their names than others. Finally, we’ll finish up in my home state of Oregon to identify the trendiest names over the past 20 years and predict whether those names will remain trendy in the future. From a technical standpoint, we’ll cover some central, bread-and-butter topics in data science, including trend detection, false discovery rates, web scraping, time-series forecasting, and geovisualization. Let’s get started!&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;people-born-in-oregon-are-named-after-trees&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;People Born in Oregon are Named after Trees&lt;/h3&gt;
+&lt;p&gt;We’ll begin by downloading more than 110 years of US name data from 🎄 &lt;a href=&#34;https://github.com/thecodeforest&#34;&gt;the codeforest github repo&lt;/a&gt; 🌴. Our dataset is published yearly by the &lt;a href=&#34;https://www.ssa.gov/OACT/babynames/limits.html&#34;&gt;Social Security Administration&lt;/a&gt;, and it contains a count of all names that occur more than five times by year within each US state. Let’s get started by loading relevant libraries and pulling our data into R.&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

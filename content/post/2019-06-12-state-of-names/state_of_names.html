@@ -1,0 +1,2112 @@
+---
+title: "The State of Names in America"
+author: "Mark LeBoeuf"
+date: '2019-06-12T21:13:14-05:00'
+summary: "In this post, we'll leverage 110 years of historical data -- and everything from time-series forecasting to hypothesis testing -- to understand how one's state of birth influences their name"
+tags:
+- R
+- Hypothesis Testing
+- Forecasting
+- Webscraping
+- Names
+categories:
+- R
+- Hypothesis Testing
+- Forecasting
+- Webscraping
+- Names
+---
+
+
+
+<p><img src="/post/2019-06-12-state-of-names/images/header_img.jpg" width="700" height="600" /></p>
+<div id="overview" class="section level3">
+<h3>Overview</h3>
+<p>Phil Karlton, a famous Netscape Developer (i.e., OG Google Chrome) once said, ‘There are two hard things in computer science: cache invalidation and naming things’. I haven’t done much cache invalidation, but I have named a few things – and naming a person is by far the hardest of them all! Indeed, having waited two days after my own son’s birth to finally settle on a name, I wondered to what extent other new parents encountered the same struggles. Are there shortcuts or heuristics that others use to simplify the decision-making process, specifically cues from their immediate surroundings to help guide their choices when choosing a baby name? This question motivated me to look into the nuances of naming conventions over the past century in America.</p>
+<p>Accordingly, in this post, we’ll investigate the influence of one’s state of residence on the frequency with which certain names occur. We’ll also explore possible reasons for why some states have more variety in their names than others. Finally, we’ll finish up in my home state of Oregon to identify the trendiest names over the past 20 years and predict whether those names will remain trendy in the future. From a technical standpoint, we’ll cover some central, bread-and-butter topics in data science, including trend detection, false discovery rates, web scraping, time-series forecasting, and geovisualization. Let’s get started!</p>
+</div>
+<div id="people-born-in-oregon-are-named-after-trees" class="section level3">
+<h3>People Born in Oregon are Named after Trees</h3>
+<p>We’ll begin by downloading more than 110 years of US name data from 🎄 <a href="https://github.com/thecodeforest">the codeforest github repo</a> 🎄. Our dataset is published yearly by the <a href="https://www.ssa.gov/OACT/babynames/limits.html">Social Security Administration</a>, and it contains a count of all names that occur more than five times by year within each US state. Let’s get started by loading relevant libraries and pulling our data into R.</p>
+<pre class="r"><code># Core Packages
+library(tidyverse)
+library(purrr)
+library(skimr)
+library(janitor)
+library(drlib)
+library(broom)
+library(openintro)
+library(sweep)
+library(tidytext)
+library(usdata)
+
+# Date Manipulation
+library(lubridate)
+
+# Forecasting Packages
+library(forecast)
+library(timetk)
+
+# Webscraping
+library(rvest)
+
+# Visualization Packages
+library(ggplot2)
+library(ggmap)
+library(ggthemes)
+library(ggrepel)
+library(artyfarty)
+library(gt)
+library(maps)
+
+# Trend Detection Packages
+library(trend)
+
+# # Set visualization themes
+theme_set(theme_bw())</code></pre>
+<pre class="r"><code>data_repo &lt;- &quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main/state_of_names&quot;
+# Create unique path for each state
+data_paths &lt;- paste0(file.path(data_repo, datasets::state.abb), &#39;.TXT&#39;)
+# Append data from each state into single table
+names_raw_df &lt;- data_paths %&gt;%
+  purrr::map(read_csv, col_names = FALSE) %&gt;%
+  reduce(rbind)</code></pre>
+<p>Let’s have a quick peek at our data.<br />
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#uylsmmxvft .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#uylsmmxvft .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#uylsmmxvft .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#uylsmmxvft .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#uylsmmxvft .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#uylsmmxvft .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#uylsmmxvft .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#uylsmmxvft .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#uylsmmxvft .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#uylsmmxvft .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#uylsmmxvft .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#uylsmmxvft .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#uylsmmxvft .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#uylsmmxvft .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uylsmmxvft .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uylsmmxvft .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#uylsmmxvft .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#uylsmmxvft .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#uylsmmxvft .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#uylsmmxvft .gt_left {
+  text-align: left;
+}
+
+#uylsmmxvft .gt_center {
+  text-align: center;
+}
+
+#uylsmmxvft .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#uylsmmxvft .gt_font_normal {
+  font-weight: normal;
+}
+
+#uylsmmxvft .gt_font_bold {
+  font-weight: bold;
+}
+
+#uylsmmxvft .gt_font_italic {
+  font-style: italic;
+}
+
+#uylsmmxvft .gt_super {
+  font-size: 65%;
+}
+
+#uylsmmxvft .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="uylsmmxvft" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="5" class="gt_heading gt_title gt_font_normal" style><strong>Sample Data</strong></th>
+    </tr>
+    <tr>
+      <th colspan="5" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">X1</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">X2</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">X3</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">X4</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">X5</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">AL</td>
+      <td class="gt_row gt_center">FALSE</td>
+      <td class="gt_row gt_center">1910</td>
+      <td class="gt_row gt_center">Mary</td>
+      <td class="gt_row gt_center">875</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">AL</td>
+      <td class="gt_row gt_center">FALSE</td>
+      <td class="gt_row gt_center">1910</td>
+      <td class="gt_row gt_center">Annie</td>
+      <td class="gt_row gt_center">482</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">AL</td>
+      <td class="gt_row gt_center">FALSE</td>
+      <td class="gt_row gt_center">1910</td>
+      <td class="gt_row gt_center">Willie</td>
+      <td class="gt_row gt_center">257</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">AL</td>
+      <td class="gt_row gt_center">FALSE</td>
+      <td class="gt_row gt_center">1910</td>
+      <td class="gt_row gt_center">Mattie</td>
+      <td class="gt_row gt_center">232</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">AL</td>
+      <td class="gt_row gt_center">FALSE</td>
+      <td class="gt_row gt_center">1910</td>
+      <td class="gt_row gt_center">Ruby</td>
+      <td class="gt_row gt_center">204</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div></p>
+<p>A little cleaning is in order. We’ll name our fields, create a gender feature, and remove spurious names.</p>
+<pre class="r"><code>names(names_raw_df) &lt;- c(&quot;state&quot;, &quot;gender&quot;, &quot;year&quot;, &quot;name&quot;, &quot;frequency&quot;)
+
+names_processed_df &lt;- names_raw_df %&gt;% 
+  mutate(gender = ifelse(is.na(gender), &quot;Male&quot;, &quot;Female&quot;)) %&gt;%
+  filter(!str_to_lower(name) %in% c(&quot;unknown&quot;, &quot;noname&quot;, &quot;female&quot;, &quot;male&quot;))</code></pre>
+<p>Let’s do some quick exploratory data analysis before addressing our original questions. Any time we are working with categorical variables (e.g., name, state, gender, etc.), I like to start by counting and visualizing their distributions. Below we’ll create two separate data views for quality assurance purposes: (1) The most popular names since 1910, and (2) the total number of births (based on name counts) across time. The goal is to ensure the data aligns with our expectations (e.g., the most popular boy names over the past 100 years are not ‘Florp’ or ‘Spaghetti Joe’).</p>
+<pre class="r"><code># calculate the top 20 most popular names
+name_popularity &lt;- names_processed_df %&gt;% 
+  group_by(name, gender) %&gt;% 
+  summarise(total = sum(frequency)) %&gt;% 
+  group_by(gender) %&gt;% 
+  top_n(20, total) %&gt;% 
+  ungroup() %&gt;% 
+  mutate(name = reorder_within(name, total, gender))
+
+name_popularity %&gt;% 
+  ggplot(aes(name, total, fill = gender)) + 
+  geom_col(alpha = 0.8, color = &#39;black&#39;) + 
+  coord_flip() + 
+  scale_x_reordered() +
+  facet_wrap(~ gender, scales = &#39;free&#39;, ncol = 1) + 
+  scale_y_continuous(labels = scales::comma_format()) + 
+  scale_fill_manual(values = pal(&quot;monokai&quot;)) +
+  my_plot_theme() + 
+  labs(x = NULL,
+       y = &#39;Total Names&#39;,
+       title = &#39;US Top 20 names by gender since 1910&#39;
+       ) + 
+  theme(legend.position = &quot;none&quot;)</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-7-1.png" width="1152" /></p>
+<p>These frequencies seem reasonable! Next, let’s examine how the total count of names has changed across time between 1910 and 2018 to determine if there are any missing or incomplete years.</p>
+<pre class="r"><code>names_processed_df %&gt;% 
+  mutate(year = as.Date(paste(as.character(year), &#39;01&#39;, &#39;01&#39;, sep = &#39;-&#39;))) %&gt;% 
+  group_by(year) %&gt;% 
+  summarise(total = sum(frequency)) %&gt;% 
+  ggplot(aes(year, total)) + 
+  geom_line(size = 2) + 
+  scale_y_continuous(labels = scales::comma_format()) + 
+  scale_x_date(date_breaks = &quot;10 year&quot;, date_labels = &#39;%Y&#39;) + 
+  my_plot_theme() + 
+  labs(x = &#39;Year&#39;,
+       y = &#39;Total Births&#39;,
+       title = &#39;Total US Births by Year&#39;,
+       subtitle = &#39;Total based only on names appearing &gt; 5 times per state per year&#39;
+       ) </code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-8-1.png" width="1152" /></p>
+<p>The overall trend here also checks out as well, with the baby-boom occurring between 1946 to 1964 and a steady decline in births rates since the early 1990s.</p>
+<p>Now that we’ve done some quick validation, let’s tackle our first question: Which names over-index within each state? To address this question, we’ll compare the proportion of names occupied by a single name within a state relative to how frequently the name occurs across all 50 states. We’ll also focus only on the past 10 years to capture recent name trends. Note that the technique implemented below was adapted from the excellent Tidy Tuesday Screen cast series found <a href="https://www.youtube.com/watch?v=EF4A4OtQprg&amp;t=1071s">here</a>.</p>
+<pre class="r"><code># count of names by state since 2008
+name_state_counts &lt;- names_processed_df %&gt;%
+  filter(year &gt;= 2008) %&gt;%
+  group_by(name, state) %&gt;%
+  summarise(n = sum(frequency)) %&gt;%
+  ungroup() %&gt;%
+  complete(state, name, fill = list(n = 0))
+
+# total births in US
+total_names &lt;- sum(name_state_counts$n)
+
+# name count across all states
+name_counts &lt;- name_state_counts %&gt;%
+  group_by(name) %&gt;%
+  summarise(name_total = sum(n))
+
+# birth count by state
+state_counts &lt;- name_state_counts %&gt;%
+  group_by(state) %&gt;%
+  summarise(state_total = sum(n))</code></pre>
+<p>Next, we’ll create a ratio that summarizes how much more likely a name is to appear within a state relative to the US as a whole. We’ll put some filters on as well to prevent rare names from overwhelming our analysis.</p>
+<pre class="r"><code># Minimum occurrences within a state
+cnt_in_state &lt;- 100
+
+# Minimum occurrences across all US
+cnt_in_US &lt;- 200
+
+# Calculate name ratio within state relative to within US
+all_name_counts &lt;- name_state_counts %&gt;%
+  inner_join(name_counts) %&gt;%
+  inner_join(state_counts) %&gt;%
+  mutate(state_name_full = abbr2state(state)) %&gt;%
+  filter(
+    n &gt;= cnt_in_state,
+    name_total &gt;= cnt_in_US
+  ) %&gt;%
+  mutate(
+    percent_of_state = n / state_total,
+    percent_of_names = name_total / total_names
+  ) %&gt;%
+  mutate(overrepresented_ratio = percent_of_state / percent_of_names) %&gt;%
+  arrange(desc(overrepresented_ratio))</code></pre>
+<p>Below we’ll plot the top 10 names by state from a geographically representative sample.</p>
+<pre class="r"><code>top_n_names &lt;- 10
+
+all_name_counts %&gt;%
+  group_by(state_name_full) %&gt;%
+  top_n(top_n_names, overrepresented_ratio) %&gt;%
+  ungroup() %&gt;%
+  filter(state_name_full %in%
+    c(
+      &quot;Alabama&quot;, &quot;New Jersey&quot;, &quot;Arkansas&quot;,
+      &quot;Oregon&quot;, &quot;Colorado&quot;, &quot;New Mexico&quot;,
+      &quot;West Virginia&quot;, &quot;Hawaii&quot;
+    )) %&gt;%
+  mutate(name = reorder_within(name, overrepresented_ratio, state_name_full)) %&gt;%
+  ggplot(aes(name, overrepresented_ratio, fill = state_name_full)) +
+  geom_col(color = &quot;black&quot;, alpha = 0.8) +
+  coord_flip() +
+  scale_x_reordered() +
+  facet_wrap(~state_name_full, scales = &quot;free&quot;, ncol = 2) +
+  scale_fill_manual(values = pal(&quot;monokai&quot;)) +
+  my_plot_theme() + 
+  labs(
+    x = NULL,
+    y = &quot;Overrepresentation Ratio&quot;
+  ) +
+  theme(legend.position = &quot;none&quot;)</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-11-1.png" width="1152" /></p>
+<p>There’s a lot to unpack here, but that fact that ‘Crimson’ over-indexes in Alabama tells me we’re on to something. Let’s briefly summarise our findings for each state separately:</p>
+<p><strong>Alabama</strong> - Roll Tide.<br />
+<strong>Arkansas</strong> - Future country music stars.<br />
+<strong>Colorado</strong> - Mountain towns (Aspen, Breckenridge) and famous skiers (Bode Miller)<br />
+<strong>Hawaii</strong> - Native Hawaiian names. Note the large magnitude of this ratio, indicating that these names are found exclusively in Hawaii.<br />
+<strong>New Jersey</strong> - Large Jewish population.<br />
+<strong>New Mexico</strong> - Large Hispanic population.<br />
+<strong>Oregon</strong> - Nature.<br />
+<strong>West Virginia</strong> - Preferred gun brands (Remington, Kolton).</p>
+<p>It’s interesting to see how cultures unique to each state come through in people’s names. Are you a big fan of the University of Alabama’s Football team? Name your kid Crimson. Are you a firearm’s enthusiast? Remington has a nice ring to it. Do you enjoy long hikes in the woods? Forrest is a great name. This finding indicates that (unsurprisingly) geography plays a significant role in determining naming conventions within a state, and that people leverage the cultural norms from within their state when deciding on a name.</p>
+</div>
+<div id="diversity-of-names" class="section level3">
+<h3>Diversity of Names</h3>
+<p>In the previous section, we established that one’s state of birth influences naming conventions (still trying to figure out if this is a good or bad thing…). Let’s continue with this theme and initially consider how ‘Name Diversity’ varies between states, which we’ll define by comparing the proportion of all names represented by the top 100 most popular names in each state. For example, the figure below shows the cumulative percentage of all names captured by the top 5 names in Oregon relative to Vermont.</p>
+<pre class="r"><code>names_diversity_sample &lt;- name_state_counts %&gt;% 
+  filter(state %in% c(&#39;OR&#39;, &#39;VT&#39;)) %&gt;% 
+  group_by(state) %&gt;% 
+  arrange(desc(n)) %&gt;%
+  mutate(total = sum(n),
+         cum_sum = cumsum(n),
+         cum_pct = round(cum_sum / total, 2),
+         name_rnk = 1:n()
+         ) %&gt;% 
+  slice(1:5) %&gt;% 
+  ungroup()</code></pre>
+<p><style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#xcqwiyijsn .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#xcqwiyijsn .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#xcqwiyijsn .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#xcqwiyijsn .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#xcqwiyijsn .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#xcqwiyijsn .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#xcqwiyijsn .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#xcqwiyijsn .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#xcqwiyijsn .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#xcqwiyijsn .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#xcqwiyijsn .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#xcqwiyijsn .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#xcqwiyijsn .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#xcqwiyijsn .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#xcqwiyijsn .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#xcqwiyijsn .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#xcqwiyijsn .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#xcqwiyijsn .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#xcqwiyijsn .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#xcqwiyijsn .gt_left {
+  text-align: left;
+}
+
+#xcqwiyijsn .gt_center {
+  text-align: center;
+}
+
+#xcqwiyijsn .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#xcqwiyijsn .gt_font_normal {
+  font-weight: normal;
+}
+
+#xcqwiyijsn .gt_font_bold {
+  font-weight: bold;
+}
+
+#xcqwiyijsn .gt_font_italic {
+  font-style: italic;
+}
+
+#xcqwiyijsn .gt_super {
+  font-size: 65%;
+}
+
+#xcqwiyijsn .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="xcqwiyijsn" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+    <col style="width:80px;"/>
+  </colgroup>
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">state</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">name</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">n</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">total</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">cum_sum</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">cum_pct</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">name_rnk</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">OR</td>
+      <td class="gt_row gt_center">Emma</td>
+      <td class="gt_row gt_center">2549</td>
+      <td class="gt_row gt_center">366114</td>
+      <td class="gt_row gt_center">2549</td>
+      <td class="gt_row gt_center">0.01</td>
+      <td class="gt_row gt_center">1</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">OR</td>
+      <td class="gt_row gt_center">Olivia</td>
+      <td class="gt_row gt_center">2452</td>
+      <td class="gt_row gt_center">366114</td>
+      <td class="gt_row gt_center">5001</td>
+      <td class="gt_row gt_center">0.01</td>
+      <td class="gt_row gt_center">2</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">OR</td>
+      <td class="gt_row gt_center">Sophia</td>
+      <td class="gt_row gt_center">2210</td>
+      <td class="gt_row gt_center">366114</td>
+      <td class="gt_row gt_center">7211</td>
+      <td class="gt_row gt_center">0.02</td>
+      <td class="gt_row gt_center">3</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">OR</td>
+      <td class="gt_row gt_center">Liam</td>
+      <td class="gt_row gt_center">2155</td>
+      <td class="gt_row gt_center">366114</td>
+      <td class="gt_row gt_center">9366</td>
+      <td class="gt_row gt_center">0.03</td>
+      <td class="gt_row gt_center">4</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">OR</td>
+      <td class="gt_row gt_center">Benjamin</td>
+      <td class="gt_row gt_center">1999</td>
+      <td class="gt_row gt_center">366114</td>
+      <td class="gt_row gt_center">11365</td>
+      <td class="gt_row gt_center">0.03</td>
+      <td class="gt_row gt_center">5</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">VT</td>
+      <td class="gt_row gt_center">Emma</td>
+      <td class="gt_row gt_center">378</td>
+      <td class="gt_row gt_center">32623</td>
+      <td class="gt_row gt_center">378</td>
+      <td class="gt_row gt_center">0.01</td>
+      <td class="gt_row gt_center">1</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">VT</td>
+      <td class="gt_row gt_center">Liam</td>
+      <td class="gt_row gt_center">374</td>
+      <td class="gt_row gt_center">32623</td>
+      <td class="gt_row gt_center">752</td>
+      <td class="gt_row gt_center">0.02</td>
+      <td class="gt_row gt_center">2</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">VT</td>
+      <td class="gt_row gt_center">Owen</td>
+      <td class="gt_row gt_center">372</td>
+      <td class="gt_row gt_center">32623</td>
+      <td class="gt_row gt_center">1124</td>
+      <td class="gt_row gt_center">0.03</td>
+      <td class="gt_row gt_center">3</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">VT</td>
+      <td class="gt_row gt_center">Mason</td>
+      <td class="gt_row gt_center">357</td>
+      <td class="gt_row gt_center">32623</td>
+      <td class="gt_row gt_center">1481</td>
+      <td class="gt_row gt_center">0.05</td>
+      <td class="gt_row gt_center">4</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">VT</td>
+      <td class="gt_row gt_center">Olivia</td>
+      <td class="gt_row gt_center">354</td>
+      <td class="gt_row gt_center">32623</td>
+      <td class="gt_row gt_center">1835</td>
+      <td class="gt_row gt_center">0.06</td>
+      <td class="gt_row gt_center">5</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+When comparing the <code>cum_pct</code> between states, we see that approximately 3% of all names are represented by the top 10 in Oregon while 6% of all names are represented in Vermont. This means that fewer names occupy a greater proportion of names in Vermont relative to Oregon. Therefore, Vermont has less Name Diversity than Oregon. What does this relationship look like when expanding our search to the top 100 names across all lower 48 states?</p>
+<pre class="r"><code>top_n_names &lt;- 100
+
+# Create Name Diversity metric
+names_diversity_lower_48 &lt;- name_state_counts %&gt;%
+  group_by(state) %&gt;%
+  arrange(state, desc(n)) %&gt;%
+  mutate(
+    name_index = row_number(),
+    cum_sum = cumsum(n),
+    cum_pct = cum_sum / sum(n)
+  ) %&gt;%
+  ungroup() %&gt;%
+  filter(name_index == top_n_names) %&gt;%
+  select(state, cum_pct) %&gt;%
+  mutate(state_name_full = abbr2state(state))
+
+# Join % of names accounted for by top 100 to map data
+us_map &lt;- map_data(&quot;state&quot;) %&gt;%
+  as_tibble() %&gt;%
+  mutate(state_name_full = str_to_title(region)) %&gt;%
+  inner_join(names_diversity_lower_48, by = &quot;state_name_full&quot;)</code></pre>
+<pre class="r"><code># Plot relationship by state
+us_map %&gt;%
+  ggplot(aes(long, lat)) +
+  geom_polygon(aes(group = group, fill = cum_pct), color = &quot;white&quot;) +
+  theme_map() +
+  coord_map() +
+  my_plot_theme() + 
+  scale_fill_viridis_c(labels = scales::percent) +
+  labs(fill = &quot;Percent of names in Top 100&quot;,
+       title = &#39;Name Diversity by State&#39;,
+       subtitle = &#39;Higher percentages indicate less diversity in names&#39;
+       ) + 
+  theme(legend.text=element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = &#39;top&#39;,
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()
+        )</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-15-1.png" width="1152" /></p>
+<p>West Coast and Southeastern states tend to have greater name diversity (i.e., a lower % of names are represented in the top 100) while the North East has less diversity. This begs the question: What type of diversity correlates with our Name Diversity index? A <a href="https://wallethub.com/edu/most-least-diverse-states-in-america/38262/">recent study</a> ranked states along six dimensions of diversity, such as Cultural, Economic, Household, Religious and Political. Let’s bring these rankings in and join them with our newly created diversity index.</p>
+<pre class="r"><code>url &lt;- &quot;https://wallethub.com/edu/most-least-diverse-states-in-america/38262/&quot;
+
+diversity_rank &lt;- read_html(url) %&gt;%
+  html_nodes(&quot;table&quot;) %&gt;%
+  .[1] %&gt;%
+  html_table(fill = TRUE) %&gt;%
+  data.frame() %&gt;%
+  clean_names()
+
+names(diversity_rank) &lt;- purrr::map_chr(names(diversity_rank), 
+                                        function(x) str_replace(x, &quot;x_&quot;, &quot;&quot;)
+                                        )
+
+diversity_tidy &lt;- diversity_rank %&gt;%
+  select(state, ends_with(&quot;_rank&quot;)) %&gt;%
+  gather(diversity_metric, rank, -state) %&gt;%
+  mutate(diversity_metric = str_to_title(str_replace(
+                                         str_replace(diversity_metric,&quot;_rank&quot;,&quot;&quot;) 
+                                                                     ,&quot;_&quot;, &quot; &quot;
+                                                    )
+                                         )
+         ) %&gt;%
+  inner_join(names_diversity_lower_48, by = c(&quot;state&quot; = &quot;state_name_full&quot;))</code></pre>
+<p>We’ll plot the relationship between Name Diversity and the six aforementioned dimensions.</p>
+<pre class="r"><code>diversity_tidy %&gt;%
+  ggplot(aes(rank, cum_pct, label = state)) +
+  geom_point() +
+  stat_smooth() +
+  facet_wrap(~diversity_metric, scales = &quot;free&quot;, ncol = 2) +
+  scale_y_percent() + 
+  my_plot_theme() + 
+  labs(
+    x = &quot;State Rank (1 = Most Diverse, 50 = Least Diverse)&quot;,
+    y = &quot;Percent of names in Top 100&quot;
+  )</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-17-1.png" width="1152" />
+There might be a positive relationship between Cultural and Household diversity relative to Name Diversity, such that states with lower Cultural Diversity also have lower Name Diversity. Some formal hypothesis testing can be useful when we don’t have a strong prior hypothesis. However, we’ll need to be careful when considering the strength of evidence, given that we are testing six separate hypotheses. To do so, we’ll adjust each p-value based on the <em>FDR</em> or False Discovery Rate. Additionally, we’ll use Spearman’s correlation coefficient in lieu of the more popular Pearson’s because we have no reason to believe that our relationships are linear. We can relax this assumption and simply state that the relationship is monotonically increasing/decreasing.</p>
+<pre class="r"><code>cor_tidy &lt;- diversity_tidy %&gt;%
+  select(-state.y, -state) %&gt;%
+  nest(-diversity_metric) %&gt;%
+  mutate(
+    test = purrr::map(data, ~ cor.test(.x$rank, .x$cum_pct, method = &quot;spearman&quot;)),
+    tidied = purrr::map(test, tidy)
+  ) %&gt;%
+  unnest(tidied, .drop = TRUE) %&gt;%
+  clean_names() %&gt;%
+  mutate(p_val_adj = p.adjust(p_value, method = &quot;fdr&quot;)) %&gt;%
+  arrange(p_val_adj) %&gt;% 
+  select(diversity_metric, estimate, p_value, p_val_adj)</code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#qfomdglcac .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#qfomdglcac .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#qfomdglcac .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#qfomdglcac .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#qfomdglcac .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#qfomdglcac .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#qfomdglcac .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#qfomdglcac .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#qfomdglcac .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#qfomdglcac .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#qfomdglcac .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#qfomdglcac .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#qfomdglcac .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#qfomdglcac .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qfomdglcac .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qfomdglcac .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#qfomdglcac .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#qfomdglcac .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qfomdglcac .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#qfomdglcac .gt_left {
+  text-align: left;
+}
+
+#qfomdglcac .gt_center {
+  text-align: center;
+}
+
+#qfomdglcac .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#qfomdglcac .gt_font_normal {
+  font-weight: normal;
+}
+
+#qfomdglcac .gt_font_bold {
+  font-weight: bold;
+}
+
+#qfomdglcac .gt_font_italic {
+  font-style: italic;
+}
+
+#qfomdglcac .gt_super {
+  font-size: 65%;
+}
+
+#qfomdglcac .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="qfomdglcac" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:100px;"/>
+    <col style="width:100px;"/>
+    <col style="width:100px;"/>
+    <col style="width:100px;"/>
+  </colgroup>
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">metric</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">est</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">p_val</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">p_val_adj</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">Cultural Diversity</td>
+      <td class="gt_row gt_center">0.41</td>
+      <td class="gt_row gt_center">0.00</td>
+      <td class="gt_row gt_center">0.02</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Household Diversity</td>
+      <td class="gt_row gt_center">0.35</td>
+      <td class="gt_row gt_center">0.01</td>
+      <td class="gt_row gt_center">0.04</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Religious Diversity</td>
+      <td class="gt_row gt_center">0.21</td>
+      <td class="gt_row gt_center">0.15</td>
+      <td class="gt_row gt_center">0.30</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Political Diversity</td>
+      <td class="gt_row gt_center">0.18</td>
+      <td class="gt_row gt_center">0.22</td>
+      <td class="gt_row gt_center">0.33</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Socioeconomic Diversity</td>
+      <td class="gt_row gt_center">0.11</td>
+      <td class="gt_row gt_center">0.43</td>
+      <td class="gt_row gt_center">0.51</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Economic Diversity</td>
+      <td class="gt_row gt_center">-0.02</td>
+      <td class="gt_row gt_center">0.89</td>
+      <td class="gt_row gt_center">0.89</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>After adjusting for multiple hypothesis tests, the only statistically significant relationships to emerge are Cultural and Household Diversity. This intuitively makes sense, as states with a greater blend of cultures will likely bring their own unique naming traditions. Let’s see how all of the states stack up against one another on the Cultural Diversity metric.</p>
+<pre class="r"><code>diversity_tidy %&gt;%
+  filter(diversity_metric == &quot;Cultural Diversity&quot;) %&gt;%
+  ggplot(aes(rank, cum_pct, label = state)) +
+  geom_smooth(span = 3, alpha = 0.5) +
+  geom_point() +
+  geom_label_repel() +
+  scale_y_percent() +
+  my_plot_theme() + 
+  labs(
+    x = &quot;Cultural Diversity (1 = Most Diverse, 50 = Least Diverse)&quot;,
+    y = &quot;Name Diversity (Lower = More diverse)&quot;,
+    title = &#39;States with Higher Cultural Diversity have a Greater Variety of Names&#39; 
+  )</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-20-1.png" width="1152" />
+We see that Cultural Diversity relates to the breadth of names represented in each state, a relationship that is particularly pronounced among states with lower Cultural Diversity. Thus, if you live in a state with low Cultural Diversity and give your child a popular name, there’s a good chance they’ll be referred to as “Oliver #2”, “Emma C”, or “Other James” during grade school.</p>
+</div>
+<div id="trendy-names" class="section level3">
+<h3>Trendy Names</h3>
+<p>In this section, we’ll focus on my current state of residence – Oregon – and explore which names have trended the most over the past two decades and where we expect the popularity of these names to go over the next decade. Let’s start with a little data cleaning.</p>
+<pre class="r"><code># only consider names that appear at least 300 times
+frequency_limit &lt;- 300
+
+start_year &lt;- 2000
+
+# arrange each name by year and count number of occurrences
+oregon_names &lt;- names_processed_df %&gt;%
+  as_tibble() %&gt;%
+  filter(
+    state == &quot;OR&quot;,
+    year &gt;= start_year
+  ) %&gt;%
+  group_by(year, name) %&gt;%
+  summarise(frequency = sum(frequency)) %&gt;%
+  ungroup() %&gt;%
+  complete(year, name, fill = list(frequency = 0)) %&gt;%
+  group_by(name) %&gt;%
+  mutate(total_freq = sum(frequency)) %&gt;%
+  ungroup() %&gt;%
+  filter(total_freq &gt;= frequency_limit) %&gt;%
+  select(-total_freq) %&gt;%
+  group_by(name) %&gt;%
+  arrange(name, year)</code></pre>
+<p>Below we’re going to use a simple (yet powerful) approach for trend detection via the <code>mk.test</code> (Mann-Kendall Test) function, which determines if a series follows a monotonic trend. Below we’ll apply this test to each name, order by the size of the resulting test statistic, and then select the top 25 largest test statistics. This will provide us with the ‘trendiest’ names since 2000.</p>
+<pre class="r"><code># Identify trendiest names based on top 25 largest test statistics
+trendy_names &lt;- oregon_names %&gt;%
+  nest(-name) %&gt;%
+  mutate(
+    model = purrr::map(data, ~ mk.test(.$frequency)),
+    tidied = purrr::map(model, tidy)
+  ) %&gt;%
+  unnest(tidied, .drop = TRUE) %&gt;%
+  arrange(desc(statistic)) %&gt;%
+  clean_names() %&gt;%
+  select(name:p_value) %&gt;%
+  head(25)</code></pre>
+<p>Let’s take a quick glance at some of the resulting names.
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#dtgqjeqjju .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#dtgqjeqjju .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#dtgqjeqjju .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#dtgqjeqjju .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#dtgqjeqjju .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#dtgqjeqjju .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#dtgqjeqjju .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#dtgqjeqjju .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dtgqjeqjju .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dtgqjeqjju .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#dtgqjeqjju .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#dtgqjeqjju .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#dtgqjeqjju .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#dtgqjeqjju .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dtgqjeqjju .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dtgqjeqjju .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#dtgqjeqjju .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dtgqjeqjju .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dtgqjeqjju .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dtgqjeqjju .gt_left {
+  text-align: left;
+}
+
+#dtgqjeqjju .gt_center {
+  text-align: center;
+}
+
+#dtgqjeqjju .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#dtgqjeqjju .gt_font_normal {
+  font-weight: normal;
+}
+
+#dtgqjeqjju .gt_font_bold {
+  font-weight: bold;
+}
+
+#dtgqjeqjju .gt_font_italic {
+  font-style: italic;
+}
+
+#dtgqjeqjju .gt_super {
+  font-size: 65%;
+}
+
+#dtgqjeqjju .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="dtgqjeqjju" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:120px;"/>
+    <col style="width:120px;"/>
+    <col style="width:120px;"/>
+  </colgroup>
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">name</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">statistic</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">p_val</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">Oliver</td>
+      <td class="gt_row gt_center">5.78</td>
+      <td class="gt_row gt_center">7.60e-09</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Hazel</td>
+      <td class="gt_row gt_center">5.53</td>
+      <td class="gt_row gt_center">3.12e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Luna</td>
+      <td class="gt_row gt_center">5.52</td>
+      <td class="gt_row gt_center">3.37e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Hudson</td>
+      <td class="gt_row gt_center">5.47</td>
+      <td class="gt_row gt_center">4.41e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Leo</td>
+      <td class="gt_row gt_center">5.46</td>
+      <td class="gt_row gt_center">4.64e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Nora</td>
+      <td class="gt_row gt_center">5.46</td>
+      <td class="gt_row gt_center">4.82e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Mila</td>
+      <td class="gt_row gt_center">5.45</td>
+      <td class="gt_row gt_center">5.03e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Harper</td>
+      <td class="gt_row gt_center">5.42</td>
+      <td class="gt_row gt_center">6.07e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Penelope</td>
+      <td class="gt_row gt_center">5.42</td>
+      <td class="gt_row gt_center">6.07e-08</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Sawyer</td>
+      <td class="gt_row gt_center">5.39</td>
+      <td class="gt_row gt_center">6.88e-08</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div></p>
+<p>A quick cross-reference with some popular naming sites indicates that these names are popular both in Oregon as well as the remainder of the US. Let’s make some predictions (because you can’t have a blog post on data without trying to predict something!) for the next 10 years.</p>
+<pre class="r"><code># Set forecasting horizon
+time_horizon &lt;- 10
+
+# Create a separate forecast for each name based on 18 years of history
+name_forecast &lt;- oregon_names %&gt;%
+  filter(name %in% trendy_names$name) %&gt;%
+  mutate(year = as.Date(&quot;0001-01-1&quot;) + lubridate::years(year - 1)) %&gt;%
+  nest(-name) %&gt;%
+  mutate(
+    ts = purrr::map(data, tk_ts, start = start_year, freq = 1),
+    model = purrr::map(ts, ets),
+    fcast = purrr::map(model, forecast, level=80, h = time_horizon)
+  )
+# Extract forecasting data
+unnest_fcast &lt;- function(name_forecast, dt_field=&#39;year&#39;){
+  max_year &lt;- year(max(name_forecast$data[[1]] %&gt;% 
+                       pull({{dt_field}})))
+  index = 1  
+  fcast_tibble &lt;- tibble()
+  for(fcast in name_forecast$fcast){
+    name &lt;- name_forecast$name[index]
+    frequency &lt;- as.vector(fcast$mean)
+    lo_80 &lt;- as.vector(fcast$lower)
+    hi_80 &lt;- as.vector(fcast$upper)
+    tmp_fcast_tibble &lt;- tibble(key = &#39;fcast&#39;,
+                               name = name, 
+                               year = seq(max_year + 1, 
+                                          length.out = length(hi_80)
+                                          ),
+                               frequency = frequency, 
+                               lo_80 = lo_80, 
+                               hi_80 = hi_80)
+    fcast_tibble &lt;- bind_rows(fcast_tibble, tmp_fcast_tibble)
+    index &lt;- index + 1
+  }
+  fcast_tibble
+}</code></pre>
+<p>Let’s visualize both the historical time series as well as our 10-year ahead forecast.</p>
+<pre class="r"><code>names_plot_df &lt;- bind_rows(oregon_names %&gt;%
+                           filter(name %in% trendy_names$name) %&gt;% 
+                           mutate(key = &#39;actual&#39;),
+                           unnest_fcast(name_forecast)
+                          )
+names_plot_df %&gt;%
+  mutate(lo_80 = ifelse(lo_80 &lt; 0, 0, lo_80)) %&gt;%
+  ggplot(aes(year, frequency, color = key)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lo_80, ymax = hi_80), alpha = .5) +
+  facet_wrap(~name, scales = &quot;free_y&quot;) +
+  ylim(0, max(names_plot_df$hi_80)) +
+  scale_color_manual(values = pal(&quot;monokai&quot;)[c(1, 3)]) +
+  my_plot_theme() +
+  labs(
+    x = &quot;Year&quot;,
+    y = &quot;Total Names&quot;,
+    title = &quot;Trendiest Name in Oregon over the Past 20 Years&quot;,
+    subtitle = &quot;Forecast for 10 Year Period. Shaded region represents 80% prediction interval.&quot;
+  ) +
+  theme(legend.position = &#39;none&#39;)</code></pre>
+<p><img src="/post/2019-06-12-state-of-names/state_of_names_files/figure-html/unnamed-chunk-25-1.png" width="1152" /></p>
+<p>There’s about to be a lot more Luna’s, Mila’s, Oliver’s, Asher’s and Jameson’s in Oregon over the next decade, whereas the popularity of Harper and Penelope are either flat or heading downward. This could be helpful depending on if you wanted your child to be cool and trendy from day-1 😄. However, the intervals on the majority of these forecasts are fairly wide, indicating that naming trends are not an easy thing to predict!</p>
+</div>
+<div id="parting-thoughts" class="section level3">
+<h3>Parting Thoughts</h3>
+<p>While this post only scratches the surface in terms of understanding how names come-to-be in America, it reveals the extent to which parents rely on cues from their surroundings and cognitive shortcuts when naming their children. Whether it’s a favorite football team, a family name that’s been passed down through generations, a ski town with great powder, or that cool tree in the backyard, our immediate environments play a central role in the naming process. It also highlights the pivotal role that cultural diversity plays in determining the breadth of names by geographical location, as well as how unpredictable naming trends can be into the near future.</p>
+<p>Hopefully you enjoyed the post and, if faced with naming a child any time soon, can leverage some of the techniques outlined here to come up with an awesome name!</p>
+</div>
+<div id="appendix" class="section level3">
+<h3>Appendix</h3>
+<pre class="r"><code>my_plot_theme = function(){
+  font_family = &quot;Helvetica&quot;
+  font_face = &quot;bold&quot;
+  return(theme(
+    axis.text.x = element_text(size = 12, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 12, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.x = element_text(size = 16, face = font_face, family = font_family),
+    plot.title = element_text(size = 20, face = font_face, family = font_family),
+    plot.subtitle = element_text(size = 16, family = font_family),
+    plot.caption = element_text(size = 11, face = &quot;italic&quot;, hjust = 0),
+    legend.position = &quot;top&quot;,
+    legend.text = element_text(size = 8,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 2),
+    legend.key.size = unit(2, &#39;lines&#39;),
+    legend.title=element_blank()
+  ))
+}</code></pre>
+</div>

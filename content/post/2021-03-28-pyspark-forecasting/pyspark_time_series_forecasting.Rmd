@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # tree -I 'pyspark_sandbox.ipynb|*.csv|venv|*.R|*.pyc|__pycache__|*.Rproj'
 ```
 
-![](/post/2021-03-28-pyspark-forecasting/images/header_image.png){width=700px height=600px}  
+ ![](/post/2021-03-28-pyspark-forecasting/images/header_image.png){width=700px height=600px}  
   
 ### Overview
 
