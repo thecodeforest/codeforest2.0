@@ -132,3 +132,6 @@ dmypy.json
 # data science 
 *.ipynb
 *.DS_STORE
+*.csv
+content/post/2018-06-01-optimal-bar-crawl/notebooks/bar_crawl.py
+content/post/2018-06-01-optimal-bar-crawl/notebooks/bar_route.py

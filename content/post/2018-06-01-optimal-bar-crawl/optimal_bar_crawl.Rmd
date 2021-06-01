@@ -1,0 +1,484 @@
+---
+title: "The Optimal Portland Pub Crawl"
+author: "Mark LeBoeuf"
+date: '2018-06-01T21:13:14-05:00'
+summary: Portland, Oregon is home to some of the best watering holes in America. With
+  so many places to quaff a West Coast Style IPA or glass of Pinot Noir, choosing
+  which to visit (and in which order) can be a daunting task. To address this question,
+  we'll leverage some classic optimization techniques to minimize the total distance
+  travelled between the top bars in Portland for a truly "optimal" Pub Crawl.
+tags:
+- R
+- Python
+- Reticulate
+- Traveling Salesman Problem
+- Route Optimization
+categories:
+- R
+- Python
+- Reticulate
+- Traveling Salesman Problem
+- Route Optimization
+---
+
+ ![](/post/2018-06-01-optimal-bar-crawl/images/portland.jpg){width=700px height=600px} 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Overview
+
+The premise of a Pub Crawl is quite simple: visit several bars in an afternoon or evening without a clear plan of where you'll go next. While this sort of spontaneous, unstructured approach may work for some people, I've always been a fan of having a plan -- in this case, an optimal plan. If we want to maximize the number of places visited (and beers tasted) in a finite period of time, then there is simply no room for shoddy planning. Accordingly, this post provides a framework for designing the optimal Portland Pub Crawl by working through the following steps: 
+
+`r emo::ji("beer")` Web Scrape the top 100 Portland bars from  [here](http://www.oregonlive.com/dining/index.ssf/2014/10/portlands_100_best_bars_bar_ta.html) 
+
+`r emo::ji("beer")` Geocode each bar's location
+
+`r emo::ji("beer")` Find the optimal route between a subsample of the bars, because visiting 100 in a day would make the following day very bad
+
+`r emo::ji("beer")` Determine a walking path between the bars
+
+`r emo::ji("beer")` Create a map of the walking path, which can be use as a field guide to impress your friends once the pub crawl is under way 
+
+`r emo::ji("beer")` Promptly spill beer on the map at the 2nd bar, rendering it unreadable, followed by a game of darts and some popcorn 
+
+If that sounds like a plan, let's get started! 
+
+### Defining the Top 100 Bars
+
+First, let's identify the stops during our tour of Portland's pub scene. In the section below, we'll load up the R libraries, identify which version of Python we'd like to use, and then do some web scraping. Note that all of the python modules and R-scripts are contained in the same directory for simplicity. 
+
+```{r message=FALSE, warning=FALSE}
+# Core pacakges
+library(tidyverse)
+
+# Mapping
+library(leaflet)
+library(widgetframe)
+library(leaflet.extras)
+
+# Calling python functions from R
+library(reticulate)
+
+# route optimization
+library(tspmeta)
+
+# Making nice tables
+library(gt)
+```
+
+The `geocode_best_portland_bars` function below is responsible for collecting the information. 
+```{python eval = FALSE}
+# best_bars.py
+
+import os
+import urllib
+from bs4 import BeautifulSoup
+import re
+from typing import List
+import googlemaps
+from tqdm import tqdm
+import pandas as pd
+from dotenv import load_dotenv
+
+API_KEY = os.getenv('GOOGLE_API_KEY')
+
+
+def find_best_bars() -> str:
+    base_url = "http://www.oregonlive.com/dining/index.ssf/2014/10/portlands_100_best_bars_bar_ta.html"
+    page = urllib.request.urlopen(base_url)
+    soup = BeautifulSoup(page, "html.parser")
+    bar_descriptors = soup.find_all("div", class_="entry-content")
+    bar_descriptors = str(bar_descriptors).split("<p>")[0]
+    best_bars_raw_lst = re.findall(r"\<strong>(.*?)</strong>", bar_descriptors)
+    return best_bars_raw_lst
+
+
+def clean_bar_names(raw_bar_lst: str) -> List[str]:
+    # exclude emphasis tags
+    best_bars = [re.sub(r"<em> (.*?)</em>", "", x) for x in raw_bar_lst]
+    # exclude number included in bar name
+    best_bars = [re.sub(r"No. \d+ --", "", x).strip() for x in best_bars]
+    # exclude headers in all caps
+    best_bars = [x for x in best_bars if not x.isupper()]
+    # exclude all lower case tags
+    best_bars = [x for x in best_bars if not x.islower()]
+    # exclude bold tags in html
+    best_bars = [x.replace("&amp;", "&") for x in best_bars]
+    # exclude other emphasis tags
+    best_bars = [re.sub(r": <em>(.*?)</em>", "", x) for x in best_bars]
+    # strip colons
+    best_bars = [x.replace(":", "") for x in best_bars]
+    # exclude blanks
+    best_bars = [x for x in best_bars if x]
+    return best_bars
+
+
+def geocode_best_portland_bars() -> pd.DataFrame:
+    best_bars_lst = find_best_bars()
+    bar_names = clean_bar_names(raw_bar_lst=best_bars_lst)
+    bar_names = [f"{x}, Portland, OR" for x in bar_names]
+    gmaps = googlemaps.Client(key=API_KEY)
+    geocoded_bars_lst = []
+    for name in tqdm(bar_names):
+        geocode_result = gmaps.geocode(name)
+        lat_lng = geocode_result[0].get("geometry").get("location")
+        lat, lng = lat_lng.get("lat"), lat_lng.get("lng")
+        geocoded_bars_lst.append([name, lat, lng])
+    geocoded_bars_df = pd.DataFrame(geocoded_bars_lst)
+    geocoded_bars_df.columns = ["name", "lat", "lng"]
+    return geocoded_bars_df   
+```
+
+Historically, this operation would require executing a python script, writing the results out (in an `.txt` or `.csv` file), and then reading the result back into R. However, with the advent of `reticulate`, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python module `geocode_best_portland_bars.py` is located in the same directory as our R-script. Below, we'll first "source" this function via `source_python` (which simply means to bring it into the R environment), then we'll execute it. Note that we aren't passing in any arguments; this function is designed for a very specific purpose, which is to find the best watering holes in Portland.  
+
+```{r, eval = FALSE}
+# specify which version of Python to use
+reticulate::use_python('//anaconda/bin/python', required = TRUE)
+
+# brings our function into the R Environment
+reticulate::source_python('best_bars.py')
+
+# executes and stores the output  in our variable 'best_bars'
+best_bars = geocode_best_portland_bars()
+```
+
+```{r include=FALSE}
+best_bars = read_csv(file.path(getwd(), 'data', 'geocoded_bars.csv')) 
+```
+
+```{r}
+best_bars %>%
+  tail(10) %>%
+  mutate(name = str_replace(name, ', Portland, OR', '')) %>%
+  gt() %>%
+  tab_header(title = gt::md('**Data Sample of Best Portland Bars**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  cols_width(
+    everything() ~ px(155)
+    )
+```
+
+We have successfully scraped the best bars and geocoded their locations. In the following section, we'll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we decide to visit during the pub crawl.
+
+### Route Optimization
+
+The goal of any routing optimization problem is simple: minimize the total distance travelled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we'll leverage the `2-optimization` or `2-opt` method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the 'edges' (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise the swap is reversed and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with any more swaps (see [here](https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf) for a more in-depth explanation). 
+
+Before going any further, let's plot out our locations to see what we're working with. We'll also define our starting point, which is often referred to as the 'depot'. 
+
+```{r }
+depot_lat = 45.525915
+depot_lng = -122.684957
+
+bar_map = leaflet(data = best_bars) %>% 
+          setView(lng = depot_lng + 0.05, lat = depot_lat, zoom = 13) %>% 
+          addProviderTiles("CartoDB.Positron") %>%
+          addMarkers(lng=depot_lng, lat=depot_lat) %>% 
+          addCircleMarkers(lat=~lat, 
+                           lng=~lng,
+                           color = "orange",
+                           radius = 4,
+                           weight = 10,
+                           stroke = FALSE,
+                           opacity = 4,
+                           fillOpacity = 4
+                           ) 
+```
+
+
+```{r, message=FALSE, warning=FALSE, echo = FALSE}
+widgetframe::frameWidget(bar_map, width = "100%", height = 400)
+```
+
+Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking, let's limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.
+
+```{r}
+earth_dist = function (lat1, lng1, lat2, lng2)
+{
+  rad = pi/180
+  a1 = lat1 * rad
+  a2 = lng1 * rad
+  b1 = lat2 * rad
+  b2 = lng2 * rad
+  dlon = b2 - a2
+  dlat = b1 - a1
+  a = (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c = 2 * atan2(sqrt(a), sqrt(1 - a))
+  R = 6378.145
+  d = R * c
+  return(d* 3280.8)
+}
+```
+
+Below we'll filter to all locations based on the maximum distance we're willing to travel. 
+```{r}
+feet_in_mile = 5280
+# maximum distance is 3 miles
+max_miles_away = 3
+
+bar_locations_nearby = best_bars %>% 
+                       mutate(distance_from_depot = earth_dist(depot_lat,
+                                                               depot_lng,
+                                                               lat,
+                                                               lng
+                                                               )
+                              ) %>% 
+                       filter(distance_from_depot <= feet_in_mile * max_miles_away)
+```
+
+```{r}
+set.seed(1)
+
+# we'll visit 24 bars
+n_bars = 24
+
+# randomly select 24 bars to visit
+bar_locations_nearby = bar_locations_nearby %>% 
+                       sample_n(n_bars)
+```
+
+Next we'll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar. 
+```{r, warning=FALSE, message = FALSE}
+# now find optimal route
+coordinates = bar_locations_nearby %>% 
+              dplyr::select(lat, lng, name) %>% 
+              mutate(location_index = 2:(n() + 1)) %>% 
+              bind_rows(data.frame(lat = depot_lat,
+                                   lng = depot_lng,
+                                   address = 'depot',
+                                   name = 'depot',
+                                   location_index = 1
+                                          )
+                               ) %>% 
+              arrange(location_index)
+
+coords_matrix = coordinates %>% 
+                dplyr::select(lat, lng) %>% 
+                as.matrix()
+
+dist_matrix = dist(coords_matrix)
+
+```
+
+The two functions below `tsp_instance` and `run_solver` will do the heavy lifting and find the optimal route between bars. 
+```{r, warning=FALSE, message = FALSE}
+# create tsp instance
+tsp_ins = tspmeta::tsp_instance(coords_matrix,dist_matrix)
+
+# find optimal route based on 2-opt method
+opt_tour = as.integer(run_solver(tsp_ins, method="2-opt"))
+
+# sort to start at depot
+sorted_tour = c(opt_tour[which(opt_tour == 1):length(opt_tour)],
+                opt_tour[1:(which(opt_tour == 1) - 1)]
+                )
+
+# join route order back to original data
+coordinates = coordinates %>% 
+              dplyr::inner_join(data.frame(location_index = sorted_tour,
+                                           route_order = 1:length(sorted_tour)
+                                           )
+                                ) %>% 
+              dplyr::arrange(route_order)
+
+# reformat so each row has a starting lat/lng and ending lat/lng
+route_df = coordinates %>% 
+            dplyr::select(-address) %>%
+            dplyr::rename(start_lat = lat,
+                          start_lng = lng
+                          ) %>% 
+            dplyr::mutate(end_lat = c(start_lat[2:n()], NA),
+                          end_lng = c(start_lng[2:n()], NA)
+                          ) %>% 
+            na.omit()
+```
+
+Let's take a peak at our data to see how everything turned out. 
+
+```{r echo=FALSE}
+route_df %>%
+  dplyr::select(name, route_order, start_lat, start_lng, end_lat, end_lng) %>% 
+  head(10) %>%
+  mutate(name = str_replace(name, ', Portland, OR', '')) %>%
+  gt() %>%
+  tab_header(title = gt::md('**Route**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  cols_width(
+    everything() ~ px(115)
+    )
+```
+
+
+Sweet! Almost there. The final step is to convert these points into an actual travel path. 
+
+### Creating a Walking Path
+
+Currently, the path between different nodes (i.e., bars) are straight lines. We'll be walking this tour, so a sidewalk travel path is required. We'll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the `convert_route_to_path.py` module. This module consists of two functions: `find_path` and `extract_polyline`. `find_path` takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. `extract_polyline` is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output will then be returned as an R DataFrame. We'll specify the python module below. 
+
+```{python eval=FALSE}
+# convert_route_to_path.py
+import os
+import pandas as pd
+import polyline
+import googlemaps
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_KEY = os.getenv('GOOGLE_API_KEY')
+
+def extract_polyline(coords: dict) -> pd.DataFrame:
+    gmaps_polyline = coords["overview_polyline"]["points"]
+    polyline_df = pd.DataFrame(polyline.decode(gmaps_polyline))
+    polyline_df.columns = ["lat", "lng"]
+    polyline_df["path_order"] = range(1, polyline_df.shape[0] + 1)
+    return polyline_df
+
+
+def create_travel_path(
+    route_df: pd.DataFrame, travel_mode: str = "walking"
+) -> pd.DataFrame:
+    gmaps = googlemaps.Client(key=API_KEY)
+    out_route_df = pd.DataFrame()
+    for row in route_df.itertuples():
+        coords = gmaps.directions(
+            origin=[row.start_lat, row.start_lng],
+            destination=[row.end_lat, row.end_lng],
+            mode=travel_mode,
+        )
+        coords_df = extract_polyline(coords=coords[0])
+        coords_df["location_index"] = row.location_index
+        coords_df["travel_time"] = coords[0]["legs"][0]["duration"]["value"]
+        coords_df["miles"] = coords[0]["legs"][0]["distance"]["text"]
+        coords_df["route_order"] = row.route_order
+        out_route_df = out_route_df.append(coords_df)
+    out_route_df = out_route_df.reset_index(drop=True)
+    return out_route_df
+
+```
+
+Next, we'll read the `convert_route_to_path.py` module into R and pass in our route DataFrame, the Google Maps API key, and our preferred method of travel. 
+
+```{r, eval = FALSE}
+reticulate::source_python('convert_route_to_path.py')
+path_df = create_travel_path(route_df)
+```
+
+```{r, echo = FALSE, message = FALSE}
+path_df = read_csv(file.path(getwd(), 'data', 'path_df.csv')) 
+```
+
+
+The data indicating the path between our depot and the first bar should look like this: 
+
+```{r echo=FALSE}
+path_df %>%
+  filter(location_index == 1) %>% 
+  dplyr::select(location_index, route_order, travel_time, miles, 
+                path_order, lat, lng   
+                ) %>% 
+  gt() %>%
+  tab_header(title = gt::md('**Sample Travel Path**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+```
+
+Note the small changes between each of the successive lat/long coordinates. This is the path we'll be walking to obtain our first frosty mug of beer. Before mapping our data, let's get a general idea of total walking time and distance. 
+
+```{r, warnings = FALSE}
+travel_time_in_hours = round(path_df %>% 
+                             dplyr::select(location_index, travel_time) %>% 
+                             dplyr::distinct() %>% 
+                             dplyr::pull(travel_time) %>% 
+                             sum() / 3600, 1)
+
+print(glue::glue("Total Travel Time Is: ",
+                 travel_time_in_hours,
+                 " Hours"
+                 )
+      )
+```
+It looks like this walk will take around six hours, so we'll need to bring some comfy shoes. What about distance (we'll need some way to work off those calories)? 
+
+```{r, warning= FALSE, message=FALSE}
+travel_distance_in_miles = round(path_df %>% 
+  dplyr::mutate(feet_numeric = 
+                case_when(stringr::str_detect(miles, 'ft') == TRUE ~ 
+                          as.numeric(stringr::str_replace(miles, 
+                                                          " ft", 
+                                                          ""
+                                                          )
+                                     ),
+                          stringr::str_detect(miles, " mi") == TRUE ~ 
+                          as.numeric(stringr::str_replace(miles, 
+                                                          " mi", 
+                                                          "")
+                                     ) * feet_in_mile
+                         )
+                ) %>% 
+  dplyr::select(location_index, feet_numeric) %>% 
+  dplyr::distinct() %>% 
+  dplyr::pull(feet_numeric) %>% 
+  sum() / feet_in_mile, 1)
+
+print(glue::glue("Total Travel Distance Is: ",
+                 travel_distance_in_miles,
+                 " Miles"
+                 )
+      )
+```
+OK, this is more of a Pub Crawl half-marathon. That's some serious distance to cover. Let's bring it all together with some visualization. 
+
+### Mapping the Route
+
+The last step is to bring this analysis to life with everyone's favorite visualization: MAPS! Indeed, we'll plot the walking path across downtown Portland so we can actually see the Pub Crawl route. 
+
+```{r}
+# We'll use this to identify the labels for each stop 
+label_df = path_df %>% 
+           dplyr::filter(path_order == 1)
+
+# Bar crawl visualization
+final_route = leaflet(data = path_df) %>%
+  setView(lng = depot_lng + 0.04, lat = depot_lat + 0.01, zoom = 13) %>% 
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolylines(data = path_df %>% 
+                 filter(route_order < 24),
+               lng = ~lng,
+               lat = ~lat,
+               color = "orange",
+               opacity = 4
+  ) %>% 
+  addMarkers(lng = depot_lng,
+             lat = depot_lat
+  ) %>% 
+  addCircleMarkers(data = label_df,
+                   lng = ~lng,
+                   lat = ~lat,
+                   radius = 4,
+                   label = ~as.character(route_order),
+                   labelOptions = labelOptions(noHide = T,
+                                               textOnly = T,
+                                               direction = 'top',
+                                               textsize = "14px",
+                                               offset=c(0,-5),
+                                               size = 1
+                   )
+  )
+```
+
+```{r, message=FALSE, warning=FALSE, echo = FALSE}
+widgetframe::frameWidget(final_route, width = "100%", height = 600)
+```
+
+Whew! That was a lot of work but it looks like we have a reasonable solution. We'll start in downtown Portland, take a quick jaunt over to the Eastside of the city and eventually return back to the Northwest. So, there you have it -- a real-world application of optimization that supports an efficient Pub Crawl. Prost!

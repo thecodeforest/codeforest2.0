@@ -3623,6 +3623,1706 @@ names_plot_df %&amp;gt;%
     </item>
     
     <item>
+      <title>The Optimal Portland Pub Crawl</title>
+      <link>http://example.org/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl/</link>
+      <pubDate>Fri, 01 Jun 2018 21:13:14 -0500</pubDate>
+      <guid>http://example.org/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl/</guid>
+      <description>
+&lt;script src=&#34;http://example.org/rmarkdown-libs/htmlwidgets/htmlwidgets.js&#34;&gt;&lt;/script&gt;
+&lt;script src=&#34;http://example.org/rmarkdown-libs/pymjs/pym.v1.js&#34;&gt;&lt;/script&gt;
+&lt;script src=&#34;http://example.org/rmarkdown-libs/widgetframe-binding/widgetframe.js&#34;&gt;&lt;/script&gt;
+
+
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2018-06-01-optimal-bar-crawl/images/portland.jpg&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;The premise of a Pub Crawl is quite simple: visit several bars in an afternoon or evening without a clear plan of where you’ll go next. While this sort of spontaneous, unstructured approach may work for some people, I’ve always been a fan of having a plan – in this case, an optimal plan. If we want to maximize the number of places visited (and beers tasted) in a finite period of time, then there is simply no room for shoddy planning. Accordingly, this post provides a framework for designing the optimal Portland Pub Crawl by working through the following steps:&lt;/p&gt;
+&lt;p&gt;🍺 Web Scrape the top 100 Portland bars from &lt;a href=&#34;http://www.oregonlive.com/dining/index.ssf/2014/10/portlands_100_best_bars_bar_ta.html&#34;&gt;here&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;🍺 Geocode each bar’s location&lt;/p&gt;
+&lt;p&gt;🍺 Find the optimal route between a subsample of the bars, because visiting 100 in a day would make the following day very bad&lt;/p&gt;
+&lt;p&gt;🍺 Determine a walking path between the bars&lt;/p&gt;
+&lt;p&gt;🍺 Create a map of the walking path, which can be use as a field guide to impress your friends once the pub crawl is under way&lt;/p&gt;
+&lt;p&gt;🍺 Promptly spill beer on the map at the 2nd bar, rendering it unreadable, followed by a game of darts and some popcorn&lt;/p&gt;
+&lt;p&gt;If that sounds like a plan, let’s get started!&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;defining-the-top-100-bars&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Defining the Top 100 Bars&lt;/h3&gt;
+&lt;p&gt;First, let’s identify the stops during our tour of Portland’s pub scene. In the section below, we’ll load up the R libraries, identify which version of Python we’d like to use, and then do some web scraping. Note that all of the python modules and R-scripts are contained in the same directory for simplicity.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Core pacakges
+library(tidyverse)
+
+# Mapping
+library(leaflet)
+library(widgetframe)
+library(leaflet.extras)
+
+# Calling python functions from R
+library(reticulate)
+
+# route optimization
+library(tspmeta)
+
+# Making nice tables
+library(gt)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;geocode_best_portland_bars&lt;/code&gt; function below is responsible for collecting the information.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# best_bars.py
+
+import os
+import urllib
+from bs4 import BeautifulSoup
+import re
+from typing import List
+import googlemaps
+from tqdm import tqdm
+import pandas as pd
+from dotenv import load_dotenv
+
+API_KEY = os.getenv(&amp;#39;GOOGLE_API_KEY&amp;#39;)
+
+
+def find_best_bars() -&amp;gt; str:
+    base_url = &amp;quot;http://www.oregonlive.com/dining/index.ssf/2014/10/portlands_100_best_bars_bar_ta.html&amp;quot;
+    page = urllib.request.urlopen(base_url)
+    soup = BeautifulSoup(page, &amp;quot;html.parser&amp;quot;)
+    bar_descriptors = soup.find_all(&amp;quot;div&amp;quot;, class_=&amp;quot;entry-content&amp;quot;)
+    bar_descriptors = str(bar_descriptors).split(&amp;quot;&amp;lt;p&amp;gt;&amp;quot;)[0]
+    best_bars_raw_lst = re.findall(r&amp;quot;\&amp;lt;strong&amp;gt;(.*?)&amp;lt;/strong&amp;gt;&amp;quot;, bar_descriptors)
+    return best_bars_raw_lst
+
+
+def clean_bar_names(raw_bar_lst: str) -&amp;gt; List[str]:
+    # exclude emphasis tags
+    best_bars = [re.sub(r&amp;quot;&amp;lt;em&amp;gt; (.*?)&amp;lt;/em&amp;gt;&amp;quot;, &amp;quot;&amp;quot;, x) for x in raw_bar_lst]
+    # exclude number included in bar name
+    best_bars = [re.sub(r&amp;quot;No. \d+ --&amp;quot;, &amp;quot;&amp;quot;, x).strip() for x in best_bars]
+    # exclude headers in all caps
+    best_bars = [x for x in best_bars if not x.isupper()]
+    # exclude all lower case tags
+    best_bars = [x for x in best_bars if not x.islower()]
+    # exclude bold tags in html
+    best_bars = [x.replace(&amp;quot;&amp;amp;amp;&amp;quot;, &amp;quot;&amp;amp;&amp;quot;) for x in best_bars]
+    # exclude other emphasis tags
+    best_bars = [re.sub(r&amp;quot;: &amp;lt;em&amp;gt;(.*?)&amp;lt;/em&amp;gt;&amp;quot;, &amp;quot;&amp;quot;, x) for x in best_bars]
+    # strip colons
+    best_bars = [x.replace(&amp;quot;:&amp;quot;, &amp;quot;&amp;quot;) for x in best_bars]
+    # exclude blanks
+    best_bars = [x for x in best_bars if x]
+    return best_bars
+
+
+def geocode_best_portland_bars() -&amp;gt; pd.DataFrame:
+    best_bars_lst = find_best_bars()
+    bar_names = clean_bar_names(raw_bar_lst=best_bars_lst)
+    bar_names = [f&amp;quot;{x}, Portland, OR&amp;quot; for x in bar_names]
+    gmaps = googlemaps.Client(key=API_KEY)
+    geocoded_bars_lst = []
+    for name in tqdm(bar_names):
+        geocode_result = gmaps.geocode(name)
+        lat_lng = geocode_result[0].get(&amp;quot;geometry&amp;quot;).get(&amp;quot;location&amp;quot;)
+        lat, lng = lat_lng.get(&amp;quot;lat&amp;quot;), lat_lng.get(&amp;quot;lng&amp;quot;)
+        geocoded_bars_lst.append([name, lat, lng])
+    geocoded_bars_df = pd.DataFrame(geocoded_bars_lst)
+    geocoded_bars_df.columns = [&amp;quot;name&amp;quot;, &amp;quot;lat&amp;quot;, &amp;quot;lng&amp;quot;]
+    return geocoded_bars_df   &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Historically, this operation would require executing a python script, writing the results out (in an &lt;code&gt;.txt&lt;/code&gt; or &lt;code&gt;.csv&lt;/code&gt; file), and then reading the result back into R. However, with the advent of &lt;code&gt;reticulate&lt;/code&gt;, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python module &lt;code&gt;geocode_best_portland_bars.py&lt;/code&gt; is located in the same directory as our R-script. Below, we’ll first “source” this function via &lt;code&gt;source_python&lt;/code&gt; (which simply means to bring it into the R environment), then we’ll execute it. Note that we aren’t passing in any arguments; this function is designed for a very specific purpose, which is to find the best watering holes in Portland.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# specify which version of Python to use
+reticulate::use_python(&amp;#39;//anaconda/bin/python&amp;#39;, required = TRUE)
+
+# brings our function into the R Environment
+reticulate::source_python(&amp;#39;best_bars.py&amp;#39;)
+
+# executes and stores the output  in our variable &amp;#39;best_bars&amp;#39;
+best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;best_bars %&amp;gt;%
+  tail(10) %&amp;gt;%
+  mutate(name = str_replace(name, &amp;#39;, Portland, OR&amp;#39;, &amp;#39;&amp;#39;)) %&amp;gt;%
+  gt() %&amp;gt;%
+  tab_header(title = gt::md(&amp;#39;**Data Sample of Best Portland Bars**&amp;#39;)) %&amp;gt;%
+  cols_align(
+  align = &amp;quot;center&amp;quot;,
+  columns = everything()) %&amp;gt;%
+  cols_width(
+    everything() ~ px(155)
+    )&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#sszsgucrgp .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#sszsgucrgp .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#sszsgucrgp .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#sszsgucrgp .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#sszsgucrgp .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#sszsgucrgp .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#sszsgucrgp .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#sszsgucrgp .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#sszsgucrgp .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#sszsgucrgp .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#sszsgucrgp .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#sszsgucrgp .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#sszsgucrgp .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#sszsgucrgp .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#sszsgucrgp .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#sszsgucrgp .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#sszsgucrgp .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#sszsgucrgp .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#sszsgucrgp .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#sszsgucrgp .gt_left {
+  text-align: left;
+}
+
+#sszsgucrgp .gt_center {
+  text-align: center;
+}
+
+#sszsgucrgp .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#sszsgucrgp .gt_font_normal {
+  font-weight: normal;
+}
+
+#sszsgucrgp .gt_font_bold {
+  font-weight: bold;
+}
+
+#sszsgucrgp .gt_font_italic {
+  font-style: italic;
+}
+
+#sszsgucrgp .gt_super {
+  font-size: 65%;
+}
+
+#sszsgucrgp .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;sszsgucrgp&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+    &lt;col style=&#34;width:155px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Data Sample of Best Portland Bars&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;name&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;lat&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;lng&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Swine&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51827&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6818&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Jackknife&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52051&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6828&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Stammtisch&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52586&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6375&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Cooper&#39;s Hall&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51988&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6596&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;The Knock Back&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.55923&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6416&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Multnomah Whiskey Library&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52098&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6835&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Trifecta Tavern &amp;amp; Bakery&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51756&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6596&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Angel Face&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52321&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6371&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Pepe Le Moko&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52187&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6813&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Expatriate&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.56240&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6346&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;We have successfully scraped the best bars and geocoded their locations. In the following section, we’ll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we decide to visit during the pub crawl.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;route-optimization&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Route Optimization&lt;/h3&gt;
+&lt;p&gt;The goal of any routing optimization problem is simple: minimize the total distance travelled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we’ll leverage the &lt;code&gt;2-optimization&lt;/code&gt; or &lt;code&gt;2-opt&lt;/code&gt; method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the ‘edges’ (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise the swap is reversed and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with any more swaps (see &lt;a href=&#34;https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf&#34;&gt;here&lt;/a&gt; for a more in-depth explanation).&lt;/p&gt;
+&lt;p&gt;Before going any further, let’s plot out our locations to see what we’re working with. We’ll also define our starting point, which is often referred to as the ‘depot’.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;depot_lat = 45.525915
+depot_lng = -122.684957
+
+bar_map = leaflet(data = best_bars) %&amp;gt;% 
+          setView(lng = depot_lng + 0.05, lat = depot_lat, zoom = 13) %&amp;gt;% 
+          addProviderTiles(&amp;quot;CartoDB.Positron&amp;quot;) %&amp;gt;%
+          addMarkers(lng=depot_lng, lat=depot_lat) %&amp;gt;% 
+          addCircleMarkers(lat=~lat, 
+                           lng=~lng,
+                           color = &amp;quot;orange&amp;quot;,
+                           radius = 4,
+                           weight = 10,
+                           stroke = FALSE,
+                           opacity = 4,
+                           fillOpacity = 4
+                           ) &lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;htmlwidget-1&#34; style=&#34;width:100%;height:400px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
+&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-1&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-7.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking, let’s limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;earth_dist = function (lat1, lng1, lat2, lng2)
+{
+  rad = pi/180
+  a1 = lat1 * rad
+  a2 = lng1 * rad
+  b1 = lat2 * rad
+  b2 = lng2 * rad
+  dlon = b2 - a2
+  dlat = b1 - a1
+  a = (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c = 2 * atan2(sqrt(a), sqrt(1 - a))
+  R = 6378.145
+  d = R * c
+  return(d* 3280.8)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Below we’ll filter to all locations based on the maximum distance we’re willing to travel.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;feet_in_mile = 5280
+# maximum distance is 3 miles
+max_miles_away = 3
+
+bar_locations_nearby = best_bars %&amp;gt;% 
+                       mutate(distance_from_depot = earth_dist(depot_lat,
+                                                               depot_lng,
+                                                               lat,
+                                                               lng
+                                                               )
+                              ) %&amp;gt;% 
+                       filter(distance_from_depot &amp;lt;= feet_in_mile * max_miles_away)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(1)
+
+# we&amp;#39;ll visit 24 bars
+n_bars = 24
+
+# randomly select 24 bars to visit
+bar_locations_nearby = bar_locations_nearby %&amp;gt;% 
+                       sample_n(n_bars)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next we’ll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# now find optimal route
+coordinates = bar_locations_nearby %&amp;gt;% 
+              dplyr::select(lat, lng, name) %&amp;gt;% 
+              mutate(location_index = 2:(n() + 1)) %&amp;gt;% 
+              bind_rows(data.frame(lat = depot_lat,
+                                   lng = depot_lng,
+                                   address = &amp;#39;depot&amp;#39;,
+                                   name = &amp;#39;depot&amp;#39;,
+                                   location_index = 1
+                                          )
+                               ) %&amp;gt;% 
+              arrange(location_index)
+
+coords_matrix = coordinates %&amp;gt;% 
+                dplyr::select(lat, lng) %&amp;gt;% 
+                as.matrix()
+
+dist_matrix = dist(coords_matrix)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The two functions below &lt;code&gt;tsp_instance&lt;/code&gt; and &lt;code&gt;run_solver&lt;/code&gt; will do the heavy lifting and find the optimal route between bars.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# create tsp instance
+tsp_ins = tspmeta::tsp_instance(coords_matrix,dist_matrix)
+
+# find optimal route based on 2-opt method
+opt_tour = as.integer(run_solver(tsp_ins, method=&amp;quot;2-opt&amp;quot;))
+
+# sort to start at depot
+sorted_tour = c(opt_tour[which(opt_tour == 1):length(opt_tour)],
+                opt_tour[1:(which(opt_tour == 1) - 1)]
+                )
+
+# join route order back to original data
+coordinates = coordinates %&amp;gt;% 
+              dplyr::inner_join(data.frame(location_index = sorted_tour,
+                                           route_order = 1:length(sorted_tour)
+                                           )
+                                ) %&amp;gt;% 
+              dplyr::arrange(route_order)
+
+# reformat so each row has a starting lat/lng and ending lat/lng
+route_df = coordinates %&amp;gt;% 
+            dplyr::select(-address) %&amp;gt;%
+            dplyr::rename(start_lat = lat,
+                          start_lng = lng
+                          ) %&amp;gt;% 
+            dplyr::mutate(end_lat = c(start_lat[2:n()], NA),
+                          end_lng = c(start_lng[2:n()], NA)
+                          ) %&amp;gt;% 
+            na.omit()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s take a peak at our data to see how everything turned out.&lt;/p&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#dmhypywntg .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#dmhypywntg .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#dmhypywntg .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#dmhypywntg .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#dmhypywntg .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#dmhypywntg .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#dmhypywntg .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#dmhypywntg .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dmhypywntg .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dmhypywntg .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#dmhypywntg .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#dmhypywntg .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#dmhypywntg .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#dmhypywntg .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dmhypywntg .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dmhypywntg .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#dmhypywntg .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dmhypywntg .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dmhypywntg .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dmhypywntg .gt_left {
+  text-align: left;
+}
+
+#dmhypywntg .gt_center {
+  text-align: center;
+}
+
+#dmhypywntg .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#dmhypywntg .gt_font_normal {
+  font-weight: normal;
+}
+
+#dmhypywntg .gt_font_bold {
+  font-weight: bold;
+}
+
+#dmhypywntg .gt_font_italic {
+  font-style: italic;
+}
+
+#dmhypywntg .gt_super {
+  font-size: 65%;
+}
+
+#dmhypywntg .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;dmhypywntg&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+    &lt;col style=&#34;width:115px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;6&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Route&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;6&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;name&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;route_order&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;start_lat&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;start_lng&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;end_lat&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;end_lng&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;depot&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52591&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6850&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52627&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6784&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Park Kitchen&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52627&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6784&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52531&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6783&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Remedy Wine Bar&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52531&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6783&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52201&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6816&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Clyde Common&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52201&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6816&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52246&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Cassidy&#39;s&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52246&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52098&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6835&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Multnomah Whiskey Library&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;6&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52098&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6835&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51487&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6824&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;The Rookery at Raven &amp;amp; Rose&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51487&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6824&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51400&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6753&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Veritable Quandary&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51400&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6753&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51904&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6781&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Departure&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;9&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51904&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6781&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52403&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6756&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Ground Kontrol&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52403&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6756&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.51900&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6641&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;Sweet! Almost there. The final step is to convert these points into an actual travel path.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;creating-a-walking-path&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Creating a Walking Path&lt;/h3&gt;
+&lt;p&gt;Currently, the path between different nodes (i.e., bars) are straight lines. We’ll be walking this tour, so a sidewalk travel path is required. We’ll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the &lt;code&gt;convert_route_to_path.py&lt;/code&gt; module. This module consists of two functions: &lt;code&gt;find_path&lt;/code&gt; and &lt;code&gt;extract_polyline&lt;/code&gt;. &lt;code&gt;find_path&lt;/code&gt; takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. &lt;code&gt;extract_polyline&lt;/code&gt; is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output will then be returned as an R DataFrame. We’ll specify the python module below.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# convert_route_to_path.py
+import os
+import pandas as pd
+import polyline
+import googlemaps
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_KEY = os.getenv(&amp;#39;GOOGLE_API_KEY&amp;#39;)
+
+def extract_polyline(coords: dict) -&amp;gt; pd.DataFrame:
+    gmaps_polyline = coords[&amp;quot;overview_polyline&amp;quot;][&amp;quot;points&amp;quot;]
+    polyline_df = pd.DataFrame(polyline.decode(gmaps_polyline))
+    polyline_df.columns = [&amp;quot;lat&amp;quot;, &amp;quot;lng&amp;quot;]
+    polyline_df[&amp;quot;path_order&amp;quot;] = range(1, polyline_df.shape[0] + 1)
+    return polyline_df
+
+
+def create_travel_path(
+    route_df: pd.DataFrame, travel_mode: str = &amp;quot;walking&amp;quot;
+) -&amp;gt; pd.DataFrame:
+    gmaps = googlemaps.Client(key=API_KEY)
+    out_route_df = pd.DataFrame()
+    for row in route_df.itertuples():
+        coords = gmaps.directions(
+            origin=[row.start_lat, row.start_lng],
+            destination=[row.end_lat, row.end_lng],
+            mode=travel_mode,
+        )
+        coords_df = extract_polyline(coords=coords[0])
+        coords_df[&amp;quot;location_index&amp;quot;] = row.location_index
+        coords_df[&amp;quot;travel_time&amp;quot;] = coords[0][&amp;quot;legs&amp;quot;][0][&amp;quot;duration&amp;quot;][&amp;quot;value&amp;quot;]
+        coords_df[&amp;quot;miles&amp;quot;] = coords[0][&amp;quot;legs&amp;quot;][0][&amp;quot;distance&amp;quot;][&amp;quot;text&amp;quot;]
+        coords_df[&amp;quot;route_order&amp;quot;] = row.route_order
+        out_route_df = out_route_df.append(coords_df)
+    out_route_df = out_route_df.reset_index(drop=True)
+    return out_route_df&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next, we’ll read the &lt;code&gt;convert_route_to_path.py&lt;/code&gt; module into R and pass in our route DataFrame, the Google Maps API key, and our preferred method of travel.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;reticulate::source_python(&amp;#39;convert_route_to_path.py&amp;#39;)
+path_df = create_travel_path(route_df)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The data indicating the path between our depot and the first bar should look like this:&lt;/p&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#pamufqigws .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#pamufqigws .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pamufqigws .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#pamufqigws .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#pamufqigws .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pamufqigws .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#pamufqigws .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#pamufqigws .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#pamufqigws .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#pamufqigws .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#pamufqigws .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#pamufqigws .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pamufqigws .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#pamufqigws .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#pamufqigws .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#pamufqigws .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#pamufqigws .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#pamufqigws .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pamufqigws .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#pamufqigws .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#pamufqigws .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#pamufqigws .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#pamufqigws .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#pamufqigws .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pamufqigws .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pamufqigws .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#pamufqigws .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#pamufqigws .gt_left {
+  text-align: left;
+}
+
+#pamufqigws .gt_center {
+  text-align: center;
+}
+
+#pamufqigws .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#pamufqigws .gt_font_normal {
+  font-weight: normal;
+}
+
+#pamufqigws .gt_font_bold {
+  font-weight: bold;
+}
+
+#pamufqigws .gt_font_italic {
+  font-style: italic;
+}
+
+#pamufqigws .gt_super {
+  font-size: 65%;
+}
+
+#pamufqigws .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;pamufqigws&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;7&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Sample Travel Path&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;7&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;location_index&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;route_order&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;travel_time&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;miles&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;path_order&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;lat&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;lng&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52576&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6849&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52575&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6853&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52508&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6853&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52449&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52443&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;6&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52362&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52312&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;8&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52304&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;9&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52282&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52263&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6853&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;11&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52247&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6854&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;344&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0.3 mi&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;12&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;45.52243&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;-122.6852&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;Note the small changes between each of the successive lat/long coordinates. This is the path we’ll be walking to obtain our first frosty mug of beer. Before mapping our data, let’s get a general idea of total walking time and distance.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;travel_time_in_hours = round(path_df %&amp;gt;% 
+                             dplyr::select(location_index, travel_time) %&amp;gt;% 
+                             dplyr::distinct() %&amp;gt;% 
+                             dplyr::pull(travel_time) %&amp;gt;% 
+                             sum() / 3600, 1)
+
+print(glue::glue(&amp;quot;Total Travel Time Is: &amp;quot;,
+                 travel_time_in_hours,
+                 &amp;quot; Hours&amp;quot;
+                 )
+      )&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Total Travel Time Is: 6.6 Hours&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It looks like this walk will take around six hours, so we’ll need to bring some comfy shoes. What about distance (we’ll need some way to work off those calories)?&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;travel_distance_in_miles = round(path_df %&amp;gt;% 
+  dplyr::mutate(feet_numeric = 
+                case_when(stringr::str_detect(miles, &amp;#39;ft&amp;#39;) == TRUE ~ 
+                          as.numeric(stringr::str_replace(miles, 
+                                                          &amp;quot; ft&amp;quot;, 
+                                                          &amp;quot;&amp;quot;
+                                                          )
+                                     ),
+                          stringr::str_detect(miles, &amp;quot; mi&amp;quot;) == TRUE ~ 
+                          as.numeric(stringr::str_replace(miles, 
+                                                          &amp;quot; mi&amp;quot;, 
+                                                          &amp;quot;&amp;quot;)
+                                     ) * feet_in_mile
+                         )
+                ) %&amp;gt;% 
+  dplyr::select(location_index, feet_numeric) %&amp;gt;% 
+  dplyr::distinct() %&amp;gt;% 
+  dplyr::pull(feet_numeric) %&amp;gt;% 
+  sum() / feet_in_mile, 1)
+
+print(glue::glue(&amp;quot;Total Travel Distance Is: &amp;quot;,
+                 travel_distance_in_miles,
+                 &amp;quot; Miles&amp;quot;
+                 )
+      )&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Total Travel Distance Is: 19 Miles&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;OK, this is more of a Pub Crawl half-marathon. That’s some serious distance to cover. Let’s bring it all together with some visualization.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;mapping-the-route&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Mapping the Route&lt;/h3&gt;
+&lt;p&gt;The last step is to bring this analysis to life with everyone’s favorite visualization: MAPS! Indeed, we’ll plot the walking path across downtown Portland so we can actually see the Pub Crawl route.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# We&amp;#39;ll use this to identify the labels for each stop 
+label_df = path_df %&amp;gt;% 
+           dplyr::filter(path_order == 1)
+
+# Bar crawl visualization
+final_route = leaflet(data = path_df) %&amp;gt;%
+  setView(lng = depot_lng + 0.02, lat = depot_lat, zoom = 13) %&amp;gt;% 
+  addProviderTiles(&amp;quot;CartoDB.Positron&amp;quot;) %&amp;gt;%
+  addPolylines(data = path_df %&amp;gt;% 
+                 filter(route_order &amp;lt; 24),
+               lng = ~lng,
+               lat = ~lat,
+               color = &amp;quot;orange&amp;quot;,
+               opacity = 4
+  ) %&amp;gt;% 
+  addMarkers(lng = depot_lng,
+             lat = depot_lat
+  ) %&amp;gt;% 
+  addCircleMarkers(data = label_df,
+                   lng = ~lng,
+                   lat = ~lat,
+                   radius = 4,
+                   label = ~as.character(route_order),
+                   labelOptions = labelOptions(noHide = T,
+                                               textOnly = T,
+                                               direction = &amp;#39;top&amp;#39;,
+                                               textsize = &amp;quot;14px&amp;quot;,
+                                               offset=c(0,-5),
+                                               size = 1
+                   )
+  )&lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;htmlwidget-2&#34; style=&#34;width:100%;height:400px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
+&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-2&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-21.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Choosing a Fantasy Football Quarterback</title>
       <link>http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb/</link>
       <pubDate>Sun, 10 Sep 2017 21:13:14 -0500</pubDate>

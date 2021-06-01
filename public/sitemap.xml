@@ -176,6 +176,27 @@
     <loc>http://example.org/terms/</loc>
     <lastmod>2018-06-28T00:00:00+01:00</lastmod>
   </url><url>
+    <loc>http://example.org/tag/reticulate/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/category/reticulate/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/tag/route-optimization/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/category/route-optimization/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/tag/traveling-salesman-problem/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
+    <loc>http://example.org/category/traveling-salesman-problem/</loc>
+    <lastmod>2018-06-01T21:13:14-05:00</lastmod>
+  </url><url>
     <loc>http://example.org/tag/beta-distribution/</loc>
     <lastmod>2017-09-10T21:13:14-05:00</lastmod>
   </url><url>
