@@ -52,7 +52,7 @@ library(leaflet.extras)
 # Calling python functions from R
 library(reticulate)
 
-# route optimization
+# Route optimization
 library(tspmeta)
 
 # Making nice tables
@@ -117,7 +117,7 @@ def geocode_best_portland_bars() -&gt; pd.DataFrame:
     geocoded_bars_df = pd.DataFrame(geocoded_bars_lst)
     geocoded_bars_df.columns = [&quot;name&quot;, &quot;lat&quot;, &quot;lng&quot;]
     return geocoded_bars_df   </code></pre>
-<p>Historically, this operation would require executing a python script, writing the results out (in an <code>.txt</code> or <code>.csv</code> file), and then reading the result back into R. However, with the advent of <code>reticulate</code>, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python module <code>geocode_best_portland_bars.py</code> is located in the same directory as our R-script. Below, we’ll first “source” this function via <code>source_python</code> (which simply means to bring it into the R environment), then we’ll execute it. Note that we aren’t passing in any arguments; this function is designed for a very specific purpose, which is to find the best watering holes in Portland.</p>
+<p>Historically, this operation would require executing a python script, writing the results out in a .txt or .csv file, and then reading the output back into R. However, with the advent of <code>reticulate</code>, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python <code>best_bars.py</code> module, which contains the three functions defined above, is located in the same directory as our R-script. We’ll source" this function via <code>source_python</code> (which means to bring it into the R environment), then we’ll execute it. Note that we aren’t passing in any arguments; this function is designed for a particular purpose, which is to find the best watering holes in Portland.</p>
 <pre class="r"><code># specify which version of Python to use
 reticulate::use_python(&#39;//anaconda/bin/python&#39;, required = TRUE)
 
@@ -141,7 +141,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#zupfrgawbr .gt_table {
+#xlgbhvnyms .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -166,7 +166,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_heading {
+#xlgbhvnyms .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -178,7 +178,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_title {
+#xlgbhvnyms .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -188,7 +188,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-bottom-width: 0;
 }
 
-#zupfrgawbr .gt_subtitle {
+#xlgbhvnyms .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -198,13 +198,13 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-top-width: 0;
 }
 
-#zupfrgawbr .gt_bottom_border {
+#xlgbhvnyms .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_col_headings {
+#xlgbhvnyms .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -219,7 +219,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_col_heading {
+#xlgbhvnyms .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -239,7 +239,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   overflow-x: hidden;
 }
 
-#zupfrgawbr .gt_column_spanner_outer {
+#xlgbhvnyms .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -251,15 +251,15 @@ best_bars = geocode_best_portland_bars()</code></pre>
   padding-right: 4px;
 }
 
-#zupfrgawbr .gt_column_spanner_outer:first-child {
+#xlgbhvnyms .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#zupfrgawbr .gt_column_spanner_outer:last-child {
+#xlgbhvnyms .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#zupfrgawbr .gt_column_spanner {
+#xlgbhvnyms .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -271,7 +271,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   width: 100%;
 }
 
-#zupfrgawbr .gt_group_heading {
+#xlgbhvnyms .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -293,7 +293,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   vertical-align: middle;
 }
 
-#zupfrgawbr .gt_empty_group_heading {
+#xlgbhvnyms .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -308,15 +308,15 @@ best_bars = geocode_best_portland_bars()</code></pre>
   vertical-align: middle;
 }
 
-#zupfrgawbr .gt_from_md > :first-child {
+#xlgbhvnyms .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#zupfrgawbr .gt_from_md > :last-child {
+#xlgbhvnyms .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#zupfrgawbr .gt_row {
+#xlgbhvnyms .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -335,7 +335,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   overflow-x: hidden;
 }
 
-#zupfrgawbr .gt_stub {
+#xlgbhvnyms .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -347,7 +347,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   padding-left: 12px;
 }
 
-#zupfrgawbr .gt_summary_row {
+#xlgbhvnyms .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -357,7 +357,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   padding-right: 5px;
 }
 
-#zupfrgawbr .gt_first_summary_row {
+#xlgbhvnyms .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -367,7 +367,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_grand_summary_row {
+#xlgbhvnyms .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -377,7 +377,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   padding-right: 5px;
 }
 
-#zupfrgawbr .gt_first_grand_summary_row {
+#xlgbhvnyms .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -387,11 +387,11 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_striped {
+#xlgbhvnyms .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#zupfrgawbr .gt_table_body {
+#xlgbhvnyms .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -400,7 +400,7 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_footnotes {
+#xlgbhvnyms .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -414,13 +414,13 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_footnote {
+#xlgbhvnyms .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#zupfrgawbr .gt_sourcenotes {
+#xlgbhvnyms .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -434,46 +434,46 @@ best_bars = geocode_best_portland_bars()</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#zupfrgawbr .gt_sourcenote {
+#xlgbhvnyms .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#zupfrgawbr .gt_left {
+#xlgbhvnyms .gt_left {
   text-align: left;
 }
 
-#zupfrgawbr .gt_center {
+#xlgbhvnyms .gt_center {
   text-align: center;
 }
 
-#zupfrgawbr .gt_right {
+#xlgbhvnyms .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#zupfrgawbr .gt_font_normal {
+#xlgbhvnyms .gt_font_normal {
   font-weight: normal;
 }
 
-#zupfrgawbr .gt_font_bold {
+#xlgbhvnyms .gt_font_bold {
   font-weight: bold;
 }
 
-#zupfrgawbr .gt_font_italic {
+#xlgbhvnyms .gt_font_italic {
   font-style: italic;
 }
 
-#zupfrgawbr .gt_super {
+#xlgbhvnyms .gt_super {
   font-size: 65%;
 }
 
-#zupfrgawbr .gt_footnote_marks {
+#xlgbhvnyms .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="zupfrgawbr" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="xlgbhvnyms" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:155px;"/>
     <col style="width:155px;"/>
@@ -549,12 +549,12 @@ best_bars = geocode_best_portland_bars()</code></pre>
   
   
 </table></div>
-<p>We have successfully scraped the best bars and geocoded their locations. In the following section, we’ll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we decide to visit during the pub crawl.</p>
+<p>We have successfully scraped the best bars and geocoded their locations. Note that you’ll need access to the Geocoding API through the Google Maps Platform to follow along with the example above. In the following section, we’ll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we want to visit during the pub crawl.</p>
 </div>
 <div id="route-optimization" class="section level3">
 <h3>Route Optimization</h3>
-<p>The goal of any routing optimization problem is simple: minimize the total distance travelled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we’ll leverage the <code>2-optimization</code> or <code>2-opt</code> method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the ‘edges’ (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise the swap is reversed and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with any more swaps (see <a href="https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf">here</a> for a more in-depth explanation).</p>
-<p>Before going any further, let’s plot out our locations to see what we’re working with. We’ll also define our starting point, which is often referred to as the ‘depot’.</p>
+<p>The goal of any routing optimization problem is simple: minimize the total distance traveled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we’ll leverage the <code>2-optimization</code> or <code>2-opt</code> method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the ‘edges’ (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise, the swap is reversed, and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with more swaps (see <a href="https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf">here</a> for a more in-depth explanation).</p>
+<p>Before going any further, let’s plot out our bar locations. We’ll also define our starting point, which is referred to as the “depot.”</p>
 <pre class="r"><code>depot_lat = 45.525915
 depot_lng = -122.684957
 
@@ -573,7 +573,7 @@ bar_map = leaflet(data = best_bars) %&gt;%
                            ) </code></pre>
 <div id="htmlwidget-1" style="width:100%;height:400px;" class="widgetframe html-widget"></div>
 <script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-7.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
-<p>Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking, let’s limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.</p>
+<p>Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking let’s limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.</p>
 <pre class="r"><code>earth_dist = function (lat1, lng1, lat2, lng2)
 {
   rad = pi/180
@@ -610,7 +610,7 @@ n_bars = 24
 # randomly select 24 bars to visit
 bar_locations_nearby = bar_locations_nearby %&gt;% 
                        sample_n(n_bars)</code></pre>
-<p>Next we’ll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar.</p>
+<p>Next, we’ll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar.</p>
 <pre class="r"><code># now find optimal route
 coordinates = bar_locations_nearby %&gt;% 
               dplyr::select(lat, lng, name) %&gt;% 
@@ -629,7 +629,7 @@ coords_matrix = coordinates %&gt;%
                 as.matrix()
 
 dist_matrix = dist(coords_matrix)</code></pre>
-<p>The two functions below <code>tsp_instance</code> and <code>run_solver</code> will do the heavy lifting and find the optimal route between bars.</p>
+<p>The two functions below <code>tsp_instance</code> and <code>run_solver</code> do the heavy lifting and find the optimal route between bars.</p>
 <pre class="r"><code># create tsp instance
 tsp_ins = tspmeta::tsp_instance(coords_matrix,dist_matrix)
 
@@ -1112,7 +1112,7 @@ route_df = coordinates %&gt;%
 </div>
 <div id="creating-a-walking-path" class="section level3">
 <h3>Creating a Walking Path</h3>
-<p>Currently, the path between different nodes (i.e., bars) are straight lines. We’ll be walking this tour, so a sidewalk travel path is required. We’ll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the <code>convert_route_to_path.py</code> module. This module consists of two functions: <code>find_path</code> and <code>extract_polyline</code>. <code>find_path</code> takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. <code>extract_polyline</code> is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output will then be returned as an R DataFrame. We’ll specify the python module below.</p>
+<p>Currently, the path between different nodes (i.e., bars) are straight lines. We’ll be walking this tour, so a sidewalk travel path is required. We’ll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the <code>convert_route_to_path.py</code> module. This module consists of two functions: <code>find_path</code> and <code>extract_polyline</code>. <code>find_path</code> takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. <code>extract_polyline</code> is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output is returned as an R DataFrame. We’ll specify the python module below.</p>
 <pre class="python"><code># convert_route_to_path.py
 import os
 import pandas as pd
@@ -1151,7 +1151,7 @@ def create_travel_path(
         out_route_df = out_route_df.append(coords_df)
     out_route_df = out_route_df.reset_index(drop=True)
     return out_route_df</code></pre>
-<p>Next, we’ll read the <code>convert_route_to_path.py</code> module into R and pass in our route DataFrame, the Google Maps API key, and our preferred method of travel.</p>
+<p>Next, we’ll read the <code>convert_route_to_path.py</code> module into R and pass in our route DataFrame to the <code>create_travel_path</code> function.</p>
 <pre class="r"><code>reticulate::source_python(&#39;convert_route_to_path.py&#39;)
 path_df = create_travel_path(route_df)</code></pre>
 <p>The data indicating the path between our depot and the first bar should look like this:</p>
@@ -1673,13 +1673,13 @@ print(glue::glue(&quot;Total Travel Distance Is: &quot;,
                  )
       )</code></pre>
 <pre><code>## Total Travel Distance Is: 19 Miles</code></pre>
-<p>OK, this is more of a Pub Crawl half-marathon. That’s some serious distance to cover. Let’s bring it all together with some visualization.</p>
+<p>OK, this is more of a Pub Crawl marathon. That’s some serious distance to cover. Let’s bring it all together with some visualization.</p>
 </div>
 <div id="mapping-the-route" class="section level3">
 <h3>Mapping the Route</h3>
-<p>The last step is to bring this analysis to life with everyone’s favorite visualization: MAPS! Indeed, we’ll plot the walking path across downtown Portland so we can actually see the Pub Crawl route.</p>
+<p>The last step is to bring this analysis to life with everyone’s favorite visualization: MAPS! Indeed, we’ll plot the walking path across downtown Portland to see the Pub Crawl route.</p>
 <pre class="r"><code># We&#39;ll use this to identify the labels for each stop 
-label_df = path_df %&gt;% 
+label_df = path_df %&gt;%  
            dplyr::filter(path_order == 1)
 
 # Bar crawl visualization
@@ -1711,5 +1711,5 @@ final_route = leaflet(data = path_df) %&gt;%
   )</code></pre>
 <div id="htmlwidget-2" style="width:100%;height:600px;" class="widgetframe html-widget"></div>
 <script type="application/json" data-for="htmlwidget-2">{"x":{"url":"/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-21.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
-<p>Whew! That was a lot of work but it looks like we have a reasonable solution. We’ll start in downtown Portland, take a quick jaunt over to the Eastside of the city and eventually return back to the Northwest. So, there you have it – a real-world application of optimization that supports an efficient Pub Crawl. Prost!</p>
+<p>Whew! That was a lot of work, but it looks like we have a reasonable solution. We’ll start in downtown Portland, take a quick tour over to the city’s Eastside, and eventually return to the Northwest. So, there you have it – a real-world application of optimization that supports an efficient Pub Crawl. Prost!</p>
 </div>

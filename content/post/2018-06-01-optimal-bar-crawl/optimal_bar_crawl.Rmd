@@ -60,7 +60,7 @@ library(leaflet.extras)
 # Calling python functions from R
 library(reticulate)
 
-# route optimization
+# Route optimization
 library(tspmeta)
 
 # Making nice tables
@@ -130,7 +130,7 @@ def geocode_best_portland_bars() -> pd.DataFrame:
     return geocoded_bars_df   
 ```
 
-Historically, this operation would require executing a python script, writing the results out (in an `.txt` or `.csv` file), and then reading the result back into R. However, with the advent of `reticulate`, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python module `geocode_best_portland_bars.py` is located in the same directory as our R-script. Below, we'll first "source" this function via `source_python` (which simply means to bring it into the R environment), then we'll execute it. Note that we aren't passing in any arguments; this function is designed for a very specific purpose, which is to find the best watering holes in Portland.  
+Historically, this operation would require executing a python script, writing the results out in a .txt or .csv file, and then reading the output back into R. However, with the advent of `reticulate`, we can execute a python function and pull the output back without ever having to leave the cozy confines of R (or R-studio in this case). Recall that the actual python `best_bars.py` module, which contains the three functions defined above, is located in the same directory as our R-script. We'll source" this function via `source_python` (which means to bring it into the R environment), then we'll execute it. Note that we aren't passing in any arguments; this function is designed for a particular purpose, which is to find the best watering holes in Portland.  
 
 ```{r, eval = FALSE}
 # specify which version of Python to use
@@ -161,13 +161,13 @@ best_bars %>%
     )
 ```
 
-We have successfully scraped the best bars and geocoded their locations. In the following section, we'll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we decide to visit during the pub crawl.
+We have successfully scraped the best bars and geocoded their locations. Note that you'll need access to the Geocoding API through the Google Maps Platform to follow along with the example above. In the following section, we'll solve a classic routing optimization problem: The Traveling Salesman Problem (TSP). The goal is to find the most direct route between all of the bars we want to visit during the pub crawl.
 
 ### Route Optimization
 
-The goal of any routing optimization problem is simple: minimize the total distance travelled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we'll leverage the `2-optimization` or `2-opt` method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the 'edges' (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise the swap is reversed and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with any more swaps (see [here](https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf) for a more in-depth explanation). 
+The goal of any routing optimization problem is simple: minimize the total distance traveled between different nodes (locations) in space while ensuring that each node is visited once. There are many algorithms to solve this type of problem, but we'll leverage the `2-optimization` or `2-opt` method due to its simplicity. This algorithm finds the lowest cost route (i.e., the route with the shortest distance that ensures each node is visited once) by swapping the 'edges' (the path that connects two nodes) between different nodes. If a swap reduces the total length of our tour, then the swap is maintained; otherwise, the swap is reversed, and we try again with different edges. Note that the swap must ensure that a single route is always possible between all nodes. The algorithm stops when a tour is reached that cannot be improved with more swaps (see [here](https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec17.pdf) for a more in-depth explanation). 
 
-Before going any further, let's plot out our locations to see what we're working with. We'll also define our starting point, which is often referred to as the 'depot'. 
+Before going any further, let's plot out our bar locations. We'll also define our starting point, which is referred to as the "depot."
 
 ```{r }
 depot_lat = 45.525915
@@ -193,7 +193,7 @@ bar_map = leaflet(data = best_bars) %>%
 widgetframe::frameWidget(bar_map, width = "100%", height = 400)
 ```
 
-Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking, let's limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.
+Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking let's limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.
 
 ```{r}
 earth_dist = function (lat1, lng1, lat2, lng2)
@@ -240,7 +240,7 @@ bar_locations_nearby = bar_locations_nearby %>%
                        sample_n(n_bars)
 ```
 
-Next we'll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar. 
+Next, we'll transform the lat/long locations into a distance matrix. The distance matrix specifies the euclidean distance of each bar from every other bar. 
 ```{r, warning=FALSE, message = FALSE}
 # now find optimal route
 coordinates = bar_locations_nearby %>% 
@@ -263,7 +263,7 @@ dist_matrix = dist(coords_matrix)
 
 ```
 
-The two functions below `tsp_instance` and `run_solver` will do the heavy lifting and find the optimal route between bars. 
+The two functions below `tsp_instance` and `run_solver` do the heavy lifting and find the optimal route between bars. 
 ```{r, warning=FALSE, message = FALSE}
 # create tsp instance
 tsp_ins = tspmeta::tsp_instance(coords_matrix,dist_matrix)
@@ -318,7 +318,7 @@ Sweet! Almost there. The final step is to convert these points into an actual tr
 
 ### Creating a Walking Path
 
-Currently, the path between different nodes (i.e., bars) are straight lines. We'll be walking this tour, so a sidewalk travel path is required. We'll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the `convert_route_to_path.py` module. This module consists of two functions: `find_path` and `extract_polyline`. `find_path` takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. `extract_polyline` is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output will then be returned as an R DataFrame. We'll specify the python module below. 
+Currently, the path between different nodes (i.e., bars) are straight lines. We'll be walking this tour, so a sidewalk travel path is required. We'll call on the Google Maps API one last time to convert each of the straight-line edges to actual walking paths via the `convert_route_to_path.py` module. This module consists of two functions: `find_path` and `extract_polyline`. `find_path` takes a starting lat/long, ending lat/long, and method of travel (walking in our case) and returns step-by-step lat/long coordinates along with distance and time estimates. `extract_polyline` is a helper function that will format each of the step-by-step coordinates into pandas DataFrame. The output is returned as an R DataFrame. We'll specify the python module below. 
 
 ```{python eval=FALSE}
 # convert_route_to_path.py
@@ -362,7 +362,7 @@ def create_travel_path(
 
 ```
 
-Next, we'll read the `convert_route_to_path.py` module into R and pass in our route DataFrame, the Google Maps API key, and our preferred method of travel. 
+Next, we'll read the `convert_route_to_path.py` module into R and pass in our route DataFrame to the `create_travel_path` function.
 
 ```{r, eval = FALSE}
 reticulate::source_python('convert_route_to_path.py')
@@ -372,7 +372,6 @@ path_df = create_travel_path(route_df)
 ```{r, echo = FALSE, message = FALSE}
 path_df = read_csv(file.path(getwd(), 'data', 'path_df.csv')) 
 ```
-
 
 The data indicating the path between our depot and the first bar should look like this: 
 
@@ -437,15 +436,15 @@ print(glue::glue("Total Travel Distance Is: ",
                  )
       )
 ```
-OK, this is more of a Pub Crawl half-marathon. That's some serious distance to cover. Let's bring it all together with some visualization. 
+OK, this is more of a Pub Crawl marathon. That's some serious distance to cover. Let's bring it all together with some visualization. 
 
 ### Mapping the Route
 
-The last step is to bring this analysis to life with everyone's favorite visualization: MAPS! Indeed, we'll plot the walking path across downtown Portland so we can actually see the Pub Crawl route. 
+The last step is to bring this analysis to life with everyone's favorite visualization: MAPS! Indeed, we'll plot the walking path across downtown Portland to see the Pub Crawl route. 
 
 ```{r}
 # We'll use this to identify the labels for each stop 
-label_df = path_df %>% 
+label_df = path_df %>%  
            dplyr::filter(path_order == 1)
 
 # Bar crawl visualization
@@ -481,4 +480,4 @@ final_route = leaflet(data = path_df) %>%
 widgetframe::frameWidget(final_route, width = "100%", height = 600)
 ```
 
-Whew! That was a lot of work but it looks like we have a reasonable solution. We'll start in downtown Portland, take a quick jaunt over to the Eastside of the city and eventually return back to the Northwest. So, there you have it -- a real-world application of optimization that supports an efficient Pub Crawl. Prost!
+Whew! That was a lot of work, but it looks like we have a reasonable solution. We'll start in downtown Portland, take a quick tour over to the city's Eastside, and eventually return to the Northwest. So, there you have it -- a real-world application of optimization that supports an efficient Pub Crawl. Prost!
