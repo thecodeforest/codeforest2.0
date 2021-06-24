@@ -1,0 +1,343 @@
+---
+title: "College Rankings and Pay"
+date: '2021-04-11T21:13:14-05:00'
+summary: College rankings are a standard input for most students when choosing a school.
+  But to what extent does a college's rank relate to how much a graduate makes 10
+  years into their career? We'll answer this question by web scraping data from a
+  variety of online sources with R and Python, and then build a model to understand
+  which factors matter most to post-college pay.
+tags:
+- College Rankings
+- Career
+- R
+- Python
+categories:
+- College Rankings
+- Career
+- R
+- Python
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+![](/post/2021-04-11-college-rankings-salary/images/belushi.jpg){width=700px height=400px}  
+
+### Overview
+ 
+Rankings are a pervasive part of modern life, especially for big decisions -- like shelling out thousands of dollars for an education. Indeed, college rankings are amongst the most widely cited rankings in existence. Students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it really matter in terms of future earnings potential? While an education is more than a simple "means to an end", making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics: 
+
+`r emo::ji("geek")` The relationship between Mid Career Pay and College Ranking after accounting for external variables (e.g., % of STEM degrees conferred each year)
+
+`r emo::ji("geek")` Understand which variables exhibit the strongest relationship with pay
+
+`r emo::ji("geek")` Identify which college's graduates over/under earn relative to our predictions
+
+Since I'm a big fan of Learning-by-doing, I've included all the code used to answer these questions. If you are simply interested in the answers, [click here](#analysis)
+
+### Data Collection
+
+We'll leverage the following data sources for our analysis: 
+
+- Payscale Data of Median Mid Career Earnings By College (with additional data about each college)
+
+- Forbes Undergraduate College Rankings
+
+- Cost of Living Index by State
+
+The data is stored across various websites, so we'll need to first scrape and format it prior to doing any analysis. For example, the `collect_cost_of_living_data.py` module below will scrape a table with cost of living data for each US state. 
+
+```{python, eval=FALSE}
+# college_cost_of_living_data.py
+import urllib
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+from datetime import datetime
+from typing import List
+import logging
+
+start_time = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+logging.basicConfig(
+    filename=f"college-rankings-pay-{start_time}.log",
+    format="%(levelname)s - %(asctime)s - %(filename)s - %(message)s",
+    level=logging.DEBUG,
+)
+logger = logging.getLogger(__name__)
+
+
+def scrape_col_data() -> List[str]:
+    base_url = "https://meric.mo.gov/data/cost-living-data-series"
+    page = urllib.request.urlopen(base_url).read()
+    soup = BeautifulSoup(page)
+    col_data = soup.findAll("tbody")[0].findAll("tr")
+    col_data_lst = str(col_data).split("</tr>")
+    return col_data_lst
+
+
+def format_col_data(col_data_lst: List[str]) -> pd.DataFrame:
+    field_names = ["state", "cost_of_living"]
+    regex_state = re.compile(">[0-9]{1,2}</td>\n<td>(.+?)\xa0<")
+    regex_col_index = re.compile("\xa0</td>\n<td>([0-9]{2,3}.\d)</td>")
+    all_states_col = list()
+    for state in col_data_lst:
+        try:
+            state_name = re.search(regex_state, state).group(1)
+            state_col = re.search(regex_col_index, state).group(1)
+            row = [state_name, state_col]
+            all_states_col.append(row)
+        except Exception as e:
+            logger.error(
+                f"Problem extract table from wikipedia for {state}", exc_info=True
+            )
+    all_states_df = pd.DataFrame(all_states_col, columns=field_names)
+    return all_states_df
+
+
+def collect_col_data() -> pd.DataFrame():
+    col_data_lst = scrape_col_data()
+    col_df = format_col_data(col_data_lst=col_data_lst)
+    return col_df
+```
+
+```{r, eval = FALSE}
+# Core package
+library(tidyverse)
+
+# Calling python functions from R
+library(reticulate)
+
+# specify which version of Python to use
+reticulate::use_python('//anaconda/bin/python', required = TRUE)
+
+# brings our function into the R Environment
+reticulate::source_python('college_cost_of_living_data.py')
+
+# executes and stores the output in our variable 'cost_of_living_df'
+col_df = collect_col_data()
+```
+
+The code for the other two data sources - `collect_payscale_data` and - `collect_rankings_data` - can be found in the appendix. If you want to follow along with analysis but avoid all of the web-scraping, you can simply pull the data directly into R by executing the block below: 
+
+```{r include=FALSE}
+# Core package
+library(tidyverse)
+library(janitor)
+
+# Making nice tables
+library(gt)
+
+# For joins
+library(fuzzyjoin)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+url = "https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main"
+post_location = "college_rankings_salary_data"
+full_path = file.path(url, post_location)
+col_df <- read_csv(file.path(full_path, 'cost_of_living.csv')) %>% clean_names()
+pay_df <- read_csv(file.path(full_path, 'college_pay.csv')) %>% clean_names()
+ranks_df <- read_csv(file.path(full_path, 'college_ranks.csv')) %>% clean_names()
+```
+
+Let's start by doing some basic data cleaning and examining our pay dataset. 
+
+```{r}
+pay_df_clean <- pay_df %>% 
+  clean_names() %>% 
+  rename(college_name = name,
+         pqy_rank = rank
+         ) %>% 
+  select(college_name, type, state, rank, early_pay, mid_pay, pct_stem) %>% 
+  mutate(college_name = str_to_lower(college_name),
+         college_name = str_replace_all(college_name, "_", " "),
+         pct_stem = parse_number(pct_stem),
+         early_pay = parse_number(early_pay),
+         mid_pay = parse_number(mid_pay)
+         )
+```
+
+
+```{r echo=FALSE}
+pay_df_clean %>%
+  head(5) %>% 
+  gt() %>%
+  tab_header(title = gt::md('**Sample Compensentation Data**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+```
+
+In the next few steps, we'll bring together our other two datasets, starting with cost of living data. This step is straightfoward, we'll bring in `cost_of_living` by state to adjust for the effect of cost of living. 
+
+```{r message=FALSE, warning=FALSE}
+pay_df_clean <- left_join(pay_df_clean, col_df, on='state')
+```
+
+The next step is a bit trickier. We'll be joining on the name of the college. Anyone who has spent a few minutes working with data knows it's never a good thing to join on strings. I came across this tweet the other day, which perfectly captures what we're trying to do here. 
+
+![](/post/2021-04-11-college-rankings-salary/images/philadelphia.png){width=400px height=200px}  
+```{r}
+pay_df_clean <- pay_df_clean %>% 
+  mutate(college_name = str_replace_all(college_name, " \\(.+?\\)", ""),
+        college_name = str_replace_all(college_name, '%2c', ','),
+        college_name = str_replace_all(college_name, '%26', '&'),
+        college_name = str_replace_all(college_name, '%27', "'"),
+        college_name = str_replace_all(college_name, 'at (.+/?)', ''), 
+        college_name = str_replace_all(college_name, ',\\s[a-z][a-z]', ''), # state at end
+        college_name = str_replace_all(college_name, ' - ', '-'),
+        college_name = str_trim(college_name)
+        )
+```
+
+Next, we'll do some light cleaning to the other data. 
+
+```{r}
+ranks_df_clean <- ranks_df %>% 
+  rename(college_name = friendly_name,
+         college_rank = rank
+         ) %>% 
+  mutate(college_name = tolower(college_name)) %>% 
+  na.omit()
+```
+
+Now we'll do fuzzy join based on stringdist. This will lead to two issues. Some records wil drop, and there can be duplicates. We'll check for both. 
+
+```{r}
+analysis_df <- stringdist_inner_join(pay_df_clean, 
+                                     ranks_df_clean,
+                                     by='college_name',
+                                     max_dist=2
+                                     )
+n_row_reduced <- nrow(pay_df_clean) - nrow(analysis_df)
+print(glue::glue('N rows reduced: {n_row_reduced}'))
+```
+
+Next need to check if there instances of duplicates, which can happen when names are close to one another. For example. 
+
+```{r}
+analysis_df <- analysis_df %>% 
+  group_by(college_name.x) %>% 
+  mutate(n_match = 1:n()) %>% 
+  ungroup()
+
+analysis_df %>% 
+  filter(college_name.x %in% c('stanford university', 'brown university')) %>% 
+  select(contains('_name'), n_match) %>% 
+  gt() %>%
+  tab_header(title = gt::md('**Names with Multiple Matches**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+  
+```
+
+An easy way to address this issue is to simply take the closest match. Fortunately, they are rank ordered so we just have to take the first match and exclude matches with a rank other than 1. 
+
+```{r}
+analysis_df <- analysis_df %>% 
+  filter(n_match == 1) %>% 
+  select(-n_match, college_name.y) %>% 
+  rename(college_name = college_name.x) %>% 
+  na.omit()
+```
+
+### Analysis
+
+We'll first start by examining the relationship between our two main variables of interest: College Rank and Mid Career Pay.  
+
+```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE, echo=FALSE}
+ggplot(final_df, aes(x = rank, y = mid_career_median_pay)) + 
+  geom_point(size = 2, alpha = 0.5) + 
+  stat_smooth(size = 2, color = 'black') + 
+  ylab("Mid Career Median Pay") + 
+  xlab("College Rank") + 
+  my_plot_theme() + 
+  scale_y_continuous(labels=scales::dollar) + 
+  scale_x_continuous(breaks = seq(0, max(final_df$rank), by = 50))
+```
+
+
+### Appendix
+
+```{python, eval=FALSE}
+# collect_payscale_data.py
+import urllib
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+from typing import List
+import time
+from tqdm import tqdm
+
+N_PAGES = 20
+
+def scrape_pay_data(page_number: int) -> List:
+    base_url = f"https://www.payscale.com/college-salary-report/bachelors/page/{str(page_number)}"
+    page = urllib.request.urlopen(base_url).read()
+    soup = BeautifulSoup(page)
+    college_data = soup.findAll("tbody")[0].findAll("tr")
+    college_data = [str(x) for x in college_data]
+    return college_data
+
+
+def format_pay_data(college_data: str) -> pd.DataFrame:
+    field_names = ["name", "rank", "type", "pct_stem", "early_pay", "mid_pay"]
+    regex_name = re.compile('<a href="/research/US/School=(.+?)/Salary')
+    regex_rank = re.compile(
+        '">Rank<!-- -->:</span><span class="data-table__value">(.+?)</span>'
+    )
+    regex_type = re.compile(
+        '>School Type<!-- -->:</span><span class="data-table__value">(.+?)</span>'
+    )
+    regex_early_pay = re.compile(
+        '>Early Career Pay<!-- -->:</span><span class="data-table__value">(.+?)</span>'
+    )
+    regex_mid_pay = re.compile(
+        '>Mid-Career Pay<!-- -->:</span><span class="data-table__value">(.+?)</span>'
+    )
+    regex_pct_stem = re.compile(
+        '>% STEM Degrees<!-- -->:</span><span class="data-table__value">(.+?)</span>'
+    )
+    all_college_data = list()
+    # TO DO - ADD LOGGING
+    for college in college_data:
+        try:
+            name = re.search(regex_name, college).group(1)
+            rank = re.search(regex_rank, college).group(1)
+            type_ = re.search(regex_type, college).group(1)
+            early_pay = re.search(regex_early_pay, college).group(1)
+            mid_pay = re.search(regex_mid_pay, college).group(1)
+            pct_stem = re.search(regex_pct_stem, college).group(1)
+            row = [name, rank, type_, pct_stem, early_pay, mid_pay]
+            all_college_data.append(row)
+        except Exception as e:
+            print(e)
+    college_df = pd.DataFrame(all_college_data, columns=FIELD_NAMES)
+    return college_df
+
+
+def collect_payscale_college_salary_data() -> pd.DataFrame:
+    all_colleges_df = pd.DataFrame(columns=FIELD_NAMES)
+    for page_number in tqdm(range(1, (N_PAGES + 1))):
+        college_data = scrape_pay_data(page_number=page_number)
+        college_data_df = format_pay_data(college_data=college_data)
+        all_colleges_df = all_colleges_df.append(college_data_df)
+        time.sleep(2)
+    return all_colleges_df
+```
+
+```{python}
+
+```
+
+

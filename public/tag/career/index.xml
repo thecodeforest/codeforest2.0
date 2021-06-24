@@ -1,0 +1,1046 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Career | The Code Forest</title>
+    <link>http://example.org/tag/career/</link>
+      <atom:link href="http://example.org/tag/career/index.xml" rel="self" type="application/rss+xml" />
+    <description>Career</description>
+    <generator>Wowchemy (https://wowchemy.com)</generator><language>en-us</language><copyright>Mark LeBoeuf</copyright><lastBuildDate>Sun, 11 Apr 2021 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>http://example.org/media/icon_huc737709a4be44af6221d1cabfe197959_22580_512x512_fill_lanczos_center_2.png</url>
+      <title>Career</title>
+      <link>http://example.org/tag/career/</link>
+    </image>
+    
+    <item>
+      <title>College Rankings and Pay</title>
+      <link>http://example.org/post/2021-04-11-college-rankings-salary/college_rankings_salary/</link>
+      <pubDate>Sun, 11 Apr 2021 21:13:14 -0500</pubDate>
+      <guid>http://example.org/post/2021-04-11-college-rankings-salary/college_rankings_salary/</guid>
+      <description>
+
+
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-11-college-rankings-salary/images/belushi.jpg&#34; width=&#34;700&#34; height=&#34;400&#34; /&gt;&lt;/p&gt;
+&lt;div id=&#34;overview&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Overview&lt;/h3&gt;
+&lt;p&gt;Rankings are a pervasive part of modern life, especially for big decisions – like shelling out thousands of dollars for an education. Indeed, college rankings are amongst the most widely cited rankings in existence. Students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it really matter in terms of future earnings potential? While an education is more than a simple “means to an end”, making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics:&lt;/p&gt;
+&lt;p&gt;🤓 The relationship between Mid Career Pay and College Ranking after accounting for external variables (e.g., % of STEM degrees conferred each year)&lt;/p&gt;
+&lt;p&gt;🤓 Understand which variables exhibit the strongest relationship with pay&lt;/p&gt;
+&lt;p&gt;🤓 Identify which college’s graduates over/under earn relative to our predictions&lt;/p&gt;
+&lt;p&gt;Since I’m a big fan of Learning-by-doing, I’ve included all the code used to answer these questions. If you are simply interested in the answers, &lt;a href=&#34;#analysis&#34;&gt;click here&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;data-collection&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Data Collection&lt;/h3&gt;
+&lt;p&gt;We’ll leverage the following data sources for our analysis:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Payscale Data of Median Mid Career Earnings By College (with additional data about each college)&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Forbes Undergraduate College Rankings&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Cost of Living Index by State&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The data is stored across various websites, so we’ll need to first scrape and format it prior to doing any analysis. For example, the &lt;code&gt;collect_cost_of_living_data.py&lt;/code&gt; module below will scrape a table with cost of living data for each US state.&lt;/p&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# college_cost_of_living_data.py
+import urllib
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+from datetime import datetime
+from typing import List
+import logging
+
+start_time = datetime.now().strftime(&amp;quot;%Y-%m-%d %H-%M-%S&amp;quot;)
+logging.basicConfig(
+    filename=f&amp;quot;college-rankings-pay-{start_time}.log&amp;quot;,
+    format=&amp;quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&amp;quot;,
+    level=logging.DEBUG,
+)
+logger = logging.getLogger(__name__)
+
+
+def scrape_col_data() -&amp;gt; List[str]:
+    base_url = &amp;quot;https://meric.mo.gov/data/cost-living-data-series&amp;quot;
+    page = urllib.request.urlopen(base_url).read()
+    soup = BeautifulSoup(page)
+    col_data = soup.findAll(&amp;quot;tbody&amp;quot;)[0].findAll(&amp;quot;tr&amp;quot;)
+    col_data_lst = str(col_data).split(&amp;quot;&amp;lt;/tr&amp;gt;&amp;quot;)
+    return col_data_lst
+
+
+def format_col_data(col_data_lst: List[str]) -&amp;gt; pd.DataFrame:
+    field_names = [&amp;quot;state&amp;quot;, &amp;quot;cost_of_living&amp;quot;]
+    regex_state = re.compile(&amp;quot;&amp;gt;[0-9]{1,2}&amp;lt;/td&amp;gt;\n&amp;lt;td&amp;gt;(.+?)\xa0&amp;lt;&amp;quot;)
+    regex_col_index = re.compile(&amp;quot;\xa0&amp;lt;/td&amp;gt;\n&amp;lt;td&amp;gt;([0-9]{2,3}.\d)&amp;lt;/td&amp;gt;&amp;quot;)
+    all_states_col = list()
+    for state in col_data_lst:
+        try:
+            state_name = re.search(regex_state, state).group(1)
+            state_col = re.search(regex_col_index, state).group(1)
+            row = [state_name, state_col]
+            all_states_col.append(row)
+        except Exception as e:
+            logger.error(
+                f&amp;quot;Problem extract table from wikipedia for {state}&amp;quot;, exc_info=True
+            )
+    all_states_df = pd.DataFrame(all_states_col, columns=field_names)
+    return all_states_df
+
+
+def collect_col_data() -&amp;gt; pd.DataFrame():
+    col_data_lst = scrape_col_data()
+    col_df = format_col_data(col_data_lst=col_data_lst)
+    return col_df&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Core package
+library(tidyverse)
+
+# Calling python functions from R
+library(reticulate)
+
+# specify which version of Python to use
+reticulate::use_python(&amp;#39;//anaconda/bin/python&amp;#39;, required = TRUE)
+
+# brings our function into the R Environment
+reticulate::source_python(&amp;#39;college_cost_of_living_data.py&amp;#39;)
+
+# executes and stores the output in our variable &amp;#39;cost_of_living_df&amp;#39;
+col_df = collect_col_data()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The code for the other two data sources - &lt;code&gt;collect_payscale_data&lt;/code&gt; and - &lt;code&gt;collect_rankings_data&lt;/code&gt; - can be found in the appendix. If you want to follow along with analysis but avoid all of the web-scraping, you can simply pull the data directly into R by executing the block below:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;url = &amp;quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main&amp;quot;
+post_location = &amp;quot;college_rankings_salary_data&amp;quot;
+full_path = file.path(url, post_location)
+col_df &amp;lt;- read_csv(file.path(full_path, &amp;#39;cost_of_living.csv&amp;#39;)) %&amp;gt;% clean_names()
+pay_df &amp;lt;- read_csv(file.path(full_path, &amp;#39;college_pay.csv&amp;#39;)) %&amp;gt;% clean_names()
+ranks_df &amp;lt;- read_csv(file.path(full_path, &amp;#39;college_ranks.csv&amp;#39;)) %&amp;gt;% clean_names()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s start by doing some basic data cleaning and examining our pay dataset.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pay_df_clean &amp;lt;- pay_df %&amp;gt;% 
+  clean_names() %&amp;gt;% 
+  rename(college_name = name) %&amp;gt;% 
+  select(college_name, type, state, rank, early_pay, mid_pay, pct_stem) %&amp;gt;% 
+  mutate(college_name = str_to_lower(college_name),
+         college_name = str_replace_all(college_name, &amp;quot;_&amp;quot;, &amp;quot; &amp;quot;),
+         pct_stem = parse_number(pct_stem),
+         early_pay = parse_number(early_pay),
+         mid_pay = parse_number(mid_pay)
+         )&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#vpufhdntpz .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#vpufhdntpz .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#vpufhdntpz .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#vpufhdntpz .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#vpufhdntpz .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#vpufhdntpz .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#vpufhdntpz .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#vpufhdntpz .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#vpufhdntpz .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#vpufhdntpz .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#vpufhdntpz .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#vpufhdntpz .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#vpufhdntpz .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#vpufhdntpz .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#vpufhdntpz .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#vpufhdntpz .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#vpufhdntpz .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#vpufhdntpz .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#vpufhdntpz .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#vpufhdntpz .gt_left {
+  text-align: left;
+}
+
+#vpufhdntpz .gt_center {
+  text-align: center;
+}
+
+#vpufhdntpz .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#vpufhdntpz .gt_font_normal {
+  font-weight: normal;
+}
+
+#vpufhdntpz .gt_font_bold {
+  font-weight: bold;
+}
+
+#vpufhdntpz .gt_font_italic {
+  font-style: italic;
+}
+
+#vpufhdntpz .gt_super {
+  font-size: 65%;
+}
+
+#vpufhdntpz .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;vpufhdntpz&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;7&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Sample Compensentation Data&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;7&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;college_name&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;type&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;state&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;rank&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;early_pay&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;mid_pay&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;pct_stem&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;harvey mudd college&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Engineering, Liberal Arts School, Private School&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;California&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;91400&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;162500&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;85&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;massachusetts institute of technology (mit)&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Engineering, Private School, Research University&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Massachusetts&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;88300&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;158100&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;69&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;united states naval academy (usna) at annapolis&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Engineering, Liberal Arts School, Sober School, For Sports Fans, State School&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Maryland&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;79600&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;152600&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;58&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;princeton university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Ivy League, Private School, Research University, For Sports Fans&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;New Jersey&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;77300&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;150500&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;48&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;california institute of technology (caltech)&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Engineering, Private School, Research University&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;California&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;87600&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;150300&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;97&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;In the next few steps, we’ll bring together our other two datasets, starting with cost of living data. This step is straightfoward, we’ll bring in &lt;code&gt;cost_of_living&lt;/code&gt; by state to adjust for the effect of cost of living.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pay_df_clean &amp;lt;- left_join(pay_df_clean, col_df, on=&amp;#39;state&amp;#39;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The next step is a bit trickier. We’ll be joining on the name of the college. Anyone who has spent a few minutes working with data knows it’s never a good thing to join on strings. I came across this tweet the other day, which perfectly captures what we’re trying to do here.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2021-04-11-college-rankings-salary/images/philadelphia.png&#34; width=&#34;400&#34; height=&#34;200&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;pay_df_clean &amp;lt;- pay_df_clean %&amp;gt;% 
+  mutate(college_name = str_replace_all(college_name, &amp;quot; \\(.+?\\)&amp;quot;, &amp;quot;&amp;quot;),
+        college_name = str_replace_all(college_name, &amp;#39;%2c&amp;#39;, &amp;#39;,&amp;#39;),
+        college_name = str_replace_all(college_name, &amp;#39;%26&amp;#39;, &amp;#39;&amp;amp;&amp;#39;),
+        college_name = str_replace_all(college_name, &amp;#39;%27&amp;#39;, &amp;quot;&amp;#39;&amp;quot;),
+        college_name = str_replace_all(college_name, &amp;#39;at (.+/?)&amp;#39;, &amp;#39;&amp;#39;), 
+        college_name = str_replace_all(college_name, &amp;#39;,\\s[a-z][a-z]&amp;#39;, &amp;#39;&amp;#39;), # state at end
+        college_name = str_replace_all(college_name, &amp;#39; - &amp;#39;, &amp;#39;-&amp;#39;),
+        college_name = str_trim(college_name)
+        )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next, we’ll do some light cleaning to the other data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ranks_df_clean &amp;lt;- ranks_df %&amp;gt;% 
+  rename(college_name = friendly_name,
+         college_rank = rank
+         ) %&amp;gt;% 
+  mutate(college_name = tolower(college_name)) %&amp;gt;% 
+  na.omit()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now we’ll do fuzzy join based on stringdist. This will lead to two issues. Some records wil drop, and there can be duplicates. We’ll check for both.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;analysis_df &amp;lt;- stringdist_inner_join(pay_df_clean, 
+                                     ranks_df_clean,
+                                     by=&amp;#39;college_name&amp;#39;,
+                                     max_dist=2
+                                     )
+n_row_reduced &amp;lt;- nrow(pay_df_clean) - nrow(analysis_df)
+print(glue::glue(&amp;#39;N rows reduced: {n_row_reduced}&amp;#39;))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## N rows reduced: 175&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next need to check if there instances of duplicates, which can happen when names are close to one another. For example.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;analysis_df &amp;lt;- analysis_df %&amp;gt;% 
+  group_by(college_name.x) %&amp;gt;% 
+  mutate(n_match = 1:n()) %&amp;gt;% 
+  ungroup()
+
+analysis_df %&amp;gt;% 
+  filter(college_name.x %in% c(&amp;#39;stanford university&amp;#39;, &amp;#39;brown university&amp;#39;)) %&amp;gt;% 
+  select(contains(&amp;#39;_name&amp;#39;), n_match) %&amp;gt;% 
+  gt() %&amp;gt;%
+  tab_header(title = gt::md(&amp;#39;**Names with Multiple Matches**&amp;#39;)) %&amp;gt;%
+  cols_align(
+  align = &amp;quot;center&amp;quot;,
+  columns = everything()) %&amp;gt;%
+  tab_options(table.font.size = 10) %&amp;gt;% 
+  cols_width(
+    everything() ~ px(100) 
+    )&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#lodecjdiyh .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#lodecjdiyh .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#lodecjdiyh .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#lodecjdiyh .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#lodecjdiyh .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#lodecjdiyh .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#lodecjdiyh .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#lodecjdiyh .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#lodecjdiyh .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#lodecjdiyh .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#lodecjdiyh .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#lodecjdiyh .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#lodecjdiyh .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#lodecjdiyh .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lodecjdiyh .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lodecjdiyh .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#lodecjdiyh .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#lodecjdiyh .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#lodecjdiyh .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#lodecjdiyh .gt_left {
+  text-align: left;
+}
+
+#lodecjdiyh .gt_center {
+  text-align: center;
+}
+
+#lodecjdiyh .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#lodecjdiyh .gt_font_normal {
+  font-weight: normal;
+}
+
+#lodecjdiyh .gt_font_bold {
+  font-weight: bold;
+}
+
+#lodecjdiyh .gt_font_italic {
+  font-style: italic;
+}
+
+#lodecjdiyh .gt_super {
+  font-size: 65%;
+}
+
+#lodecjdiyh .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;lodecjdiyh&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+    &lt;col style=&#34;width:100px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Names with Multiple Matches&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;3&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;college_name.x&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;college_name.y&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;n_match&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;stanford university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;stanford university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;stanford university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;samford university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;brown university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;brown university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;brown university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;rowan university&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;An easy way to address this issue is to simply take the closest match. Fortunately, they are rank ordered so we just have to take the first match and exclude matches with a rank other than 1.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;analysis_df &amp;lt;- analysis_df %&amp;gt;% 
+  filter(n_match == 1) %&amp;gt;% 
+  select(-n_match, college_name.y) %&amp;gt;% 
+  rename(college_name = college_name.x) %&amp;gt;% 
+  na.omit()&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;appendix&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Appendix&lt;/h3&gt;
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# collect_payscale_data.py
+import urllib
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+from typing import List
+import time
+from tqdm import tqdm
+
+N_PAGES = 20
+
+def scrape_pay_data(page_number: int) -&amp;gt; List:
+    base_url = f&amp;quot;https://www.payscale.com/college-salary-report/bachelors/page/{str(page_number)}&amp;quot;
+    page = urllib.request.urlopen(base_url).read()
+    soup = BeautifulSoup(page)
+    college_data = soup.findAll(&amp;quot;tbody&amp;quot;)[0].findAll(&amp;quot;tr&amp;quot;)
+    college_data = [str(x) for x in college_data]
+    return college_data
+
+
+def format_pay_data(college_data: str) -&amp;gt; pd.DataFrame:
+    field_names = [&amp;quot;name&amp;quot;, &amp;quot;rank&amp;quot;, &amp;quot;type&amp;quot;, &amp;quot;pct_stem&amp;quot;, &amp;quot;early_pay&amp;quot;, &amp;quot;mid_pay&amp;quot;]
+    regex_name = re.compile(&amp;#39;&amp;lt;a href=&amp;quot;/research/US/School=(.+?)/Salary&amp;#39;)
+    regex_rank = re.compile(
+        &amp;#39;&amp;quot;&amp;gt;Rank&amp;lt;!-- --&amp;gt;:&amp;lt;/span&amp;gt;&amp;lt;span class=&amp;quot;data-table__value&amp;quot;&amp;gt;(.+?)&amp;lt;/span&amp;gt;&amp;#39;
+    )
+    regex_type = re.compile(
+        &amp;#39;&amp;gt;School Type&amp;lt;!-- --&amp;gt;:&amp;lt;/span&amp;gt;&amp;lt;span class=&amp;quot;data-table__value&amp;quot;&amp;gt;(.+?)&amp;lt;/span&amp;gt;&amp;#39;
+    )
+    regex_early_pay = re.compile(
+        &amp;#39;&amp;gt;Early Career Pay&amp;lt;!-- --&amp;gt;:&amp;lt;/span&amp;gt;&amp;lt;span class=&amp;quot;data-table__value&amp;quot;&amp;gt;(.+?)&amp;lt;/span&amp;gt;&amp;#39;
+    )
+    regex_mid_pay = re.compile(
+        &amp;#39;&amp;gt;Mid-Career Pay&amp;lt;!-- --&amp;gt;:&amp;lt;/span&amp;gt;&amp;lt;span class=&amp;quot;data-table__value&amp;quot;&amp;gt;(.+?)&amp;lt;/span&amp;gt;&amp;#39;
+    )
+    regex_pct_stem = re.compile(
+        &amp;#39;&amp;gt;% STEM Degrees&amp;lt;!-- --&amp;gt;:&amp;lt;/span&amp;gt;&amp;lt;span class=&amp;quot;data-table__value&amp;quot;&amp;gt;(.+?)&amp;lt;/span&amp;gt;&amp;#39;
+    )
+    all_college_data = list()
+    # TO DO - ADD LOGGING
+    for college in college_data:
+        try:
+            name = re.search(regex_name, college).group(1)
+            rank = re.search(regex_rank, college).group(1)
+            type_ = re.search(regex_type, college).group(1)
+            early_pay = re.search(regex_early_pay, college).group(1)
+            mid_pay = re.search(regex_mid_pay, college).group(1)
+            pct_stem = re.search(regex_pct_stem, college).group(1)
+            row = [name, rank, type_, pct_stem, early_pay, mid_pay]
+            all_college_data.append(row)
+        except Exception as e:
+            print(e)
+    college_df = pd.DataFrame(all_college_data, columns=FIELD_NAMES)
+    return college_df
+
+
+def collect_payscale_college_salary_data() -&amp;gt; pd.DataFrame:
+    all_colleges_df = pd.DataFrame(columns=FIELD_NAMES)
+    for page_number in tqdm(range(1, (N_PAGES + 1))):
+        college_data = scrape_pay_data(page_number=page_number)
+        college_data_df = format_pay_data(college_data=college_data)
+        all_colleges_df = all_colleges_df.append(college_data_df)
+        time.sleep(2)
+    return all_colleges_df&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

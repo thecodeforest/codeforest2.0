@@ -1254,34 +1254,722 @@ If we spread this estimate out across 16 regular-season games, it comes out to l
 &lt;div id=&#34;collecting-qb-data&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;Collecting QB Data&lt;/h3&gt;
 &lt;p&gt;We’ll use the &lt;code&gt;nflgame&lt;/code&gt; python package to gather QB data. We’ll pull 2013-2014 weekly performance data for Joe Flacco to calculate our prior, as well as the 2015 data for all three players. During the season we’ll update our priors to determine which QB we should play for a given week. That is, as we acquire results over the season, updates will be made to obtain a better, more reliable estimate of the “success” parameter for each QB.&lt;/p&gt;
-&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;import nflgame
+&lt;pre class=&#34;python&#34;&gt;&lt;code&gt;# qb_stats.py
+import nflgame
 import pandas as pd
+from itertools import product
+from tqdm import tqdm
+from typing import Tuple
 
-game_years = range(2013, 2016)
-game_weeks = range(1, 17)
-qbs = (&amp;quot;Joe Flacco&amp;quot;, 
-       &amp;quot;Marcus Mariota&amp;quot;,
-       &amp;quot;Jameis Winston&amp;quot;)
-       
-def get_passing_data(year, week, players, qbs):
+GAME_YEARS = range(2013, 2016)
+GAME_WEEKS = range(1, 17)
+QUARTERBACKS = (&amp;quot;Joe Flacco&amp;quot;, &amp;quot;Marcus Mariota&amp;quot;, &amp;quot;Jameis Winston&amp;quot;)
+
+
+def format_passing_stats(
+    year: int, week: int, players: nflgame.seq.GenPlayerStats, quarterbacks: Tuple[str]
+):
     qb_list = list()
     for p in players.passing():
-        player = &amp;quot; &amp;quot;.join(str(p.player).split(&amp;quot; &amp;quot;)[:2]) 
-        if player in qbs:
+        player = &amp;quot; &amp;quot;.join(str(p.player).split(&amp;quot; &amp;quot;)[:2])
+        if player in quarterbacks:
             qb_list.append([year, week, player, p.passing_tds, p.passing_yds])
     return qb_list
-    
-quarterback_data = pd.DataFrame()
-for year in game_years:
-    print &amp;quot;Retrieving Player Data for {year}&amp;quot;.format(year = year)
-    for week in game_weeks:
+
+
+def collect_qb_stats() -&amp;gt; pd.DataFrame:
+    qb_data = pd.DataFrame()
+    for year, week in tqdm(product(GAME_YEARS, GAME_WEEKS)):
         games = nflgame.games(year, week)
         players = nflgame.combine_game_stats(games)
-        temp_qb_stats = get_passing_data(year, week, players, qbs)
-        quarterback_data = quarterback_data.append(pd.DataFrame(temp_qb_stats))
-        
-quarterback_data.columns = [&amp;quot;year&amp;quot;, &amp;quot;week&amp;quot;, &amp;quot;player&amp;quot;, &amp;quot;touchdowns&amp;quot;, &amp;quot;passing_yds&amp;quot;]
-quarterback_data.to_csv(&amp;quot;quarterback_data.csv&amp;quot;, index = False)&lt;/code&gt;&lt;/pre&gt;
+        qb_stats = format_passing_stats(year, week, players, quarterbacks=QUARTERBACKS)
+        qb_data = qb_data.append(pd.DataFrame(qb_stats))
+    qb_data.columns = [&amp;quot;year&amp;quot;, &amp;quot;week&amp;quot;, &amp;quot;player&amp;quot;, &amp;quot;touchdowns&amp;quot;, &amp;quot;passing_yds&amp;quot;]
+    return qb_data&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can execute our main function - &lt;code&gt;collect_qb_stats&lt;/code&gt; - from within R via the &lt;code&gt;reticulate&lt;/code&gt; package.&lt;/p&gt;
+&lt;p&gt;Let’s take a brief look at the data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Core packages
+library(tidyverse)
+library(janitor)
+
+# Interacting with Python
+library(reticulate)
+
+# Multiple Assignment 
+library(zeallot)
+
+# Tables
+library(gt)
+
+# Plot colors
+library(artyfarty)
+
+# specify which version of Python to use
+reticulate::use_python(&amp;#39;//anaconda/bin/python&amp;#39;, required = TRUE)
+
+# brings our main module into the R Environment
+reticulate::source_python(&amp;#39;qb_stats.py&amp;#39;)
+
+# executes and stores the output
+qb_df = collect_qb_stats()&lt;/code&gt;&lt;/pre&gt;
+&lt;style&gt;html {
+  font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
+}
+
+#xrvcvzeaeb .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#xrvcvzeaeb .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#xrvcvzeaeb .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#xrvcvzeaeb .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#xrvcvzeaeb .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#xrvcvzeaeb .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#xrvcvzeaeb .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#xrvcvzeaeb .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#xrvcvzeaeb .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#xrvcvzeaeb .gt_from_md &gt; :first-child {
+  margin-top: 0;
+}
+
+#xrvcvzeaeb .gt_from_md &gt; :last-child {
+  margin-bottom: 0;
+}
+
+#xrvcvzeaeb .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#xrvcvzeaeb .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#xrvcvzeaeb .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#xrvcvzeaeb .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#xrvcvzeaeb .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#xrvcvzeaeb .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#xrvcvzeaeb .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#xrvcvzeaeb .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#xrvcvzeaeb .gt_left {
+  text-align: left;
+}
+
+#xrvcvzeaeb .gt_center {
+  text-align: center;
+}
+
+#xrvcvzeaeb .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#xrvcvzeaeb .gt_font_normal {
+  font-weight: normal;
+}
+
+#xrvcvzeaeb .gt_font_bold {
+  font-weight: bold;
+}
+
+#xrvcvzeaeb .gt_font_italic {
+  font-style: italic;
+}
+
+#xrvcvzeaeb .gt_super {
+  font-size: 65%;
+}
+
+#xrvcvzeaeb .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+&lt;/style&gt;
+&lt;div id=&#34;xrvcvzeaeb&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+  &lt;colgroup&gt;
+    &lt;col style=&#34;width:120px;&#34;/&gt;
+    &lt;col style=&#34;width:120px;&#34;/&gt;
+    &lt;col style=&#34;width:120px;&#34;/&gt;
+    &lt;col style=&#34;width:120px;&#34;/&gt;
+    &lt;col style=&#34;width:120px;&#34;/&gt;
+  &lt;/colgroup&gt;
+  &lt;thead class=&#34;gt_header&#34;&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;5&#34; class=&#34;gt_heading gt_title gt_font_normal&#34; style&gt;&lt;strong&gt;Data Sample of QB Passing Stats&lt;/strong&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th colspan=&#34;5&#34; class=&#34;gt_heading gt_subtitle gt_font_normal gt_bottom_border&#34; style&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;thead class=&#34;gt_col_headings&#34;&gt;
+    &lt;tr&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;year&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;week&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;player&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;touchdowns&lt;/th&gt;
+      &lt;th class=&#34;gt_col_heading gt_columns_bottom_border gt_center&#34; rowspan=&#34;1&#34; colspan=&#34;1&#34;&gt;passing_yds&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody class=&#34;gt_table_body&#34;&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;362&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;211&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;3&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;171&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;4&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;347&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;5&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;0&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;269&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;6&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;342&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;7&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;215&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;9&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;250&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;10&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;140&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;2013&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;11&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;Joe Flacco&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;1&lt;/td&gt;
+      &lt;td class=&#34;gt_row gt_center&#34;&gt;162&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  
+  
+&lt;/table&gt;&lt;/div&gt;
+&lt;p&gt;Let’s add our indicator for success below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;N_TOUCHDOWNS = 3
+N_PASSING_YDS = 300
+
+qb_df &amp;lt;- qb_df %&amp;gt;% 
+  mutate(success = ifelse(touchdowns &amp;gt;= N_TOUCHDOWNS | 
+                          passing_yds &amp;gt;= N_PASSING_YDS, 
+                          1, 
+                          0)
+         )&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And now we have all the data to get started.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;modeling-qb-performance-with-the-beta-distribution&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Modeling QB Performance with the Beta Distribution&lt;/h3&gt;
+&lt;p&gt;The Beta Distribution is used to model processes involving successes/failure, purchase/non-purchase, clicks/non-clicks – basically any process where there are two potential outcomes, and we’re interested in the probability of one of those outcomes occurring. It is defined with two parameters – &lt;em&gt;alpha&lt;/em&gt; (the number of successes) and &lt;em&gt;beta&lt;/em&gt; (the number of failures). We’ll calculate Flacco’s prior based on the 2013-2014 season performance. He played a total of 30 games during this time, and he threw 3TDs|300yards in eight of those weeks. Accordingly, Flacco’s alpha and beta are 8 and 22, respectively. Mariota and Winston have no history, so their alpha and beta will be 1 and 1.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# this will hold the data we&amp;#39;ll update
+flacco_prior =  qb_df %&amp;gt;% 
+                filter(player == &amp;#39;Joe Flacco&amp;#39;,
+                       year &amp;lt; 2015
+                       )
+
+c(flacco_beta, flacco_alpha) %&amp;lt;-% unname(table(flacco_prior$success))
+c(mariota_beta, mariota_alpha) %&amp;lt;-% c(1, 1)
+c(winston_beta, winston_alpha) %&amp;lt;-% c(1, 1)
+# define priors
+players_list = list()
+
+# players_list_reference stores posterior distribution after each week
+players_list_reference = list()
+players_list[[&amp;#39;Joe Flacco&amp;#39;]] = c(flacco_alpha, flacco_beta)
+players_list[[&amp;#39;Marcus Mariota&amp;#39;]] = c(mariota_alpha, mariota_beta)
+players_list[[&amp;#39;Jameis Winston&amp;#39;]] = c(mariota_alpha, mariota_beta)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s filter the data to the current season and iterate through each week. The alpha or beta parameter is incremented by one, depending on whether the quarterback achieved success for that week, via the &lt;code&gt;update_player_beta&lt;/code&gt; function below.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;update_player_beta = function(players_list, current_week, stat_field){
+    for(temp_player in names(players_list)){
+        player_stats = current_week %&amp;gt;% 
+            filter(player == temp_player) %&amp;gt;% 
+            select(stat_field)
+        if(nrow(player_stats) == 0){
+            next
+        }
+        if(player_stats == 1){
+            players_list[[temp_player]][1] = players_list[[temp_player]][1] + 1
+        } else {
+            players_list[[temp_player]][2] = players_list[[temp_player]][2] + 1
+        } 
+    }
+    return(players_list)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We’ll also calculate the density of each player’s distribution for every value from 0 - 1. This indicates the likelihood of each player achieving success for a given week. For example, a mean of 0.4 would indicate that there’s a 40 percent chance that, after accounting for historical performance, a QB will throw +3TDs|300yards in the following week. We aren’t considering the uncertainty surrounding the estimate of our mean yet, but we’ll tackle that issue in a second. The &lt;code&gt;format_posterior&lt;/code&gt; function below will help transform the data into a format amenable to plotting.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;format_posterior = function(players_list){
+    posterior = lapply(players_list, function(x) dbeta(seq(0, 
+                                                           1, 
+                                                           by = 0.01), 
+                                                           x[1], 
+                                                           x[2])) %&amp;gt;% 
+        data.frame() %&amp;gt;% 
+        mutate(x = seq(0, 1, by = 0.01)) %&amp;gt;% 
+        select(x, 1:(length(players_list))) %&amp;gt;% 
+        reshape::melt(id.vars = &amp;quot;x&amp;quot;) %&amp;gt;% 
+        dplyr::rename(player = variable,
+                      density = value) %&amp;gt;% 
+        mutate(weeks_elapsed = i)
+    return(posterior)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;current_season = qb_df %&amp;gt;% 
+  filter(year == 2015) %&amp;gt;% 
+  select(year, week) %&amp;gt;% 
+  distinct()
+
+beta_evolution_df = data.frame(NULL)
+for(i in 1:nrow(current_season)){
+    c(cur_year, cur_week) %&amp;lt;-% current_season[i,]
+    current_week = qb_df %&amp;gt;% 
+                   filter(year == cur_year, 
+                          week == cur_week)
+    
+    players_list = update_player_beta(players_list, 
+                                      current_week, 
+                                      &amp;#39;success&amp;#39;)
+    players_list_reference[[i]] = players_list
+    
+    posterior = format_posterior(players_list)
+    beta_evolution_df = bind_rows(beta_evolution_df, 
+                                  posterior)  
+    
+}
+
+beta_evolution_df = beta_evolution_df %&amp;gt;% 
+                    mutate(player = gsub(&amp;quot;\\.&amp;quot;, &amp;quot; &amp;quot;, player))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Let’s examine how our estimates for each player change as the season unfolds. I’ve plotted this process by storing the Probability Density Functions (PDFs) following each week (a total of 16 games) during the regular season. I’ve also used a custom plotting theme and colors, which can be found below in the &lt;a href=&#34;#appendix&#34;&gt;Appendix&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(beta_evolution_df, aes(x, density, color = player)) + 
+  geom_line(size = 2) + 
+  facet_wrap(~weeks_elapsed) + 
+  theme_bw() + 
+  my_plot_theme() + 
+  scale_color_manual(values = c(my_color_theme[1:length(unique(beta_evolution_df$player))])) + 
+  theme(legend.title=element_blank(),
+        axis.text.x = element_text(size = 10)
+  ) + 
+  ylab(&amp;quot;Density&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/figure-html/unnamed-chunk-11-1.png&#34; width=&#34;960&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;By the end of the season, it looks like Mariota would’ve been the correct choice, even though there is a fair amount of overlap between the distributions. However, knowing this at Week 16 isn’t helpful – the fantasy season is over. Let’s say we started the veteran QB Joe Flacco for Week 1, and Week 2 we decided to use some maths to help us choose between our three QBs. There are two related approaches we could use to address this question:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Upper Confidence Bound&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Simulation&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I’ll outline both in further detail below.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;decisions-based-on-the-upper-confidence-bound&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Decisions based on the Upper Confidence Bound&lt;/h3&gt;
+&lt;p&gt;The Upper Confidence Bound algorithm is one way to make decisions in the face of uncertainty, in this case, which quarterback to fire up in our lineup each week. The idea is to choose the option with the greatest potential for a favorable outcome, even if our estimate of the probability of that outcome is uncertain (see &lt;a href=&#34;http://banditalgs.com/2016/09/18/the-upper-confidence-bound-algorithm/&#34;&gt;here&lt;/a&gt; for more detail). We’ll calculate a 90% credible interval for our beta parameter each week. A credible interval is like a confidence interval, but the interpretation is a bit different and, in my opinion, easier to understand. In the current context, a 90% credible interval is the range of values in which we are 90% certain that the probability of weekly success falls based on the data we have thus far (see &lt;a href=&#34;http://www.john-uebersax.com/stat312/17%20Credible%20Intervals%20and%20Confidence%20Intervals.pdf&#34;&gt;here&lt;/a&gt; for an excellent explanation on the distinction between confidence and credible intervals).&lt;/p&gt;
+&lt;p&gt;Taking these concepts together, we’ll choose the QB in Week 2 with the highest upper bound on their credible interval. I’ll also include an additional ten weeks to show how the interval evolves as we obtain more information.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;credible_intervals = data.frame(NULL)
+for(week in 2:length(players_list_reference)){
+  temp_week = players_list_reference[[week]]
+  for(player in names(temp_week)){
+    temp_player = temp_week[[player]]
+    lower_cred_int = qbeta(0.05,temp_player[1], temp_player[2])
+    upper_cred_int = qbeta(0.95,temp_player[1], temp_player[2])
+    alpha = temp_player[1]
+    beta = temp_player[2]
+    credible_intervals = bind_rows(credible_intervals,
+                                   data.frame(player = player,
+                                                week = week,
+                                                lower = lower_cred_int,
+                                                mean = alpha/(alpha + beta),
+                                                upper = upper_cred_int))
+  }
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(credible_intervals %&amp;gt;% filter(week &amp;lt; 11), 
+       aes(x = mean, y = player, color = player)) + 
+  geom_point(size = 3) + 
+  geom_errorbarh(aes(xmin = lower,
+                    xmax = upper),
+                 size = 2) + 
+  xlab(&amp;quot;Chance of Achieving +300yds | +3TDs During Week&amp;quot;) + 
+  theme_bw() + 
+  my_plot_theme() + 
+  scale_color_manual(values = c(my_color_theme[1:length(unique(beta_evolution_df$player))])) +
+  facet_grid(week ~.) + 
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = &amp;quot;top&amp;quot;,
+        legend.title = element_blank())&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/figure-html/unnamed-chunk-13-1.png&#34; width=&#34;960&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Mariota has the largest upper bound for his credible interval, so we should start Mariota during Week 2 and continue starting him as a quarterback until another QB’s upper bound is greater than his. Note also that Flacco’s interval is both narrower and remains relatively unchanged over the six week period. This is because we have a lot more information on Flacco going into the season – that is, our prior is a lot stronger! A few successful or unsuccessful games during the season wont shift Flacco’s interval much. We already have two seasons worth of data indicating that Flacco’s probability of success hovers somewhere around 30% but is likely not higher than 40% or lower than 20%. In contrast, Marriota’s credible interval changes rapidly from one week to the next. By Week 7, Mariota’s interval drifts toward a more reasonable range (0.15 - 0.70), a process known formally as shrinkage.&lt;/p&gt;
+&lt;p&gt;The Upper Bound approach is an easy way to choose a QB. But what if we wanted a specific estimate of the probability that one QB was “better” than the other? For that question, we’ll turn to simulation.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;decisions-based-on-simulation&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Decisions Based on Simulation&lt;/h3&gt;
+&lt;p&gt;Let’s keep this simple and compare Flacco vs. Mariota following Week 2. Our goal is to determine the probability that one QB, or, more formally, their beta distribution, is greater/better than the other, according to our criteria for success. We’ll simulate 1000 draws from the posterior distribution of each week via the &lt;code&gt;simulate_weeks&lt;/code&gt; function, then compare the number of instances in which Mariota’s sampled beta was greater than Flacco’s.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;simulate_weeks = function(player_1, player_2, n_simulations, players_list_reference){
+  simulated_outcome = data.frame(NULL)
+  set.seed(123)
+  for(reference_week in 1:length(players_list_reference)){
+      player1_simulation = rbeta(n_simulations,
+            players_list_reference[[reference_week]][player_1][[1]][1],
+            players_list_reference[[reference_week]][player_1][[1]][2])
+
+      player2_simulation = rbeta(n_simulations,
+                                 players_list_reference[[reference_week]][player_2][[1]][1],
+                                 players_list_reference[[reference_week]][player_2][[1]][2])
+
+      player1_v_player2 = mean(player1_simulation &amp;gt; player2_simulation)
+      simulated_outcome = bind_rows(simulated_outcome,
+                data.frame(weeks_elapsed = reference_week,
+                 player = c(player_1, player_2),
+                 simulations_won = c(player1_v_player2,
+                                     1 - player1_v_player2)
+                ))
+  }
+  return(simulated_outcome)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;player_1 = &amp;quot;Marcus Mariota&amp;quot;
+player_2 = &amp;quot;Joe Flacco&amp;quot;
+n_simulations = 1000
+simulated_outcome = simulate_weeks(player_1, 
+                                   player_2, 
+                                   n_simulations, 
+                                   players_list_reference)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(simulated_outcome, aes(x = weeks_elapsed, y = simulations_won, 
+                              color = player)) +
+    scale_x_continuous(breaks = seq(0, 20, 5)) + 
+    xlab(&amp;quot;N Weeks Elapsed&amp;quot;) + 
+    ylab(&amp;quot;Simulations Won&amp;quot;) + 
+    geom_point(size = 2) + geom_line(size = 2) + 
+    theme_bw() + 
+    my_plot_theme() + 
+    scale_color_manual(values = c(my_color_theme[1:length(unique(beta_evolution_df$player))])) +
+    theme(legend.title=element_blank()) + 
+    scale_x_continuous(breaks = seq(1, 16))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2017-09-10-choosing-ff-qb/choosing_fantasy_qb_files/figure-html/unnamed-chunk-16-1.png&#34; width=&#34;960&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;From Week 2 there is a ~80% chance that Mariota is the better choice relative to Flacco. By Week 7 there is ~75% chance, and by Week 12 there is a ~79% chance. If someone asked you at the end of the season who was the better quarterback, you could say with about 75% certainty that Mariota was better than Flacco, according to the criteria defined here.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;key-takeaways&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Key Takeaways&lt;/h3&gt;
+&lt;p&gt;As mentioned above, this system has worked well for me over the past few seasons. It does have some obvious shortcomings, namely that it doesn’t account for the strength of an opposing defense, health of receivers, recent performance, or the Over/Under for the game – all factors that should be considered when selecting a weekly QB. However, this approach provides an objective way to quantify the potential of a QB to deliver a solid weekly performance.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;appendix&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;Appendix&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;my_plot_theme = function(){
+  font_family = &amp;quot;Helvetica&amp;quot;
+  font_face = &amp;quot;bold&amp;quot;
+  return(theme(
+    axis.text.x = element_text(size = 18, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 18, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 20, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 20, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 18, face = font_face, family = font_family),
+    plot.title = element_text(size = 18, face = font_face, family = font_family),
+    legend.position = &amp;quot;top&amp;quot;,
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 14,
+                               face = font_face,
+                               family = font_family)
+  ))
+}
+
+my_color_theme = c(&amp;quot;#272822&amp;quot;,  &amp;quot;#F92672&amp;quot;,&amp;quot;#66D9EF&amp;quot;,&amp;quot;#A6E22E&amp;quot;, &amp;quot;#A6E22E&amp;quot;, &amp;quot;#F92672&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 </description>
     </item>

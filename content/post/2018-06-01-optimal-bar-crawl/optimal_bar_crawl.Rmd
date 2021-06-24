@@ -49,7 +49,7 @@ If that sounds like a plan, let's get started!
 First, let's identify the stops during our tour of Portland's pub scene. In the section below, we'll load up the R libraries, identify which version of Python we'd like to use, and then do some web scraping. Note that all of the python modules and R-scripts are contained in the same directory for simplicity. 
 
 ```{r message=FALSE, warning=FALSE}
-# Core pacakges
+# Core package
 library(tidyverse)
 
 # Mapping
