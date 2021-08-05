@@ -643,7 +643,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    12 min read
+    25 min read
   </span>
   
 
@@ -683,108 +683,77 @@
 <p><img src="/post/2021-04-11-college-rankings-salary/images/belushi.jpg" width="700" height="400" /></p>
 <div id="overview" class="section level3">
 <h3>Overview</h3>
-<p>Rankings are a pervasive part of modern life, especially for big decisions – like shelling out thousands of dollars for an education. Indeed, college rankings are amongst the most widely cited rankings in existence. Students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it really matter in terms of future earnings potential? While an education is more than a simple “means to an end”, making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics:</p>
-<p>🤓 The relationship between Mid Career Pay and College Ranking after accounting for external variables (e.g., % of STEM degrees conferred each year)</p>
-<p>🤓 Understand which variables exhibit the strongest relationship with pay</p>
-<p>🤓 Identify which college’s graduates over/under earn relative to our predictions</p>
-<p>Since I’m a big fan of Learning-by-doing, I’ve included all the code used to answer these questions. If you are simply interested in the answers, <a href="#analysis">click here</a></p>
+<p>Rankings are a pervasive part of modern life, especially for big decisions – like shelling out thousands of dollars for an education. Indeed, college rankings are among the most widely cited rankings in existence. So naturally, students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it matter in terms of future earnings potential? While education is more than a simple “means to an end,” making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics:</p>
+<p>🤓 Understanding the relationship between mid-career pay and college ranking after accounting for external variables (e.g., % of STEM degrees conferred each year).</p>
+<p>🤓 Understanding the relative contribution of all variables to mid-career pay.</p>
+<p>Since I’m a big fan of Learning-by-doing, I’ve included all code used to answer these questions. If you are simply interested in the answers <a href="#analysis">click here</a>.</p>
 </div>
 <div id="data-collection" class="section level3">
 <h3>Data Collection</h3>
-<p>We’ll leverage the following data sources for our analysis:</p>
+<p>Let’s start off by defining our data sources, which include:</p>
 <ul>
-<li><p>Payscale Data of Median Mid Career Earnings By College (with additional data about each college)</p></li>
-<li><p>Forbes Undergraduate College Rankings</p></li>
-<li><p>Cost of Living Index by State</p></li>
+<li><p>Mid-career pay by college from <a href="www.payscale.com">payscale.com</a>.</p></li>
+<li><p>Undergraduate college rankings from <a href="https://www.forbes.com/top-colleges/#551bb5519877">forbes</a></p></li>
+<li><p>Cost of living index by state from <a href="https://meric.mo.gov/data/cost-living-data-series">here</a></p></li>
 </ul>
-<p>The data is stored across various websites, so we’ll need to first scrape and format it prior to doing any analysis. For example, the <code>collect_cost_of_living_data.py</code> module below will scrape a table with cost of living data for each US state.</p>
-<pre class="python"><code># college_cost_of_living_data.py
-import urllib
-from bs4 import BeautifulSoup
-import re
-import pandas as pd
-from datetime import datetime
-from typing import List
-import logging
-
-start_time = datetime.now().strftime(&quot;%Y-%m-%d %H-%M-%S&quot;)
-logging.basicConfig(
-    filename=f&quot;college-rankings-pay-{start_time}.log&quot;,
-    format=&quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&quot;,
-    level=logging.DEBUG,
-)
-logger = logging.getLogger(__name__)
-
-
-def scrape_col_data() -&gt; List[str]:
-    base_url = &quot;https://meric.mo.gov/data/cost-living-data-series&quot;
-    page = urllib.request.urlopen(base_url).read()
-    soup = BeautifulSoup(page)
-    col_data = soup.findAll(&quot;tbody&quot;)[0].findAll(&quot;tr&quot;)
-    col_data_lst = str(col_data).split(&quot;&lt;/tr&gt;&quot;)
-    return col_data_lst
-
-
-def format_col_data(col_data_lst: List[str]) -&gt; pd.DataFrame:
-    field_names = [&quot;state&quot;, &quot;cost_of_living&quot;]
-    regex_state = re.compile(&quot;&gt;[0-9]{1,2}&lt;/td&gt;\n&lt;td&gt;(.+?)\xa0&lt;&quot;)
-    regex_col_index = re.compile(&quot;\xa0&lt;/td&gt;\n&lt;td&gt;([0-9]{2,3}.\d)&lt;/td&gt;&quot;)
-    all_states_col = list()
-    for state in col_data_lst:
-        try:
-            state_name = re.search(regex_state, state).group(1)
-            state_col = re.search(regex_col_index, state).group(1)
-            row = [state_name, state_col]
-            all_states_col.append(row)
-        except Exception as e:
-            logger.error(
-                f&quot;Problem extract table from wikipedia for {state}&quot;, exc_info=True
-            )
-    all_states_df = pd.DataFrame(all_states_col, columns=field_names)
-    return all_states_df
-
-
-def collect_col_data() -&gt; pd.DataFrame():
-    col_data_lst = scrape_col_data()
-    col_df = format_col_data(col_data_lst=col_data_lst)
-    return col_df</code></pre>
+<p>The data is stored across various websites, so we’ll need to first scrape and format it prior to doing any analysis. All source code for the data-collections functions is in the <a href="#appendix">appendix</a>. Each can be executed by using the <code>reticulate</code> package. However, if you want to follow along with analysis and avoid all of the web-scraping (my recommendation), you can pull the data directly into R from Github.</p>
 <pre class="r"><code># Core package
 library(tidyverse)
+library(janitor)
 
 # Calling python functions from R
 library(reticulate)
 
+# For joins
+library(fuzzyjoin)
+
+# Modeling packages
+library(broom)
+library(recipes)
+library(rsample)
+library(tidymodels)
+library(tidytext)
+
+# Explainable ML
+library(DALEX)
+library(DALEXtra)
+
+# --- Uncomment to scrape the original data
 # specify which version of Python to use
-reticulate::use_python(&#39;//anaconda/bin/python&#39;, required = TRUE)
+# reticulate::use_python(&#39;//anaconda/bin/python&#39;, required = TRUE)
+# reticulate::source_python(&#39;college_cost_of_living_data.py&#39;)
+# reticulate::source_python(&#39;collect_payscale_data.py&#39;)
+# reticulate::source_python(&#39;collect_college_ranks.py&#39;)
+# col_df &lt;- collect_col_data()
+# pay_df &lt;- collect_payscale_data()
+# ranks_df &lt;- collect_college_ranks_data()
 
-# brings our function into the R Environment
-reticulate::source_python(&#39;college_cost_of_living_data.py&#39;)
-
-# executes and stores the output in our variable &#39;cost_of_living_df&#39;
-col_df = collect_col_data()</code></pre>
-<p>The code for the other two data sources - <code>collect_payscale_data</code> and - <code>collect_rankings_data</code> - can be found in the appendix. If you want to follow along with analysis but avoid all of the web-scraping, you can simply pull the data directly into R by executing the block below:</p>
-<pre class="r"><code>url = &quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main&quot;
-post_location = &quot;college_rankings_salary_data&quot;
-full_path = file.path(url, post_location)
+# --- Download from Github
+url &lt;- &quot;https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main&quot;
+post_location &lt;- &quot;college_rankings_salary_data&quot;
+full_path &lt;- file.path(url, post_location)
 col_df &lt;- read_csv(file.path(full_path, &#39;cost_of_living.csv&#39;)) %&gt;% clean_names()
 pay_df &lt;- read_csv(file.path(full_path, &#39;college_pay.csv&#39;)) %&gt;% clean_names()
 ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;% clean_names()</code></pre>
-<p>Let’s start by doing some basic data cleaning and examining our pay dataset.</p>
+<p>We’ll start by doing some cleaning and exploratory data analysis (EDA) after loading our data.</p>
 <pre class="r"><code>pay_df_clean &lt;- pay_df %&gt;% 
   clean_names() %&gt;% 
-  rename(college_name = name) %&gt;% 
-  select(college_name, type, state, rank, early_pay, mid_pay, pct_stem) %&gt;% 
+  rename(college_name = name,
+         pay_rank = rank
+  ) %&gt;% 
+  select(college_name, type, state, pay_rank, early_pay, mid_pay, pct_stem) %&gt;% 
   mutate(college_name = str_to_lower(college_name),
          college_name = str_replace_all(college_name, &quot;_&quot;, &quot; &quot;),
          pct_stem = parse_number(pct_stem),
          early_pay = parse_number(early_pay),
          mid_pay = parse_number(mid_pay)
-         )</code></pre>
+  )</code></pre>
+<p>Let’s peak at the first few rows of the compensation data.</p>
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#vpufhdntpz .gt_table {
+#pzzwqgdksd .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -809,7 +778,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-left-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_heading {
+#pzzwqgdksd .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -821,7 +790,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-right-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_title {
+#pzzwqgdksd .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -831,7 +800,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-bottom-width: 0;
 }
 
-#vpufhdntpz .gt_subtitle {
+#pzzwqgdksd .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -841,13 +810,13 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-top-width: 0;
 }
 
-#vpufhdntpz .gt_bottom_border {
+#pzzwqgdksd .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_col_headings {
+#pzzwqgdksd .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -862,7 +831,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-right-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_col_heading {
+#pzzwqgdksd .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -882,7 +851,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   overflow-x: hidden;
 }
 
-#vpufhdntpz .gt_column_spanner_outer {
+#pzzwqgdksd .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -894,15 +863,15 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   padding-right: 4px;
 }
 
-#vpufhdntpz .gt_column_spanner_outer:first-child {
+#pzzwqgdksd .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#vpufhdntpz .gt_column_spanner_outer:last-child {
+#pzzwqgdksd .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#vpufhdntpz .gt_column_spanner {
+#pzzwqgdksd .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -914,7 +883,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   width: 100%;
 }
 
-#vpufhdntpz .gt_group_heading {
+#pzzwqgdksd .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -936,7 +905,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   vertical-align: middle;
 }
 
-#vpufhdntpz .gt_empty_group_heading {
+#pzzwqgdksd .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -951,15 +920,15 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   vertical-align: middle;
 }
 
-#vpufhdntpz .gt_from_md > :first-child {
+#pzzwqgdksd .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#vpufhdntpz .gt_from_md > :last-child {
+#pzzwqgdksd .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#vpufhdntpz .gt_row {
+#pzzwqgdksd .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -978,7 +947,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   overflow-x: hidden;
 }
 
-#vpufhdntpz .gt_stub {
+#pzzwqgdksd .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -990,7 +959,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   padding-left: 12px;
 }
 
-#vpufhdntpz .gt_summary_row {
+#pzzwqgdksd .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1000,7 +969,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   padding-right: 5px;
 }
 
-#vpufhdntpz .gt_first_summary_row {
+#pzzwqgdksd .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1010,7 +979,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-top-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_grand_summary_row {
+#pzzwqgdksd .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1020,7 +989,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   padding-right: 5px;
 }
 
-#vpufhdntpz .gt_first_grand_summary_row {
+#pzzwqgdksd .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1030,11 +999,11 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-top-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_striped {
+#pzzwqgdksd .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#vpufhdntpz .gt_table_body {
+#pzzwqgdksd .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1043,7 +1012,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_footnotes {
+#pzzwqgdksd .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1057,13 +1026,13 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-right-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_footnote {
+#pzzwqgdksd .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#vpufhdntpz .gt_sourcenotes {
+#pzzwqgdksd .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1077,46 +1046,46 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   border-right-color: #D3D3D3;
 }
 
-#vpufhdntpz .gt_sourcenote {
+#pzzwqgdksd .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#vpufhdntpz .gt_left {
+#pzzwqgdksd .gt_left {
   text-align: left;
 }
 
-#vpufhdntpz .gt_center {
+#pzzwqgdksd .gt_center {
   text-align: center;
 }
 
-#vpufhdntpz .gt_right {
+#pzzwqgdksd .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#vpufhdntpz .gt_font_normal {
+#pzzwqgdksd .gt_font_normal {
   font-weight: normal;
 }
 
-#vpufhdntpz .gt_font_bold {
+#pzzwqgdksd .gt_font_bold {
   font-weight: bold;
 }
 
-#vpufhdntpz .gt_font_italic {
+#pzzwqgdksd .gt_font_italic {
   font-style: italic;
 }
 
-#vpufhdntpz .gt_super {
+#pzzwqgdksd .gt_super {
   font-size: 65%;
 }
 
-#vpufhdntpz .gt_footnote_marks {
+#pzzwqgdksd .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="vpufhdntpz" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="pzzwqgdksd" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:100px;"/>
     <col style="width:100px;"/>
@@ -1139,7 +1108,7 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">college_name</th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">type</th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">state</th>
-      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">rank</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">pay_rank</th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">early_pay</th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">mid_pay</th>
       <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">pct_stem</th>
@@ -1195,10 +1164,11 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
   
   
 </table></div>
-<p>In the next few steps, we’ll bring together our other two datasets, starting with cost of living data. This step is straightfoward, we’ll bring in <code>cost_of_living</code> by state to adjust for the effect of cost of living.</p>
-<pre class="r"><code>pay_df_clean &lt;- left_join(pay_df_clean, col_df, on=&#39;state&#39;)</code></pre>
-<p>The next step is a bit trickier. We’ll be joining on the name of the college. Anyone who has spent a few minutes working with data knows it’s never a good thing to join on strings. I came across this tweet the other day, which perfectly captures what we’re trying to do here.</p>
-<p><img src="/post/2021-04-11-college-rankings-salary/images/philadelphia.png" width="400" height="200" /></p>
+<p>We’ll merge the cost of living (COL) and college rankings data in the next two steps. Let’s start with COL by state to adjust for its effect on pay. The rationale for adding this variable is that many college graduates end up working in the same city or state as their college. For example, if you go to Ohio State, there’s a good chance you’ll take a job in Ohio. Likewise, if you attend New York University, you’ll probably end up somewhere in New York. Therefore, the cost of living in Ohio is different from New York, and employers take this into account when setting salaries. However, these cost differences are not related to the rank of one’s college, so to get a better idea of the relationship between college rank and mid-career pay, we’ll want to “adjust” for these variables.</p>
+<pre class="r"><code>pay_df_clean &lt;- inner_join(pay_df_clean, col_df, on=&#39;state&#39;)</code></pre>
+<p>The next step is a bit trickier. We’ll be joining on (gasp!) the college’s name to bring together compensation and college rankings. Anyone who has spent a few minutes working with data knows it’s generally a bad idea to join on strings, especially when those strings come from unrelated data sources. Indeed, I came across this tweet the other day, and I feel seen.</p>
+<p><img src="/post/2021-04-11-college-rankings-salary/images/philadelphia.png" width="400" height="200" /><br />
+However, as data scientists, we rarely have the dataset we want, so we’ll have to employ the magic you see below to create a consistent mapping between college names (Yes, regular expressions have always felt magical to me).</p>
 <pre class="r"><code>pay_df_clean &lt;- pay_df_clean %&gt;% 
   mutate(college_name = str_replace_all(college_name, &quot; \\(.+?\\)&quot;, &quot;&quot;),
         college_name = str_replace_all(college_name, &#39;%2c&#39;, &#39;,&#39;),
@@ -1209,45 +1179,29 @@ ranks_df &lt;- read_csv(file.path(full_path, &#39;college_ranks.csv&#39;)) %&gt;
         college_name = str_replace_all(college_name, &#39; - &#39;, &#39;-&#39;),
         college_name = str_trim(college_name)
         )</code></pre>
-<p>Next, we’ll do some light cleaning to the other data.</p>
+<p>We’ll also do some light cleaning for the college ranks data.</p>
 <pre class="r"><code>ranks_df_clean &lt;- ranks_df %&gt;% 
   rename(college_name = friendly_name,
          college_rank = rank
          ) %&gt;% 
   mutate(college_name = tolower(college_name)) %&gt;% 
   na.omit()</code></pre>
-<p>Now we’ll do fuzzy join based on stringdist. This will lead to two issues. Some records wil drop, and there can be duplicates. We’ll check for both.</p>
+<p>In the next step, we’ll bring the compensation and college rankings together via a “fuzzy join.” This type of join is useful when the key (or field(s) you join is “close enough” but not an exact match. The <code>max_dist</code> parameter below is how we define “close enough.” The lower the number for this parameter, the closer two strings will need to be in their structure to match.</p>
 <pre class="r"><code>analysis_df &lt;- stringdist_inner_join(pay_df_clean, 
                                      ranks_df_clean,
                                      by=&#39;college_name&#39;,
                                      max_dist=2
                                      )
-n_row_reduced &lt;- nrow(pay_df_clean) - nrow(analysis_df)
-print(glue::glue(&#39;N rows reduced: {n_row_reduced}&#39;))</code></pre>
-<pre><code>## N rows reduced: 175</code></pre>
-<p>Next need to check if there instances of duplicates, which can happen when names are close to one another. For example.</p>
-<pre class="r"><code>analysis_df &lt;- analysis_df %&gt;% 
-  group_by(college_name.x) %&gt;% 
-  mutate(n_match = 1:n()) %&gt;% 
-  ungroup()
-
-analysis_df %&gt;% 
-  filter(college_name.x %in% c(&#39;stanford university&#39;, &#39;brown university&#39;)) %&gt;% 
-  select(contains(&#39;_name&#39;), n_match) %&gt;% 
-  gt() %&gt;%
-  tab_header(title = gt::md(&#39;**Names with Multiple Matches**&#39;)) %&gt;%
-  cols_align(
-  align = &quot;center&quot;,
-  columns = everything()) %&gt;%
-  tab_options(table.font.size = 10) %&gt;% 
-  cols_width(
-    everything() ~ px(100) 
-    )</code></pre>
+n_row_reduced &lt;- round((nrow(pay_df_clean) - nrow(analysis_df)) / nrow(pay_df_clean) * 100, 2)
+print(glue::glue(&#39;Pct excluded: {n_row_reduced}%&#39;))</code></pre>
+<pre><code>## Pct excluded: 29.82%</code></pre>
+<p>A good practice after executing an inner-join is to determine if the number of records has changed. The number of records are reduced by 29.82% following our join. If I were compensated for this analysis, I would return to the regular expressions above to see where I could further improve the match rate. However, we’ll trudge along with our smaller dataset to keep things moving along.</p>
+<p>The other thing to keep in mind with fuzzy joins is that duplicate matches can occur, which the example below illustrates:</p>
 <style>html {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#lodecjdiyh .gt_table {
+#ouepnnabqq .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -1272,7 +1226,7 @@ analysis_df %&gt;%
   border-left-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_heading {
+#ouepnnabqq .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1284,7 +1238,7 @@ analysis_df %&gt;%
   border-right-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_title {
+#ouepnnabqq .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1294,7 +1248,7 @@ analysis_df %&gt;%
   border-bottom-width: 0;
 }
 
-#lodecjdiyh .gt_subtitle {
+#ouepnnabqq .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1304,13 +1258,13 @@ analysis_df %&gt;%
   border-top-width: 0;
 }
 
-#lodecjdiyh .gt_bottom_border {
+#ouepnnabqq .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_col_headings {
+#ouepnnabqq .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1325,7 +1279,7 @@ analysis_df %&gt;%
   border-right-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_col_heading {
+#ouepnnabqq .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1345,7 +1299,7 @@ analysis_df %&gt;%
   overflow-x: hidden;
 }
 
-#lodecjdiyh .gt_column_spanner_outer {
+#ouepnnabqq .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1357,15 +1311,15 @@ analysis_df %&gt;%
   padding-right: 4px;
 }
 
-#lodecjdiyh .gt_column_spanner_outer:first-child {
+#ouepnnabqq .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#lodecjdiyh .gt_column_spanner_outer:last-child {
+#ouepnnabqq .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#lodecjdiyh .gt_column_spanner {
+#ouepnnabqq .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1377,7 +1331,7 @@ analysis_df %&gt;%
   width: 100%;
 }
 
-#lodecjdiyh .gt_group_heading {
+#ouepnnabqq .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1399,7 +1353,7 @@ analysis_df %&gt;%
   vertical-align: middle;
 }
 
-#lodecjdiyh .gt_empty_group_heading {
+#ouepnnabqq .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1414,15 +1368,15 @@ analysis_df %&gt;%
   vertical-align: middle;
 }
 
-#lodecjdiyh .gt_from_md > :first-child {
+#ouepnnabqq .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#lodecjdiyh .gt_from_md > :last-child {
+#ouepnnabqq .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#lodecjdiyh .gt_row {
+#ouepnnabqq .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1441,7 +1395,7 @@ analysis_df %&gt;%
   overflow-x: hidden;
 }
 
-#lodecjdiyh .gt_stub {
+#ouepnnabqq .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1453,7 +1407,7 @@ analysis_df %&gt;%
   padding-left: 12px;
 }
 
-#lodecjdiyh .gt_summary_row {
+#ouepnnabqq .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1463,7 +1417,7 @@ analysis_df %&gt;%
   padding-right: 5px;
 }
 
-#lodecjdiyh .gt_first_summary_row {
+#ouepnnabqq .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1473,7 +1427,7 @@ analysis_df %&gt;%
   border-top-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_grand_summary_row {
+#ouepnnabqq .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1483,7 +1437,7 @@ analysis_df %&gt;%
   padding-right: 5px;
 }
 
-#lodecjdiyh .gt_first_grand_summary_row {
+#ouepnnabqq .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1493,11 +1447,11 @@ analysis_df %&gt;%
   border-top-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_striped {
+#ouepnnabqq .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#lodecjdiyh .gt_table_body {
+#ouepnnabqq .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1506,7 +1460,7 @@ analysis_df %&gt;%
   border-bottom-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_footnotes {
+#ouepnnabqq .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1520,13 +1474,13 @@ analysis_df %&gt;%
   border-right-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_footnote {
+#ouepnnabqq .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#lodecjdiyh .gt_sourcenotes {
+#ouepnnabqq .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1540,46 +1494,46 @@ analysis_df %&gt;%
   border-right-color: #D3D3D3;
 }
 
-#lodecjdiyh .gt_sourcenote {
+#ouepnnabqq .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#lodecjdiyh .gt_left {
+#ouepnnabqq .gt_left {
   text-align: left;
 }
 
-#lodecjdiyh .gt_center {
+#ouepnnabqq .gt_center {
   text-align: center;
 }
 
-#lodecjdiyh .gt_right {
+#ouepnnabqq .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#lodecjdiyh .gt_font_normal {
+#ouepnnabqq .gt_font_normal {
   font-weight: normal;
 }
 
-#lodecjdiyh .gt_font_bold {
+#ouepnnabqq .gt_font_bold {
   font-weight: bold;
 }
 
-#lodecjdiyh .gt_font_italic {
+#ouepnnabqq .gt_font_italic {
   font-style: italic;
 }
 
-#lodecjdiyh .gt_super {
+#ouepnnabqq .gt_super {
   font-size: 65%;
 }
 
-#lodecjdiyh .gt_footnote_marks {
+#ouepnnabqq .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="lodecjdiyh" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+<div id="ouepnnabqq" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
   <colgroup>
     <col style="width:100px;"/>
     <col style="width:100px;"/>
@@ -1625,15 +1579,682 @@ analysis_df %&gt;%
   
   
 </table></div>
-<p>An easy way to address this issue is to simply take the closest match. Fortunately, they are rank ordered so we just have to take the first match and exclude matches with a rank other than 1.</p>
+<p>The duplicate issue can be addressed by taking the closest match. Fortunately, our observations are ordered in terms of similarity, so we can take the first match and exclude matches with a rank other than 1.</p>
 <pre class="r"><code>analysis_df &lt;- analysis_df %&gt;% 
   filter(n_match == 1) %&gt;% 
   select(-n_match, college_name.y) %&gt;% 
   rename(college_name = college_name.x) %&gt;% 
-  na.omit()</code></pre>
+  na.omit() </code></pre>
+<p>We are now ready to move on to some basic analysis.</p>
+</div>
+<div id="analysis" class="section level3">
+<h3>Analysis</h3>
+<p>Let’s start by examining the relationship between our two main variables of interest: college rank and mid-career pay.</p>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-11-1.png" width="960" /></p>
+<p>Earnings drop quicker for highly ranked colleges relative to lower ranked colleges. Let’s break this out by bucketing the ranks and examining the slopes for each bucket – that is, the expected change in salary as the ranking decreases by one.</p>
+<pre class="r"><code>analysis_df = analysis_df %&gt;% 
+  mutate(rank_bucket = case_when(college_rank &gt;= 1 &amp; college_rank &lt;= 50 ~ &#39;1 - 50&#39;,
+                                 college_rank &gt;= 51 &amp; college_rank &lt;= 100 ~ &#39;51 - 100&#39;,
+                                 college_rank &gt; 100 &amp; college_rank &lt;= 200 ~ &#39;101 - 200&#39;,
+                                 college_rank &gt; 200 &amp; college_rank &lt;= 300 ~ &#39;201 - 300&#39;,
+                                 college_rank &gt; 300 &amp; college_rank &lt;= 400 ~ &#39;301 - 400&#39;,
+                                 college_rank &gt; 400 ~ &#39;&gt; 400&#39;
+  )
+  )</code></pre>
+<p>Let’s visualize the slopes for each bucket.</p>
+<pre class="r"><code>rank_bucket_est = analysis_df %&gt;% 
+  group_by(rank_bucket) %&gt;% 
+  do(tidy(lm(mid_pay ~ college_rank, data=.))) %&gt;% 
+  select(rank_bucket, term, estimate) %&gt;% 
+  ungroup() %&gt;% 
+  reshape::cast(rank_bucket ~ term, value = &#39;estimate&#39;) %&gt;% 
+  clean_names() %&gt;% 
+  rename(rank_coeff = college_rank)
+
+rank_bucket_est &lt;- rank_bucket_est %&gt;% 
+  inner_join(analysis_df, by = &#39;rank_bucket&#39;) %&gt;% 
+  mutate(predicted_income = college_rank * rank_coeff + intercept) %&gt;% 
+  mutate(rank_bucket = factor(rank_bucket,
+                              levels = c(&#39;1 - 50&#39;,
+                                         &#39;51 - 100&#39;,
+                                         &#39;101 - 200&#39;,
+                                         &#39;201 - 300&#39;,
+                                         &#39;301 - 400&#39;,
+                                         &#39;&gt; 400&#39;
+                              )
+  ))</code></pre>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-14-1.png" width="960" /></p>
+<p>While the relationship between earnings and rank is non-linear, this provides a rough estimate of what we initially noticed in the first scatterplot. For example, colleges in the 1- 50 bucket experienced a pay decrease of ~$520 for each one-unit reduction in rank. In contrast, for colleges in the &gt; 400 bucket, a one-unit reduction in position results only in a ~$34 drop in compensation.</p>
+<p>At this point, we’ve established that (1) rank is a decent predictor of earnings, and (2) the nature of this relationship varies by the level of the rank, indicating that a modeling approach that handles non-linearity would likely perform better than our current linear model. Accordingly, we’ll use a tree-based algorithm to capture these non-linearities and any interactions between college rank and our other variables.</p>
+</div>
+<div id="feature-engineering-modeling" class="section level3">
+<h3>Feature Engineering &amp; Modeling</h3>
+<p>We’ll start by defining how we’ll evaluate our model’s performance. For regression problems, I like to begin with mean-absolute-error (MAE) as an evaluation metric for one reason: it expresses how large of an error I can expect in the original units of my outcome variable. Framing our model’s performance in this way makes it easier to interpret and explain when it comes down to evaluating how much faith I should put in the outputs.</p>
+<pre class="r"><code># define key metric that we want to evaluate against
+mset &lt;- metric_set(mae)
+
+# specify x variables
+x_vars = c(&#39;pct_stem&#39;, &#39;type&#39; ,&#39;cost_of_living&#39;, &#39;college_rank&#39;)
+y_var = &#39;mid_pay&#39;
+id_vars = &#39;college_name&#39;
+model_df &lt;- analysis_df %&gt;% select(c(id_vars, x_vars, y_var))</code></pre>
+<p>We’ll also do some minimal feature engineering on the <code>type</code> field, which classifies colleges as being one of the following types:</p>
+<pre class="r"><code>college_types &lt;- model_df %&gt;% 
+  separate_rows(type, sep = &quot;, &quot;) %&gt;% 
+  count(type, sort = TRUE) </code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#gsyjfxoqvi .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 10px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#gsyjfxoqvi .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#gsyjfxoqvi .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#gsyjfxoqvi .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#gsyjfxoqvi .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#gsyjfxoqvi .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#gsyjfxoqvi .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#gsyjfxoqvi .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#gsyjfxoqvi .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#gsyjfxoqvi .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#gsyjfxoqvi .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#gsyjfxoqvi .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#gsyjfxoqvi .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#gsyjfxoqvi .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#gsyjfxoqvi .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#gsyjfxoqvi .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#gsyjfxoqvi .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#gsyjfxoqvi .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#gsyjfxoqvi .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#gsyjfxoqvi .gt_left {
+  text-align: left;
+}
+
+#gsyjfxoqvi .gt_center {
+  text-align: center;
+}
+
+#gsyjfxoqvi .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#gsyjfxoqvi .gt_font_normal {
+  font-weight: normal;
+}
+
+#gsyjfxoqvi .gt_font_bold {
+  font-weight: bold;
+}
+
+#gsyjfxoqvi .gt_font_italic {
+  font-style: italic;
+}
+
+#gsyjfxoqvi .gt_super {
+  font-size: 65%;
+}
+
+#gsyjfxoqvi .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="gsyjfxoqvi" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table" style="table-layout: fixed;; width: 0px">
+  <colgroup>
+    <col style="width:100px;"/>
+    <col style="width:100px;"/>
+  </colgroup>
+  <thead class="gt_header">
+    <tr>
+      <th colspan="2" class="gt_heading gt_title gt_font_normal" style><strong>College Types</strong></th>
+    </tr>
+    <tr>
+      <th colspan="2" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">type</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">n</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_center">Private School</td>
+      <td class="gt_row gt_center">203</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">For Sports Fans</td>
+      <td class="gt_row gt_center">145</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Research University</td>
+      <td class="gt_row gt_center">136</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">State School</td>
+      <td class="gt_row gt_center">100</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Liberal Arts School</td>
+      <td class="gt_row gt_center">87</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Religious</td>
+      <td class="gt_row gt_center">75</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Engineering</td>
+      <td class="gt_row gt_center">26</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Party School</td>
+      <td class="gt_row gt_center">14</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Ivy League</td>
+      <td class="gt_row gt_center">8</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Sober School</td>
+      <td class="gt_row gt_center">8</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Business</td>
+      <td class="gt_row gt_center">6</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_center">Art</td>
+      <td class="gt_row gt_center">2</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>Some types of colleges may lead graduates into higher or lower-paying fields. First, however, we’ll have to translate these into a format that can feed into a machine learning model.</p>
+<pre class="r"><code>college_type_feature &lt;- model_df %&gt;% 
+  select(college_name, type) %&gt;%
+  separate_rows(type, sep = &quot;, &quot;) %&gt;%
+  recipe(.) %&gt;%
+  update_role(college_name, new_role = &#39;id variable&#39;) %&gt;%
+  step_dummy(type, one_hot=TRUE) %&gt;%
+  step_nzv(all_predictors()) %&gt;%
+  prep() %&gt;%
+  juice() %&gt;%
+  group_by(college_name) %&gt;%
+  summarise_at(vars(starts_with(&#39;type_&#39;)), sum) %&gt;%
+  clean_names()
+
+names(college_type_feature) &lt;- str_replace(names(college_type_feature), &#39;type_&#39;, &#39;&#39;)
+college_type_vars = setdiff(names(college_type_feature), &#39;college_name&#39;)</code></pre>
+<p>Next, we’ll join the features back into our dataset and transition to building our model.</p>
+<pre class="r"><code>model_df &lt;- model_df %&gt;%
+  inner_join(college_type_feature, on = &#39;college_name&#39;) %&gt;%
+  select(-type, -liberal_arts_school) %&gt;%
+  relocate(y_var, .after = last_col())</code></pre>
+<pre><code>## Joining, by = &quot;college_name&quot;</code></pre>
+<p>We’ll start by splitting our data into training and testing. The train is used for tuning (or which combination of hyperparameters yields the lowest MAE). We’ll then test our final model on the holdout set to get a feel for overall performance.</p>
+<pre class="r"><code>set.seed(2021)
+spl &lt;- initial_split(model_df)
+train &lt;- training(spl)
+test &lt;- testing(spl)
+train_folds &lt;- vfold_cv(train, v = 5, strata = y_var)</code></pre>
+<p>Let’s specify our “recipe” below, which is the series of data-preparation steps executed before fitting our model.</p>
+<pre class="r"><code>rank_recipe &lt;- 
+  model_df %&gt;% 
+  recipe(mid_pay ~ ., data = train) %&gt;% 
+  update_role(college_name, new_role = &#39;id variable&#39;)</code></pre>
+<p>Then, we’ll create a tuning grid for our XGBoost model.</p>
+<pre class="r"><code>grid_control &lt;- control_grid(save_pred= TRUE,
+                             save_workflow = TRUE,
+                             extract = extract_model
+                             )
+xg_spec &lt;- boost_tree(mode=&#39;regression&#39;,
+                      mtry = tune(),
+                      trees = tune(),
+                      learn_rate = .01
+                      ) %&gt;% 
+           set_engine(&quot;xgboost&quot;)</code></pre>
+<p>Once tuning is complete and the algorithm has been specified, we’ll combine our steps into a <code>workflow</code>, which holds the fitting and predicting operations in a single object.</p>
+<pre class="r"><code>xg_workflow &lt;- workflow() %&gt;% 
+  add_recipe(rank_recipe) %&gt;% 
+  add_model(xg_spec)</code></pre>
+<p>Finally, we’ll pull in our split training data and evaluate performance across the different combinations of our hyperparameters. Note that we are not tuning the learning rate in an effort to minimize the number of combinations to test.</p>
+<pre class="r"><code>set.seed(123)
+xg_tuned &lt;- xg_workflow %&gt;% 
+  tune_grid(train_folds,
+            metrics = mset,
+            grid = crossing(mtry = c(2, 4, 6, 8),
+                            trees = seq(50, 1000, 50)
+                            ),
+
+            )</code></pre>
+<p>The plot below indicates the performance across each of the combinations</p>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-25-1.png" width="960" /></p>
+<pre class="r"><code>xg_tuned %&gt;% 
+collect_metrics() %&gt;% 
+arrange(mean) %&gt;% 
+head(5)</code></pre>
+<pre><code>## # A tibble: 5 x 8
+##    mtry trees .metric .estimator  mean     n std_err .config
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;  
+## 1     6   500 mae     standard   6328.     5    236. Model50
+## 2     6   550 mae     standard   6329.     5    259. Model51
+## 3     6   600 mae     standard   6331.     5    287. Model52
+## 4     6   650 mae     standard   6350.     5    325. Model53
+## 5     6   700 mae     standard   6361.     5    352. Model54</code></pre>
+<p>Based on these results, it looks like ~600 trees and six parameters yield the best results. Next, we’ll extract the best model, fit it to the complete training set, and see how well it performs on our test set.</p>
+<pre class="r"><code>xg_fit &lt;- xg_workflow %&gt;% 
+  finalize_workflow(select_best(xg_tuned)) %&gt;% 
+  fit(train)
+
+bind_cols(test, xg_fit %&gt;% predict(test)) %&gt;% 
+  mae(mid_pay, .pred)</code></pre>
+<pre><code>## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 mae     standard       7411.</code></pre>
+<p>While the MAE is higher here, it’s not too different from what we observed above, indicating that we aren’t overfitting with the hyperparameters we’ve selected. Now that we know how well the model performs on our holdout-set let’s examine which variables are the most important.</p>
+<pre class="r"><code>var_imp &lt;- xgboost::xgb.importance(model = xg_fit$fit$fit$fit)
+
+var_imp %&gt;% 
+  clean_names() %&gt;% 
+  mutate(feature = str_replace_all(feature, &#39;_&#39;, &#39; &#39;),
+         feature = str_to_title(feature),
+         feature = fct_reorder(feature, gain),) %&gt;% 
+  ggplot(aes(feature, gain)) + 
+  geom_col(color = &#39;black&#39;) + 
+  coord_flip() + 
+  theme_bw() + 
+  my_plot_theme() + 
+  labs(x=NULL,
+       y=&#39;Feature Importance&#39;
+       )</code></pre>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-28-1.png" width="960" /></p>
+<p>The variable importance ratings are unsurprising. College rank is the most important variable, followed by the percentage of students majoring in Science, Technology, Engineering, or Math (STEM) major, with Cost of Living possessing some additional explanatory power. The college-type variables appear somewhat less critical.</p>
+</div>
+<div id="interpreting-model-predictions" class="section level3">
+<h3>Interpreting Model Predictions</h3>
+<p>So far, we’ve established that college rank, cost of living, and college major (or the percentage of STEM students) are associated with variation in mid-career pay. However, to make this actionable, it helps to tailor these predictions to an individual’s circumstances. For example, let’s say we want a general idea of how much our mid-career salary varies between a subset of colleges. We can use a technique called “local model interpretation,” which can provide answers to the following questions:</p>
+<ul>
+<li>Why did our model predict $120,000?</li>
+<li>What effect does college’s state or specific rank have on predicted mid-career earnings?</li>
+</ul>
+<p>The great thing about these techniques is that they open the “black box” of more intricate machine learning models rather than simply telling us which variables are more important than others. Below we’ll set up our “explainer” and test our previously trained model on specific observations.</p>
+<pre class="r"><code>x_values = train[setdiff(names(train), y_var)]
+y_values = train[y_var]
+
+pred &lt;- function(model, newdata){
+  results &lt;- model %&gt;% predict(newdata) %&gt;% pull(.pred)
+  return(results)
+
+}
+
+explainer_xg &lt;- DALEX::explain(model=xg_fit,
+                              data = x_values,
+                              y = y_values,
+                              predict_function = pred,
+                              label = &#39;xg explainer&#39;,
+                              verbose = FALSE
+                        )</code></pre>
+<p>Let’s test it out on my graduate college - Northwestern University (go Cats!). If you were an undergraduate attending Northwestern and plan to work within the state of Illinois, how much can you expect to make, and what factors are associated with an increase/decrease in potential mid-career earnings?</p>
+<pre class="r"><code>nu_student &lt;- model_df %&gt;% filter(college_name == &#39;northwestern university&#39;)
+nu_student_pred &lt;- DALEX::predict_parts_break_down(explainer_xg, nu_student)
+plot(nu_student_pred)</code></pre>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-30-1.png" width="960" /></p>
+<p>The way to read this plot is to start at the top left and work your way down to the “prediction” row. The intercept represents the overall average. That is, if I knew nothing about a college, this is my best guess. Stepping down one row, we see that Northwestern is ranked 28th of all colleges, which contributes to ~$10K increase in mid career pay. However, the cost of living in Illinois appears to be lower than the rest of the country, which depresses expected earnings by ~$8K. From there, you can “walk” by each factor to get to the final prediction of $120K. This is how a breakdown plot works - it helps us understand which variables explain the most variation and how they contribute relative to one another.</p>
+<p>We can even create a fictitious college, such as the the one below.</p>
+<pre class="r"><code>state_u_student &lt;- tibble(college_name = &#39;State U&#39;,
+                      college_rank = 400,
+                      cost_of_living = mean(x_values %&gt;% pull(cost_of_living)),
+                      pct_stem = 25,
+                      for_sports_fans = 1,
+                      private_school = 0,
+                      religious = 0,
+                      research_university = 1,
+                      state_school = 1
+)
+state_u_student_pred &lt;- DALEX::predict_parts_break_down(explainer_xg, state_u_student)
+plot(state_u_student_pred)</code></pre>
+<p><img src="/post/2021-04-11-college-rankings-salary/college_rankings_salary_files/figure-html/unnamed-chunk-31-1.png" width="960" /></p>
+<p>The plot above is interpreted exactly the same - if we attended “State U,” our expected annual mid-career pay would be somewhere around $98K.</p>
+</div>
+<div id="conclusion-does-rank-matter" class="section level3">
+<h3>Conclusion: Does Rank Matter?</h3>
+<p>It’s important to note that our outcome variable – median mid-career pay – is a summary statistic. Thus, we do not know how much information each college contributed to our estimates, as the raw data (i.e., the individual responses associated with each college) are not available. However, these findings feel correct. Even after considering the caveat mentioned above, it is apparent that where you attend college is strongly associated (but not necessarily cause) with shifts in how much you earn later in life. This is especially true for top-ranked colleges. The difference between attending a college ranked in the top-10 relative to the top-100 has substantial pay implications, while this difference is less critical among lower-ranked colleges.</p>
+<p>Hopefully, you enjoyed the post. I’d love to hear your feedback, so feel free to comment below!</p>
 </div>
 <div id="appendix" class="section level3">
 <h3>Appendix</h3>
+<pre class="python"><code># college_cost_of_living_data.py
+import urllib
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+from datetime import datetime
+from typing import List
+import logging
+
+start_time = datetime.now().strftime(&quot;%Y-%m-%d %H-%M-%S&quot;)
+logging.basicConfig(
+    filename=f&quot;college-rankings-pay-{start_time}.log&quot;,
+    format=&quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&quot;,
+    level=logging.DEBUG,
+)
+logger = logging.getLogger(__name__)
+
+
+def scrape_col_data() -&gt; List[str]:
+    base_url = &quot;https://meric.mo.gov/data/cost-living-data-series&quot;
+    page = urllib.request.urlopen(base_url).read()
+    soup = BeautifulSoup(page)
+    col_data = soup.findAll(&quot;tbody&quot;)[0].findAll(&quot;tr&quot;)
+    col_data_lst = str(col_data).split(&quot;&lt;/tr&gt;&quot;)
+    return col_data_lst
+
+
+def format_col_data(col_data_lst: List[str]) -&gt; pd.DataFrame:
+    field_names = [&quot;state&quot;, &quot;cost_of_living&quot;]
+    regex_state = re.compile(&quot;&gt;[0-9]{1,2}&lt;/td&gt;\n&lt;td&gt;(.+?)\xa0&lt;&quot;)
+    regex_col_index = re.compile(&quot;\xa0&lt;/td&gt;\n&lt;td&gt;([0-9]{2,3}.\d)&lt;/td&gt;&quot;)
+    all_states_col = list()
+    for state in col_data_lst:
+        try:
+            state_name = re.search(regex_state, state).group(1)
+            state_col = re.search(regex_col_index, state).group(1)
+            row = [state_name, state_col]
+            all_states_col.append(row)
+        except Exception as e:
+            logger.error(
+                f&quot;Problem extract table from wikipedia for {state}&quot;, exc_info=True
+            )
+    all_states_df = pd.DataFrame(all_states_col, columns=field_names)
+    return all_states_df
+
+
+def collect_col_data() -&gt; pd.DataFrame():
+    col_data_lst = scrape_col_data()
+    col_df = format_col_data(col_data_lst=col_data_lst)
+    return col_df</code></pre>
 <pre class="python"><code># collect_payscale_data.py
 import urllib
 from bs4 import BeautifulSoup
@@ -1689,7 +2310,7 @@ def format_pay_data(college_data: str) -&gt; pd.DataFrame:
     college_df = pd.DataFrame(all_college_data, columns=FIELD_NAMES)
     return college_df
 
-
+ 
 def collect_payscale_college_salary_data() -&gt; pd.DataFrame:
     all_colleges_df = pd.DataFrame(columns=FIELD_NAMES)
     for page_number in tqdm(range(1, (N_PAGES + 1))):
@@ -1698,6 +2319,29 @@ def collect_payscale_college_salary_data() -&gt; pd.DataFrame:
         all_colleges_df = all_colleges_df.append(college_data_df)
         time.sleep(2)
     return all_colleges_df</code></pre>
+<pre class="r"><code># Helper function for visualization
+my_plot_theme = function(){
+  font_family = &quot;Helvetica&quot;
+  font_face = &quot;bold&quot;
+  return(theme(
+    axis.text.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 22, face = font_face, family = font_family),
+    plot.title = element_text(size = 22, face = font_face, family = font_family),
+    
+    legend.position = &quot;top&quot;,
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 16,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 5),
+    legend.key.size = unit(1.5, &#39;lines&#39;)
+  ))
+}</code></pre>
 </div>
 
     </div>

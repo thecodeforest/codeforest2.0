@@ -55,6 +55,7 @@ def clean_names(df: pd.DataFrame) -> pd.DataFrame:
         - Removes camel case
         - Replaces any double underscore with single underscore
         - Removes spaces in the middle of a string name
+        - Replaces single spaces with underscore
         - Replaces periods with underscores
 
     Args:

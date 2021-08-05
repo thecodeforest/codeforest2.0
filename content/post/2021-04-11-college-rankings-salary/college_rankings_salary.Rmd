@@ -25,27 +25,536 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Overview
  
-Rankings are a pervasive part of modern life, especially for big decisions -- like shelling out thousands of dollars for an education. Indeed, college rankings are amongst the most widely cited rankings in existence. Students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it really matter in terms of future earnings potential? While an education is more than a simple "means to an end", making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics: 
+Rankings are a pervasive part of modern life, especially for big decisions – like shelling out thousands of dollars for an education. Indeed, college rankings are among the most widely cited rankings in existence. So naturally, students, parents, and college administrators fret about where their school lands along these highly debated spectrums. But does it matter in terms of future earnings potential? While education is more than a simple “means to an end,” making a decent living is amongst the reasons why students pull all-nighters, work terrible summer jobs, and do everything they can to position themselves for a lucrative, meaningful career. Accordingly, this post will focus on the following topics:
 
-`r emo::ji("geek")` The relationship between Mid Career Pay and College Ranking after accounting for external variables (e.g., % of STEM degrees conferred each year)
+`r emo::ji("geek")` Understanding the relationship between mid-career pay and college ranking after accounting for external variables (e.g., % of STEM degrees conferred each year).
 
-`r emo::ji("geek")` Understand which variables exhibit the strongest relationship with pay
+`r emo::ji("geek")` Understanding the relative contribution of all variables to mid-career pay.
 
-`r emo::ji("geek")` Identify which college's graduates over/under earn relative to our predictions
-
-Since I'm a big fan of Learning-by-doing, I've included all the code used to answer these questions. If you are simply interested in the answers, [click here](#analysis)
+Since I'm a big fan of Learning-by-doing, I've included all code used to answer these questions. If you are simply interested in the answers [click here](#analysis).
 
 ### Data Collection
 
-We'll leverage the following data sources for our analysis: 
+Let's start off by defining our data sources, which include:
 
-- Payscale Data of Median Mid Career Earnings By College (with additional data about each college)
+- Mid-career pay by college from [payscale.com](www.payscale.com).
 
-- Forbes Undergraduate College Rankings
+- Undergraduate college rankings from [forbes](https://www.forbes.com/top-colleges/#551bb5519877)
 
-- Cost of Living Index by State
+- Cost of living index by state from [here](https://meric.mo.gov/data/cost-living-data-series)
 
-The data is stored across various websites, so we'll need to first scrape and format it prior to doing any analysis. For example, the `collect_cost_of_living_data.py` module below will scrape a table with cost of living data for each US state. 
+The data is stored across various websites, so we'll need to first scrape and format it prior to doing any analysis. All source code for the data-collections functions is in the [appendix](#appendix). Each can be executed by using the `reticulate` package. However, if you want to follow along with analysis and avoid all of the web-scraping (my recommendation), you can pull the data directly into R from Github. 
+
+```{r, message=FALSE, warning=FALSE}
+# Core package
+library(tidyverse)
+library(janitor)
+
+# Calling python functions from R
+library(reticulate)
+
+# For joins
+library(fuzzyjoin)
+
+# Modeling packages
+library(broom)
+library(recipes)
+library(rsample)
+library(tidymodels)
+library(tidytext)
+
+# Explainable ML
+library(DALEX)
+library(DALEXtra)
+
+# --- Uncomment to scrape the original data
+# specify which version of Python to use
+# reticulate::use_python('//anaconda/bin/python', required = TRUE)
+# reticulate::source_python('college_cost_of_living_data.py')
+# reticulate::source_python('collect_payscale_data.py')
+# reticulate::source_python('collect_college_ranks.py')
+# col_df <- collect_col_data()
+# pay_df <- collect_payscale_data()
+# ranks_df <- collect_college_ranks_data()
+
+# --- Download from Github
+url <- "https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main"
+post_location <- "college_rankings_salary_data"
+full_path <- file.path(url, post_location)
+col_df <- read_csv(file.path(full_path, 'cost_of_living.csv')) %>% clean_names()
+pay_df <- read_csv(file.path(full_path, 'college_pay.csv')) %>% clean_names()
+ranks_df <- read_csv(file.path(full_path, 'college_ranks.csv')) %>% clean_names()
+```
+
+
+```{r include=FALSE}
+# Core package
+library(tidyverse)
+library(janitor)
+
+# Making nice tables
+library(gt)
+
+# For joins
+library(fuzzyjoin)
+
+# Modeling packages
+library(broom)
+library(recipes)
+library(rsample)
+library(tidymodels)
+library(tidytext)
+
+# Explainable ML
+library(DALEX)
+library(DALEXtra)
+
+# helper function for visualization
+my_plot_theme = function(){
+  font_family = "Helvetica"
+  font_face = "bold"
+  return(theme(
+    axis.text.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 22, face = font_face, family = font_family),
+    plot.title = element_text(size = 22, face = font_face, family = font_family),
+    
+    legend.position = "top",
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 16,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 5),
+    legend.key.size = unit(1.5, 'lines')
+  ))
+}
+```
+
+We'll start by doing some cleaning and exploratory data analysis (EDA) after loading our data.
+
+```{r}
+pay_df_clean <- pay_df %>% 
+  clean_names() %>% 
+  rename(college_name = name,
+         pay_rank = rank
+  ) %>% 
+  select(college_name, type, state, pay_rank, early_pay, mid_pay, pct_stem) %>% 
+  mutate(college_name = str_to_lower(college_name),
+         college_name = str_replace_all(college_name, "_", " "),
+         pct_stem = parse_number(pct_stem),
+         early_pay = parse_number(early_pay),
+         mid_pay = parse_number(mid_pay)
+  )
+```
+
+Let's peak at the first few rows of the compensation data. 
+
+```{r echo=FALSE}
+pay_df_clean %>%
+  head(5) %>% 
+  gt() %>%
+  tab_header(title = gt::md('**Sample Compensentation Data**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+```
+
+We'll merge the cost of living (COL) and college rankings data in the next two steps. Let's start with COL by state to adjust for its effect on pay. The rationale for adding this variable is that many college graduates end up working in the same city or state as their college. For example, if you go to Ohio State, there's a good chance you'll take a job in Ohio. Likewise, if you attend New York University, you'll probably end up somewhere in New York. Therefore, the cost of living in Ohio is different from New York, and employers take this into account when setting salaries. However, these cost differences are not related to the rank of one's college, so to get a better idea of the relationship between college rank and mid-career pay, we'll want to "adjust" for these variables.
+
+```{r message=FALSE, warning=FALSE}
+pay_df_clean <- inner_join(pay_df_clean, col_df, on='state')
+```
+
+The next step is a bit trickier. We'll be joining on (gasp!) the college's name to bring together compensation and college rankings. Anyone who has spent a few minutes working with data knows it's generally a bad idea to join on strings, especially when those strings come from unrelated data sources. Indeed, I came across this tweet the other day, and I feel seen. 
+
+![](/post/2021-04-11-college-rankings-salary/images/philadelphia.png){width=400px height=200px}  
+However, as data scientists, we rarely have the dataset we want, so we'll have to employ the magic you see below to create a consistent mapping between college names (Yes, regular expressions have always felt magical to me).
+```{r}
+pay_df_clean <- pay_df_clean %>% 
+  mutate(college_name = str_replace_all(college_name, " \\(.+?\\)", ""),
+        college_name = str_replace_all(college_name, '%2c', ','),
+        college_name = str_replace_all(college_name, '%26', '&'),
+        college_name = str_replace_all(college_name, '%27', "'"),
+        college_name = str_replace_all(college_name, 'at (.+/?)', ''), 
+        college_name = str_replace_all(college_name, ',\\s[a-z][a-z]', ''), # state at end
+        college_name = str_replace_all(college_name, ' - ', '-'),
+        college_name = str_trim(college_name)
+        )
+```
+
+We'll also do some light cleaning for the college ranks data. 
+
+```{r}
+ranks_df_clean <- ranks_df %>% 
+  rename(college_name = friendly_name,
+         college_rank = rank
+         ) %>% 
+  mutate(college_name = tolower(college_name)) %>% 
+  na.omit()
+```
+
+In the next step, we'll bring the compensation and college rankings together via a "fuzzy join." This type of join is useful when the key (or field(s) you join is “close enough” but not an exact match. The `max_dist` parameter below is how we define "close enough." The lower the number for this parameter, the closer two strings will need to be in their structure to match. 
+```{r}
+analysis_df <- stringdist_inner_join(pay_df_clean, 
+                                     ranks_df_clean,
+                                     by='college_name',
+                                     max_dist=2
+                                     )
+n_row_reduced <- round((nrow(pay_df_clean) - nrow(analysis_df)) / nrow(pay_df_clean) * 100, 2)
+print(glue::glue('Pct excluded: {n_row_reduced}%'))
+```
+
+A good practice after executing an inner-join is to determine if the number of records has changed. The number of records are reduced by  `r glue::glue('{n_row_reduced}%')` following our join. If I were compensated for this analysis, I would return to the regular expressions above to see where I could further improve the match rate. However, we'll trudge along with our smaller dataset to keep things moving along. 
+
+The other thing to keep in mind with fuzzy joins is that duplicate matches can occur, which the example below illustrates: 
+
+```{r echo=FALSE}
+analysis_df <- analysis_df %>% 
+  group_by(college_name.x) %>% 
+  mutate(n_match = 1:n()) %>% 
+  ungroup()
+
+analysis_df %>% 
+  filter(college_name.x %in% c('stanford university', 'brown university')) %>% 
+  select(contains('_name'), n_match) %>% 
+  gt() %>%
+  tab_header(title = gt::md('**Names with Multiple Matches**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+  
+```
+
+The duplicate issue can be addressed by taking the closest match. Fortunately, our observations are ordered in terms of similarity, so we can take the first match and exclude matches with a rank other than 1. 
+
+```{r}
+analysis_df <- analysis_df %>% 
+  filter(n_match == 1) %>% 
+  select(-n_match, college_name.y) %>% 
+  rename(college_name = college_name.x) %>% 
+  na.omit() 
+```
+
+We are now ready to move on to some basic analysis. 
+
+### Analysis
+
+Let's start by examining the relationship between our two main variables of interest: college rank and mid-career pay.  
+
+```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE, echo=FALSE}
+ggplot(analysis_df, aes(x = college_rank, y = mid_pay)) + 
+  geom_point(size = 2, alpha = 0.5) + 
+  stat_smooth(size = 2, color = 'black') + 
+  ylab("Mid Career Median Pay") + 
+  xlab("College Rank") + 
+  theme_bw() + 
+  my_plot_theme() + 
+  scale_y_continuous(labels=scales::dollar) + 
+  scale_x_continuous(breaks = seq(0, max(analysis_df$college_rank), by = 50))
+```
+
+Earnings drop quicker for highly ranked colleges relative to lower ranked colleges. Let’s break this out by bucketing the ranks and examining the slopes for each bucket – that is, the expected change in salary as the ranking decreases by one.
+
+```{r}
+analysis_df = analysis_df %>% 
+  mutate(rank_bucket = case_when(college_rank >= 1 & college_rank <= 50 ~ '1 - 50',
+                                 college_rank >= 51 & college_rank <= 100 ~ '51 - 100',
+                                 college_rank > 100 & college_rank <= 200 ~ '101 - 200',
+                                 college_rank > 200 & college_rank <= 300 ~ '201 - 300',
+                                 college_rank > 300 & college_rank <= 400 ~ '301 - 400',
+                                 college_rank > 400 ~ '> 400'
+  )
+  )
+```
+
+Let's visualize the slopes for each bucket.  
+```{r}
+rank_bucket_est = analysis_df %>% 
+  group_by(rank_bucket) %>% 
+  do(tidy(lm(mid_pay ~ college_rank, data=.))) %>% 
+  select(rank_bucket, term, estimate) %>% 
+  ungroup() %>% 
+  reshape::cast(rank_bucket ~ term, value = 'estimate') %>% 
+  clean_names() %>% 
+  rename(rank_coeff = college_rank)
+
+rank_bucket_est <- rank_bucket_est %>% 
+  inner_join(analysis_df, by = 'rank_bucket') %>% 
+  mutate(predicted_income = college_rank * rank_coeff + intercept) %>% 
+  mutate(rank_bucket = factor(rank_bucket,
+                              levels = c('1 - 50',
+                                         '51 - 100',
+                                         '101 - 200',
+                                         '201 - 300',
+                                         '301 - 400',
+                                         '> 400'
+                              )
+  ))
+```
+
+```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE, echo=FALSE}
+rank_bucket_est %>% 
+  ggplot(aes(x = college_rank, y = predicted_income, color = rank_bucket)) + 
+  geom_point() + 
+  geom_line() + 
+  geom_point(data = analysis_df, aes(x = college_rank,
+                                  y = mid_pay),
+             alpha = 0.25
+  ) + 
+  theme_bw() + 
+  my_plot_theme() + 
+  labs(x = 'College Rank', y = 'Predicted Mid Career Pay') + 
+  scale_y_continuous(labels=scales::dollar) + 
+  scale_x_continuous(breaks = seq(0, max(analysis_df$college_rank), by = 100)) + 
+  labs(color = 'Rank Bucket')
+```
+
+While the relationship between earnings and rank is non-linear, this provides a rough estimate of what we initially noticed in the first scatterplot. For example, colleges in the 1- 50 bucket experienced a pay decrease of ~$520 for each one-unit reduction in rank. In contrast, for colleges in the > 400 bucket, a one-unit reduction in position results only in a ~$34 drop in compensation. 
+
+At this point, we’ve established that (1) rank is a decent predictor of earnings, and (2) the nature of this relationship varies by the level of the rank, indicating that a modeling approach that handles non-linearity would likely perform better than our current linear model. Accordingly, we’ll use a tree-based algorithm to capture these non-linearities and any interactions between college rank and our other variables. 
+
+### Feature Engineering & Modeling
+
+We'll start by defining how we'll evaluate our model's performance. For regression problems, I like to begin with mean-absolute-error (MAE) as an evaluation metric for one reason: it expresses how large of an error I can expect in the original units of my outcome variable. Framing our model's performance in this way makes it easier to interpret and explain when it comes down to evaluating how much faith I should put in the outputs.
+```{r, message=FALSE, warning=FALSE,}
+# define key metric that we want to evaluate against
+mset <- metric_set(mae)
+
+# specify x variables
+x_vars = c('pct_stem', 'type' ,'cost_of_living', 'college_rank')
+y_var = 'mid_pay'
+id_vars = 'college_name'
+model_df <- analysis_df %>% select(c(id_vars, x_vars, y_var))
+```
+
+We'll also do some minimal feature engineering on the `type` field, which classifies colleges as being one of the following types: 
+
+```{r}
+college_types <- model_df %>% 
+  separate_rows(type, sep = ", ") %>% 
+  count(type, sort = TRUE) 
+```
+
+```{r echo=FALSE}
+college_types %>% 
+gt() %>%
+  tab_header(title = gt::md('**College Types**')) %>%
+  cols_align(
+  align = "center",
+  columns = everything()) %>%
+  tab_options(table.font.size = 10) %>% 
+  cols_width(
+    everything() ~ px(100) 
+    )
+```
+
+Some types of colleges may lead graduates into higher or lower-paying fields. First, however, we'll have to translate these into a format that can feed into a machine learning model.
+
+```{r}
+college_type_feature <- model_df %>% 
+  select(college_name, type) %>%
+  separate_rows(type, sep = ", ") %>%
+  recipe(.) %>%
+  update_role(college_name, new_role = 'id variable') %>%
+  step_dummy(type, one_hot=TRUE) %>%
+  step_nzv(all_predictors()) %>%
+  prep() %>%
+  juice() %>%
+  group_by(college_name) %>%
+  summarise_at(vars(starts_with('type_')), sum) %>%
+  clean_names()
+
+names(college_type_feature) <- str_replace(names(college_type_feature), 'type_', '')
+college_type_vars = setdiff(names(college_type_feature), 'college_name')
+```
+
+Next, we'll join the features back into our dataset and transition to building our model. 
+
+```{r}
+model_df <- model_df %>%
+  inner_join(college_type_feature, on = 'college_name') %>%
+  select(-type, -liberal_arts_school) %>%
+  relocate(y_var, .after = last_col())
+```
+
+We'll start by splitting our data into training and testing. The train is used for tuning (or which combination of hyperparameters yields the lowest MAE). We'll then test our final model on the holdout set to get a feel for overall performance. 
+
+```{r}
+set.seed(2021)
+spl <- initial_split(model_df)
+train <- training(spl)
+test <- testing(spl)
+train_folds <- vfold_cv(train, v = 5, strata = y_var)
+```
+
+Let's specify our "recipe" below, which is the series of data-preparation steps executed before fitting our model. 
+
+```{r}
+rank_recipe <- 
+  model_df %>% 
+  recipe(mid_pay ~ ., data = train) %>% 
+  update_role(college_name, new_role = 'id variable')
+```
+
+Then, we'll create a tuning grid for our XGBoost model.
+
+```{r}
+grid_control <- control_grid(save_pred= TRUE,
+                             save_workflow = TRUE,
+                             extract = extract_model
+                             )
+xg_spec <- boost_tree(mode='regression',
+                      mtry = tune(),
+                      trees = tune(),
+                      learn_rate = .01
+                      ) %>% 
+           set_engine("xgboost")
+```
+
+Once tuning is complete and the algorithm has been specified, we'll combine our steps into a `workflow`, which holds the fitting and predicting operations in a single object. 
+
+```{r}
+xg_workflow <- workflow() %>% 
+  add_recipe(rank_recipe) %>% 
+  add_model(xg_spec)
+```
+
+Finally, we'll pull in our split training data and evaluate performance across the different combinations of our hyperparameters. Note that we are not tuning the learning rate in an effort to minimize the number of combinations to test. 
+
+```{r}
+set.seed(123)
+xg_tuned <- xg_workflow %>% 
+  tune_grid(train_folds,
+            metrics = mset,
+            grid = crossing(mtry = c(2, 4, 6, 8),
+                            trees = seq(50, 1000, 50)
+                            ),
+
+            )
+```
+
+The plot below indicates the performance across each of the combinations
+
+```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE, echo=FALSE}
+autoplot(xg_tuned) + 
+  theme_bw() + 
+  my_plot_theme()
+```
+
+```{r}
+xg_tuned %>% 
+collect_metrics() %>% 
+arrange(mean) %>% 
+head(5)
+```
+
+Based on these results, it looks like ~600 trees and six parameters yield the best results. Next, we'll extract the best model, fit it to the complete training set, and see how well it performs on our test set. 
+```{r}
+xg_fit <- xg_workflow %>% 
+  finalize_workflow(select_best(xg_tuned)) %>% 
+  fit(train)
+
+bind_cols(test, xg_fit %>% predict(test)) %>% 
+  mae(mid_pay, .pred)
+```
+
+While the MAE is higher here, it's not too different from what we observed above, indicating that we aren't overfitting with the hyperparameters we've selected. Now that we know how well the model performs on our holdout-set let's examine which variables are the most important. 
+
+```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE}
+var_imp <- xgboost::xgb.importance(model = xg_fit$fit$fit$fit)
+
+var_imp %>% 
+  clean_names() %>% 
+  mutate(feature = str_replace_all(feature, '_', ' '),
+         feature = str_to_title(feature),
+         feature = fct_reorder(feature, gain),) %>% 
+  ggplot(aes(feature, gain)) + 
+  geom_col(color = 'black') + 
+  coord_flip() + 
+  theme_bw() + 
+  my_plot_theme() + 
+  labs(x=NULL,
+       y='Feature Importance'
+       )
+```
+
+The variable importance ratings are unsurprising. College rank is the most important variable, followed by the percentage of students majoring in Science, Technology, Engineering, or Math (STEM) major, with Cost of Living possessing some additional explanatory power. The college-type variables appear somewhat less critical. 
+
+### Interpreting Model Predictions
+
+So far, we've established that college rank, cost of living, and college major (or the percentage of STEM students) are associated with variation in mid-career pay. However, to make this actionable, it helps to tailor these predictions to an individual's circumstances. For example, let's say we want a general idea of how much our mid-career salary varies between a subset of colleges. We can use a technique called "local model interpretation," which can provide answers to the following questions: 
+
+- Why did our model predict $120,000? 
+- What effect does college's state or specific rank have on predicted mid-career earnings? 
+
+The great thing about these techniques is that they open the "black box" of more intricate machine learning models rather than simply telling us which variables are more important than others. Below we'll set up our "explainer" and test our previously trained model on specific observations. 
+
+```{r message=FALSE, warning=FALSE}
+x_values = train[setdiff(names(train), y_var)]
+y_values = train[y_var]
+
+pred <- function(model, newdata){
+  results <- model %>% predict(newdata) %>% pull(.pred)
+  return(results)
+
+}
+
+explainer_xg <- DALEX::explain(model=xg_fit,
+                              data = x_values,
+                              y = y_values,
+                              predict_function = pred,
+                              label = 'xg explainer',
+                              verbose = FALSE
+                        )
+```
+
+Let's test it out on my graduate college - Northwestern University (go Cats!). If you were an undergraduate attending Northwestern and plan to work within the state of Illinois, how much can you expect to make, and what factors are associated with an increase/decrease in potential mid-career earnings? 
+
+```{r fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE}
+nu_student <- model_df %>% filter(college_name == 'northwestern university')
+nu_student_pred <- DALEX::predict_parts_break_down(explainer_xg, nu_student)
+plot(nu_student_pred)
+```
+
+The way to read this plot is to start at the top left and work your way down to the "prediction" row. The intercept represents the overall average. That is, if I knew nothing about a college, this is my best guess.  Stepping down one row, we see that Northwestern is ranked 28th of all colleges, which contributes to ~$10K increase in mid career pay. However, the cost of living in Illinois appears to be lower than the rest of the country, which depresses expected earnings by ~$8K. From there, you can "walk" by each factor to get to the final prediction of $120K. This is how a breakdown plot works - it helps us understand which variables explain the most variation and how they contribute relative to one another.  
+
+We can even create a fictitious college, such as the the one below. 
+```{r fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE}
+state_u_student <- tibble(college_name = 'State U',
+                      college_rank = 400,
+                      cost_of_living = mean(x_values %>% pull(cost_of_living)),
+                      pct_stem = 25,
+                      for_sports_fans = 1,
+                      private_school = 0,
+                      religious = 0,
+                      research_university = 1,
+                      state_school = 1
+)
+state_u_student_pred <- DALEX::predict_parts_break_down(explainer_xg, state_u_student)
+plot(state_u_student_pred)
+```
+
+The plot above is interpreted exactly the same - if we attended "State U," our expected annual mid-career pay would be somewhere around $98K. 
+
+### Conclusion: Does Rank Matter?
+
+It’s important to note that our outcome variable – median mid-career pay – is a summary statistic. Thus, we do not know how much information each college contributed to our estimates, as the raw data (i.e., the individual responses associated with each college) are not available. However, these findings feel correct. Even after considering the caveat mentioned above, it is apparent that where you attend college is strongly associated (but not necessarily cause) with shifts in how much you earn later in life. This is especially true for top-ranked colleges. The difference between attending a college ranked in the top-10 relative to the top-100 has substantial pay implications, while this difference is less critical among lower-ranked colleges. 
+
+Hopefully, you enjoyed the post. I’d love to hear your feedback, so feel free to comment below!
+
+### Appendix
 
 ```{python, eval=FALSE}
 # college_cost_of_living_data.py
@@ -99,175 +608,6 @@ def collect_col_data() -> pd.DataFrame():
     col_df = format_col_data(col_data_lst=col_data_lst)
     return col_df
 ```
-
-```{r, eval = FALSE}
-# Core package
-library(tidyverse)
-
-# Calling python functions from R
-library(reticulate)
-
-# specify which version of Python to use
-reticulate::use_python('//anaconda/bin/python', required = TRUE)
-
-# brings our function into the R Environment
-reticulate::source_python('college_cost_of_living_data.py')
-
-# executes and stores the output in our variable 'cost_of_living_df'
-col_df = collect_col_data()
-```
-
-The code for the other two data sources - `collect_payscale_data` and - `collect_rankings_data` - can be found in the appendix. If you want to follow along with analysis but avoid all of the web-scraping, you can simply pull the data directly into R by executing the block below: 
-
-```{r include=FALSE}
-# Core package
-library(tidyverse)
-library(janitor)
-
-# Making nice tables
-library(gt)
-
-# For joins
-library(fuzzyjoin)
-```
-
-
-```{r message=FALSE, warning=FALSE}
-url = "https://raw.githubusercontent.com/thecodeforest/codeforest_datasets/main"
-post_location = "college_rankings_salary_data"
-full_path = file.path(url, post_location)
-col_df <- read_csv(file.path(full_path, 'cost_of_living.csv')) %>% clean_names()
-pay_df <- read_csv(file.path(full_path, 'college_pay.csv')) %>% clean_names()
-ranks_df <- read_csv(file.path(full_path, 'college_ranks.csv')) %>% clean_names()
-```
-
-Let's start by doing some basic data cleaning and examining our pay dataset. 
-
-```{r}
-pay_df_clean <- pay_df %>% 
-  clean_names() %>% 
-  rename(college_name = name,
-         pqy_rank = rank
-         ) %>% 
-  select(college_name, type, state, rank, early_pay, mid_pay, pct_stem) %>% 
-  mutate(college_name = str_to_lower(college_name),
-         college_name = str_replace_all(college_name, "_", " "),
-         pct_stem = parse_number(pct_stem),
-         early_pay = parse_number(early_pay),
-         mid_pay = parse_number(mid_pay)
-         )
-```
-
-
-```{r echo=FALSE}
-pay_df_clean %>%
-  head(5) %>% 
-  gt() %>%
-  tab_header(title = gt::md('**Sample Compensentation Data**')) %>%
-  cols_align(
-  align = "center",
-  columns = everything()) %>%
-  tab_options(table.font.size = 10) %>% 
-  cols_width(
-    everything() ~ px(100) 
-    )
-```
-
-In the next few steps, we'll bring together our other two datasets, starting with cost of living data. This step is straightfoward, we'll bring in `cost_of_living` by state to adjust for the effect of cost of living. 
-
-```{r message=FALSE, warning=FALSE}
-pay_df_clean <- left_join(pay_df_clean, col_df, on='state')
-```
-
-The next step is a bit trickier. We'll be joining on the name of the college. Anyone who has spent a few minutes working with data knows it's never a good thing to join on strings. I came across this tweet the other day, which perfectly captures what we're trying to do here. 
-
-![](/post/2021-04-11-college-rankings-salary/images/philadelphia.png){width=400px height=200px}  
-```{r}
-pay_df_clean <- pay_df_clean %>% 
-  mutate(college_name = str_replace_all(college_name, " \\(.+?\\)", ""),
-        college_name = str_replace_all(college_name, '%2c', ','),
-        college_name = str_replace_all(college_name, '%26', '&'),
-        college_name = str_replace_all(college_name, '%27', "'"),
-        college_name = str_replace_all(college_name, 'at (.+/?)', ''), 
-        college_name = str_replace_all(college_name, ',\\s[a-z][a-z]', ''), # state at end
-        college_name = str_replace_all(college_name, ' - ', '-'),
-        college_name = str_trim(college_name)
-        )
-```
-
-Next, we'll do some light cleaning to the other data. 
-
-```{r}
-ranks_df_clean <- ranks_df %>% 
-  rename(college_name = friendly_name,
-         college_rank = rank
-         ) %>% 
-  mutate(college_name = tolower(college_name)) %>% 
-  na.omit()
-```
-
-Now we'll do fuzzy join based on stringdist. This will lead to two issues. Some records wil drop, and there can be duplicates. We'll check for both. 
-
-```{r}
-analysis_df <- stringdist_inner_join(pay_df_clean, 
-                                     ranks_df_clean,
-                                     by='college_name',
-                                     max_dist=2
-                                     )
-n_row_reduced <- nrow(pay_df_clean) - nrow(analysis_df)
-print(glue::glue('N rows reduced: {n_row_reduced}'))
-```
-
-Next need to check if there instances of duplicates, which can happen when names are close to one another. For example. 
-
-```{r}
-analysis_df <- analysis_df %>% 
-  group_by(college_name.x) %>% 
-  mutate(n_match = 1:n()) %>% 
-  ungroup()
-
-analysis_df %>% 
-  filter(college_name.x %in% c('stanford university', 'brown university')) %>% 
-  select(contains('_name'), n_match) %>% 
-  gt() %>%
-  tab_header(title = gt::md('**Names with Multiple Matches**')) %>%
-  cols_align(
-  align = "center",
-  columns = everything()) %>%
-  tab_options(table.font.size = 10) %>% 
-  cols_width(
-    everything() ~ px(100) 
-    )
-  
-```
-
-An easy way to address this issue is to simply take the closest match. Fortunately, they are rank ordered so we just have to take the first match and exclude matches with a rank other than 1. 
-
-```{r}
-analysis_df <- analysis_df %>% 
-  filter(n_match == 1) %>% 
-  select(-n_match, college_name.y) %>% 
-  rename(college_name = college_name.x) %>% 
-  na.omit()
-```
-
-### Analysis
-
-We'll first start by examining the relationship between our two main variables of interest: College Rank and Mid Career Pay.  
-
-```{r, fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE, echo=FALSE}
-ggplot(final_df, aes(x = rank, y = mid_career_median_pay)) + 
-  geom_point(size = 2, alpha = 0.5) + 
-  stat_smooth(size = 2, color = 'black') + 
-  ylab("Mid Career Median Pay") + 
-  xlab("College Rank") + 
-  my_plot_theme() + 
-  scale_y_continuous(labels=scales::dollar) + 
-  scale_x_continuous(breaks = seq(0, max(final_df$rank), by = 50))
-```
-
-
-### Appendix
 
 ```{python, eval=FALSE}
 # collect_payscale_data.py
@@ -336,8 +676,30 @@ def collect_payscale_college_salary_data() -> pd.DataFrame:
     return all_colleges_df
 ```
 
-```{python}
-
+```{r}
+# Helper function for visualization
+my_plot_theme = function(){
+  font_family = "Helvetica"
+  font_face = "bold"
+  return(theme(
+    axis.text.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.text.y = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.x = element_text(size = 16, face = font_face, family = font_family),
+    axis.title.y = element_text(size = 16, face = font_face, family = font_family),
+    strip.text.y = element_text(size = 22, face = font_face, family = font_family),
+    plot.title = element_text(size = 22, face = font_face, family = font_family),
+    
+    legend.position = "top",
+    legend.title = element_text(size = 16,
+                                face = font_face,
+                                family = font_family),
+    legend.text = element_text(size = 16,
+                               face = font_face,
+                               family = font_family),
+    legend.key = element_rect(size = 5),
+    legend.key.size = unit(1.5, 'lines')
+  ))
+}
 ```
 
 

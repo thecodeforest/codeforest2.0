@@ -188,10 +188,7 @@ bar_map = leaflet(data = best_bars) %>%
                            ) 
 ```
 
-
-```{r, message=FALSE, warning=FALSE, echo = FALSE}
-widgetframe::frameWidget(bar_map, width = "100%", height = 400)
-```
+![](/post/2018-06-01-optimal-bar-crawl/images/bar_locations.png){width=700px height=600px}
 
 Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking let's limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.
 
@@ -476,8 +473,6 @@ final_route = leaflet(data = path_df) %>%
   )
 ```
 
-```{r, message=FALSE, warning=FALSE, echo = FALSE}
-widgetframe::frameWidget(final_route, width = "100%", height = 600)
-```
+![](/post/2018-06-01-optimal-bar-crawl/images/final_route.png){width=700px height=600px}
 
 Whew! That was a lot of work, but it looks like we have a reasonable solution. We'll start in downtown Portland, take a quick tour over to the city's Eastside, and eventually return to the Northwest. So, there you have it -- a real-world application of optimization that supports an efficient Pub Crawl. Prost!

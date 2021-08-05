@@ -18,9 +18,6 @@
       <pubDate>Fri, 01 Jun 2018 21:13:14 -0500</pubDate>
       <guid>http://example.org/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl/</guid>
       <description>
-&lt;script src=&#34;http://example.org/rmarkdown-libs/htmlwidgets/htmlwidgets.js&#34;&gt;&lt;/script&gt;
-&lt;script src=&#34;http://example.org/rmarkdown-libs/pymjs/pym.v1.js&#34;&gt;&lt;/script&gt;
-&lt;script src=&#34;http://example.org/rmarkdown-libs/widgetframe-binding/widgetframe.js&#34;&gt;&lt;/script&gt;
 
 
 &lt;p&gt;&lt;img src=&#34;http://example.org/post/2018-06-01-optimal-bar-crawl/images/portland.jpg&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
@@ -138,7 +135,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, Oxygen, Ubuntu, Cantarell, &#39;Helvetica Neue&#39;, &#39;Fira Sans&#39;, &#39;Droid Sans&#39;, Arial, sans-serif;
 }
 
-#ijjoiaylpw .gt_table {
+#waqzymrfiy .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -163,7 +160,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-left-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_heading {
+#waqzymrfiy .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -175,7 +172,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_title {
+#waqzymrfiy .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -185,7 +182,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-bottom-width: 0;
 }
 
-#ijjoiaylpw .gt_subtitle {
+#waqzymrfiy .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -195,13 +192,13 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-top-width: 0;
 }
 
-#ijjoiaylpw .gt_bottom_border {
+#waqzymrfiy .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_col_headings {
+#waqzymrfiy .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -216,7 +213,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_col_heading {
+#waqzymrfiy .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -236,7 +233,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#ijjoiaylpw .gt_column_spanner_outer {
+#waqzymrfiy .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -248,15 +245,15 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   padding-right: 4px;
 }
 
-#ijjoiaylpw .gt_column_spanner_outer:first-child {
+#waqzymrfiy .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ijjoiaylpw .gt_column_spanner_outer:last-child {
+#waqzymrfiy .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ijjoiaylpw .gt_column_spanner {
+#waqzymrfiy .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -268,7 +265,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   width: 100%;
 }
 
-#ijjoiaylpw .gt_group_heading {
+#waqzymrfiy .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -290,7 +287,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#ijjoiaylpw .gt_empty_group_heading {
+#waqzymrfiy .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -305,15 +302,15 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   vertical-align: middle;
 }
 
-#ijjoiaylpw .gt_from_md &gt; :first-child {
+#waqzymrfiy .gt_from_md &gt; :first-child {
   margin-top: 0;
 }
 
-#ijjoiaylpw .gt_from_md &gt; :last-child {
+#waqzymrfiy .gt_from_md &gt; :last-child {
   margin-bottom: 0;
 }
 
-#ijjoiaylpw .gt_row {
+#waqzymrfiy .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -332,7 +329,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   overflow-x: hidden;
 }
 
-#ijjoiaylpw .gt_stub {
+#waqzymrfiy .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -344,7 +341,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   padding-left: 12px;
 }
 
-#ijjoiaylpw .gt_summary_row {
+#waqzymrfiy .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -354,7 +351,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#ijjoiaylpw .gt_first_summary_row {
+#waqzymrfiy .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -364,7 +361,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_grand_summary_row {
+#waqzymrfiy .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -374,7 +371,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   padding-right: 5px;
 }
 
-#ijjoiaylpw .gt_first_grand_summary_row {
+#waqzymrfiy .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -384,11 +381,11 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-top-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_striped {
+#waqzymrfiy .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ijjoiaylpw .gt_table_body {
+#waqzymrfiy .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -397,7 +394,7 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-bottom-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_footnotes {
+#waqzymrfiy .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -411,13 +408,13 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_footnote {
+#waqzymrfiy .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#ijjoiaylpw .gt_sourcenotes {
+#waqzymrfiy .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -431,46 +428,46 @@ best_bars = geocode_best_portland_bars()&lt;/code&gt;&lt;/pre&gt;
   border-right-color: #D3D3D3;
 }
 
-#ijjoiaylpw .gt_sourcenote {
+#waqzymrfiy .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#ijjoiaylpw .gt_left {
+#waqzymrfiy .gt_left {
   text-align: left;
 }
 
-#ijjoiaylpw .gt_center {
+#waqzymrfiy .gt_center {
   text-align: center;
 }
 
-#ijjoiaylpw .gt_right {
+#waqzymrfiy .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ijjoiaylpw .gt_font_normal {
+#waqzymrfiy .gt_font_normal {
   font-weight: normal;
 }
 
-#ijjoiaylpw .gt_font_bold {
+#waqzymrfiy .gt_font_bold {
   font-weight: bold;
 }
 
-#ijjoiaylpw .gt_font_italic {
+#waqzymrfiy .gt_font_italic {
   font-style: italic;
 }
 
-#ijjoiaylpw .gt_super {
+#waqzymrfiy .gt_super {
   font-size: 65%;
 }
 
-#ijjoiaylpw .gt_footnote_marks {
+#waqzymrfiy .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 &lt;/style&gt;
-&lt;div id=&#34;ijjoiaylpw&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
+&lt;div id=&#34;waqzymrfiy&#34; style=&#34;overflow-x:auto;overflow-y:auto;width:auto;height:auto;&#34;&gt;&lt;table class=&#34;gt_table&#34; style=&#34;table-layout: fixed;; width: 0px&#34;&gt;
   &lt;colgroup&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
     &lt;col style=&#34;width:155px;&#34;/&gt;
@@ -568,8 +565,7 @@ bar_map = leaflet(data = best_bars) %&amp;gt;%
                            opacity = 4,
                            fillOpacity = 4
                            ) &lt;/code&gt;&lt;/pre&gt;
-&lt;div id=&#34;htmlwidget-1&#34; style=&#34;width:100%;height:400px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
-&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-1&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-7.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2018-06-01-optimal-bar-crawl/images/bar_locations.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Each orange dot is a bar, and the pointer indicates our starting position (the depot). Given that we are walking let’s limit the potential distance to a maximum of three miles from our starting location. The function below calculates the total feet between two points defined by a latitude/longitude coordinate.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;earth_dist = function (lat1, lng1, lat2, lng2)
 {
@@ -1706,8 +1702,7 @@ final_route = leaflet(data = path_df) %&amp;gt;%
                                                size = 1
                    )
   )&lt;/code&gt;&lt;/pre&gt;
-&lt;div id=&#34;htmlwidget-2&#34; style=&#34;width:100%;height:600px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
-&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-2&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-06-01-optimal-bar-crawl/optimal_bar_crawl_files/figure-html//widgets/widget_unnamed-chunk-21.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;&lt;img src=&#34;http://example.org/post/2018-06-01-optimal-bar-crawl/images/final_route.png&#34; width=&#34;700&#34; height=&#34;600&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;Whew! That was a lot of work, but it looks like we have a reasonable solution. We’ll start in downtown Portland, take a quick tour over to the city’s Eastside, and eventually return to the Northwest. So, there you have it – a real-world application of optimization that supports an efficient Pub Crawl. Prost!&lt;/p&gt;
 &lt;/div&gt;
 </description>
