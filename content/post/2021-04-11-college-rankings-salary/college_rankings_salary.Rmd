@@ -460,7 +460,7 @@ arrange(mean) %>%
 head(5)
 ```
 
-Based on these results, it looks like ~600 trees and six parameters yield the best results. Next, we'll extract the best model, fit it to the complete training set, and see how well it performs on our test set. 
+Based on these results, it looks like ~500 trees and six features yield the best results. Next, we'll extract the best model, fit it to the complete training set, and see how well it performs on our test set. 
 ```{r}
 xg_fit <- xg_workflow %>% 
   finalize_workflow(select_best(xg_tuned)) %>% 

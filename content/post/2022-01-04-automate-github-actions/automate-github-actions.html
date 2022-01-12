@@ -1,0 +1,311 @@
+---
+title: "Scheduling Python Scripts with Github Actions"
+date: '2022-01-04T21:13:14-05:00'
+summary: Have a task you want to schedule? Read on to learn how I automated the weekly collection of fantasy football player data with Github Actions! 
+tags:
+- Github Actions
+- Automation
+- Python
+- AWS
+categories:
+- Github Actions
+- Automation
+- Python
+- AWS
+---
+
+
+
+<p><img src="/post/2022-01-04-automate-github-actions/images/actions.png" width="700" height="400" /></p>
+<p>Fantasy Football season has sadly come to an end, so the next best thing I can do is…write about Fantasy Football! Indeed, this past season I decided to manage my team differently. While I’ve always used a “data-driven” approach to making roster decisions, I’ve predominantly relied on the forecasts and opinions of the internet. So this year, I decided to build a custom model to make my own weekly player point forecasts.</p>
+<p>My goal wasn’t to beat the “professional” fantasy football players, specifically Draft Kings or Yahoo. Instead, I wanted to see if I could come close to their point projections in terms of accuracy by creating a simple model with some essential inputs, like past player performance, betting lines, weather forecasts, and playing environment. These inputs were part of a more extensive data-scraping process that ran every Wednesday. Upon completion, the scraped data was fed into a predictive model. The model predicted how many points each player on my roster would score in the upcoming week of games. Players with higher projections would “play,” while those with lower point projections would stay “on the bench.”</p>
+<p>After comparing my model’s performance against Yahoo’s projections following the completion of the season, my projections were, as expected, close but less accurate (but that’s for a different discussion). Still, I discovered a simple way to automate and schedule the execution of <code>.py</code> scripts. The process is identical to the all-too-common Extract-Transform-Load (ETL) pattern we observe in data science:</p>
+<ul>
+<li>Query a database or scrape data from a website.</li>
+<li>Do some data cleaning.</li>
+<li>Save the resulting output to a database (e.g., Snowflake) or object storage (e.g., AWS S3).</li>
+</ul>
+<p>Despite the ubiquity of this process, I’ve noticed it is also one of the more challenging aspects for beginners to grasp. The task of moving code developed locally and executed manually to a remote location that runs on a schedule can seem daunting at first.</p>
+<p>A standard recommendation for creating workflows is to learn Airflow. While Airflow is the industry standard for building workflows, there is a lot to know before starting. The learning curve can deter data scientists from taking on this type of work, which translates into a few (less than optimal) outcomes: You ask a separate team to do the job, or you just run it manually every time data is needed. Thus, this post outlines a different process for scheduling and executing “simple” workflows. Please note that the proposed approach does not replace Airflow. Instead, it can serve as a guide for getting a project up and running quickly with minimal overhead.</p>
+<p>With that in mind, here are the main things we’ll cover:</p>
+<ul>
+<li>Managing dependencies with <code>poetry</code><br />
+</li>
+<li>Setting up a Github Actions workflow</li>
+<li>Connecting to Amazon Web Services (AWS) via Github Actions</li>
+</ul>
+<div id="a-brief-tangent" class="section level3">
+<h3>A Brief Tangent</h3>
+<p>If you’ve made it this far, you might be thinking to yourself, “Data scientists don’t typically concern themselves with these topics.” Five years ago, I would’ve agreed with that statement. But the longer I spend working in this field, the more I realize that your best data scientists can own a product end-to-end. This is because they understand their models and inference process and the stuff required to make those models run, including databases, schedulers, monitoring systems, and serving infrastructure.</p>
+<p>Indeed, one of the hallmarks of a “senior” data scientist is someone who can take a systems-level view of a project and not just focus on a single component (e.g., the model) but instead on how all the parts fit together. They understand that most of the work is not getting something to run but rather ensuring it can run reliably. So my advice to folks just getting started in this field is not to shy away from the “plumbing” or “glue” work. You don’t have to be an expert on everything needed to run an ML model in production or even a simple weekly data refresh. But learning the fundamentals – things like dependency management, Version Control, CI/CD, and some of the more popular services of the big cloud providers (e.g., AWS S3) – can set you apart from data scientists who can’t move beyond a local Jupyter notebook.
+With that in mind, let’s get back to the actual post!</p>
+</div>
+<div id="project-setup" class="section level3">
+<h3>Project Setup</h3>
+<p>I find learning by example to be best. All source code is <a href="https://github.com/thecodeforest/stats-scrape">here</a> if you’d like to follow along. We’ll start by copying the repository to our local machine.</p>
+<p><strong>Step 1</strong>: Clone the repository.</p>
+<pre class="shell"><code>git clone https://github.com/thecodeforest/stats-scrape.git</code></pre>
+<p><strong>Step 2</strong>: Create a virtual environment.</p>
+<pre class="shell"><code>conda create --name statsscrape python=3.8.3 -y</code></pre>
+<p><strong>Step 3</strong>: Activate the virtual environment.</p>
+<pre class="shell"><code>conda activate statsscrape</code></pre>
+<p>If you want to verify that you’ve successfully created and activated the <code>statsscrape</code> environment, run the following command, which will list all libraries installed:</p>
+<pre class="shell"><code>pip list</code></pre>
+<p>You’ll notice that no third-party libraries appear (e.g., numpy, scipy, pandas, requests) because we have created a brand new environment and thus will need to install all of the required packages.</p>
+<p><strong>Step 4</strong>: Install <code>poetry</code>. Poetry helps to install and manage dependencies.</p>
+<pre class="shell"><code>pip install poetry</code></pre>
+<p><strong>Step 5</strong>: Install the dependencies listed in <code>poetry.lock</code>. The lock file (included in the repository) logs all the dependencies we’ll need for this walkthrough.</p>
+<pre class="shell"><code>poetry install</code></pre>
+<p><strong>Step 6</strong>: Run our <em>main</em> script in “debug” mode. Instead of normally writing the output to S3, it will appear on your local machine when a <code>--debug</code> argument is passed.</p>
+<pre class="shell"><code>python statsscrape/statsscrape.py --s3_bucket &quot;test&quot; --year 2021 --debug True</code></pre>
+<p>There should be two new files in your repository: A <code>.csv</code> file with a single player’s game statistics for the 2021 season and a <code>.log</code> file that captures some high-level details about what happened in our script.</p>
+<p>In the next few sections, we’ll dive deeper into the logic used to create these outputs as well as Github Actions.</p>
+</div>
+<div id="collecting-player-data" class="section level3">
+<h3>Collecting Player Data</h3>
+<p>The <code>statsscrape.py</code> script is what we’ll use to collect game data for each player active within a given season. We executed this script in “debug” mode above, which I like to do when trying out code for the first time. When the data collection process runs on Github’s server, all outputs will land in S3 instead of our local machine.</p>
+<pre class="python"><code># statsscrape.py
+import logging
+from datetime import datetime
+import argparse
+import awswrangler as wr
+import pandas as pd
+from createplayerid import create_player_id_df
+
+
+def read_args() -&gt; argparse.Namespace:
+    parser = argparse.ArgumentParser(description=&quot;Create player id dataframe&quot;)
+    parser.add_argument(&quot;--s3_bucket&quot;, type=str, help=&quot;s3 bucket name&quot;)
+    parser.add_argument(&quot;--year&quot;, type=int, help=&quot;Year to create dataframe for&quot;)
+    parser.add_argument(&quot;--debug&quot;, default=False, type=bool, help=&quot;Run in debug mode&quot;)
+    args = parser.parse_args()
+    return args
+
+
+logging.basicConfig(
+    format=&quot;%(levelname)s - %(asctime)s - %(filename)s - %(message)s&quot;,
+    level=logging.INFO,
+    filename=&quot;player-stats-{start_time}.log&quot;.format(
+        start_time=datetime.now().strftime(&quot;%Y-%m-%d&quot;)
+    ),
+)
+
+
+def collect_stats():
+    logging.info(f&quot;Starting collection of player statistics&quot;)
+    args = read_args()
+    season_year = args.year
+    s3_bucket = args.s3_bucket
+    debug = args.debug
+    s3_path = f&quot;s3://{s3_bucket}/data/playerstats/raw/{season_year}/playerstats.csv&quot;
+    logging.info(f&quot;Collecting data for {season_year}&quot;)
+    logging.info(f&quot;Writing data to {s3_path}&quot;)
+    logging.info(f&quot;Running module in Debug mode: {debug}&quot;)
+    player_id_df = create_player_id_df(season_year=season_year)
+    # take the first player returned
+    player_name, player_id, _ = player_id_df.iloc[0]
+    player_last_name_first_letter = player_name.split()[1][0]
+    player_stats_url = f&quot;https://www.pro-football-reference.com/players/{player_last_name_first_letter}/{player_id}.htm&quot;
+    # scrape the stats for a single player
+    player_stats_df = pd.read_html(player_stats_url)[0]
+    # write locally or save data to S3
+    if debug: 
+        player_stats_df.to_csv(f&quot;debug_df_season_{season_year}.csv&quot;, index=False)
+    else:
+        wr.s3.to_csv(player_stats_df, s3_path, index=False)
+    logging.info(&quot;Completed collection of player statistics&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    collect_stats()</code></pre>
+<p>To summarise what’s happening above:</p>
+<ul>
+<li>We’ll load our dependencies, including the <code>createplayerid</code> module, which consists of a series of helper functions that create a unique ID to access the actual season data for a given player.<br />
+</li>
+<li>Set up some basic logging functionality.<br />
+</li>
+<li>Pass in our arguments for which season we want data, the name of the S3 bucket where we’ll store our data, and if we’re debugging.<br />
+</li>
+<li>Extract all of the player’s IDs for a given season.<br />
+</li>
+<li>Create the URL for an individual player. Again, we keep things simple and take the first player on the list.<br />
+</li>
+<li>Read the player stats associated with the URL we’ve created.<br />
+</li>
+<li>Save the data to S3 or locally, depending on our running mode.</li>
+</ul>
+<p>Pretty simple stuff! But how do we get this thing to run every week without executing the module above manually? That’s what we’ll cover in the next section!</p>
+</div>
+<div id="automating-recurring-processes-with-github-actions" class="section level3">
+<h3>Automating Recurring Processes with Github Actions</h3>
+<p>Let’s start with a quick primer on Github Actions (GA). GA is primarily used for CI/CD, which stands for Continuous Integration/Continuous Deployment. CI automates the testing, monitoring, and deployment of changes to an existing codebase. For example, a CI workflow might run units tests to determine if changes to a current function introduced bugs or unwanted outcomes. It also might calculate code coverage or update documentation. In contrast, CD is about shipping updates you’ve made to your codebase, assuming all of the checks outlined during the CI process pass.</p>
+<p>GA is relatively new to the CI/CD space, and several other solutions are available (e.g., Circle CI, Travis CI). However, it’s my go-to-solution for personal projects for a few reasons:</p>
+<ol style="list-style-type: decimal">
+<li>It’s one less dependency to manage, given that Version Control and CI/CD are within the same place.</li>
+<li>For public repositories, you have 2,000 free minutes per month. Each time a CI/CD workflow runs, Github spins up a machine to execute a series of steps. For small projects with only a few simple steps (like the one outlined here), you’ll never come close to the limit, which makes it easy to get started.<br />
+</li>
+<li>The configuration consists of a single <code>.yaml</code> file, which can be tracked and versioned just like your code.</li>
+</ol>
+<p>We’ll discuss scheduling a weekly data refresh now that we’ve covered GA’s typical use-case and benefits. But, again, I wouldn’t recommend using GA for scheduling an intricate ETL process. However, for solo, small projects (like a personal project or a minimal viable product), it is a simple yet effective way to get code out of a local development environment and onto a remote server.</p>
+</div>
+<div id="creating-a-workflow" class="section level3">
+<h3>Creating a Workflow</h3>
+<p>A workflow automates a series of “actions,” which could be executing a <code>.py</code> script, installing some packages, running a suite of unit tests, or verifying that code syntax adheres to a particular style. Actions are associated with a specific “step” of the workflow. A collection of steps comprises a “job.” A job is all the steps that get executed on a single Github machine. An event can trigger each workflow. In our case, we chose a schedule, but a workflow can be prompted by changes to our codebase, such as merging a new feature branch into the main branch.</p>
+<p>All workflows executed by GA are in the <code>.github</code> directory within a repository. I named mine <em>schedule-data-refresh.yaml</em>, so it is located at <code>stats-scrape/.github/workflows/schedule-data-refresh.yaml</code>, but the generic path will look something like <code>&lt;your-repository-name/.github/workflows/&lt;your-workflow-name.yaml&gt;</code>.
+Below is the complete workflow I’ve used to collect up-to-date player statistics on a weekly cadence for the past season. We’ll go through each section in greater detail.</p>
+<pre class="yaml"><code># Describe what your workflow does
+name: Refresh NFL Data
+
+# How frequently you need data refreshed
+on: 
+  schedule:
+    - cron: &quot;0 12 * * 3&quot;
+  # uncomment below if you need to debug 
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    # set our environment variables
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+      S3_BUCKET_NAME: player-data-season
+      AWS_DEFAULT_REGION: us-west-2
+      SEASON_YEAR: 2021      
+    steps:
+      # check-out the repository &lt;stat-scrape&gt; so job can access all your code
+      - uses: actions/checkout@v2
+      # create a python environment 
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with: 
+          python-version: 3.8.3
+      # install poetry 
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      # if an environment already exists, load it; otherwise create a new one 
+      - name: Load Cached Virtual Environment
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles(&#39;**/poetry.lock&#39;) }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != &#39;true&#39;
+      # if no cache exists, install packages 
+        run: poetry install --no-interaction --no-root
+      # scrape data and save to s3
+      - name: Collect + Load Raw Player Stats Data to S3 
+        run: |
+          source .venv/bin/activate
+          python statsscrape/statsscrape.py --s3_bucket &quot;$S3_BUCKET_NAME&quot; --year $SEASON_YEAR
+      # install AWS command line interface
+      - name: Install AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2 
+          verbose: false 
+      # save log file to S3 bucket
+      - name: Save Log File to S3
+        run: aws s3 cp &quot;player-stats-$(date +&#39;%Y-%m-%d&#39;).log&quot; &quot;s3://$S3_BUCKET_NAME/logs/&quot;       </code></pre>
+</div>
+<div id="decide-how-frequently-you-need-data-refreshed" class="section level3">
+<h3>1: Decide how frequently you need data refreshed</h3>
+<p>We’ll use CRON to specify the cadence we want the data refresh process to run. The schedule below says, “Run this every Wednesday at noon.” If there are two things I have to frequently Google - it’s regular expressions and CRON. Save your memory and use a tool like <a href="https://crontab.cronhub.io/">this</a>.</p>
+<pre class="yaml"><code>name: Refresh NFL Data
+on: 
+  schedule:
+    - cron: &quot;0 12 * * 3&quot;</code></pre>
+<p>As an aside, it is more common for a workflow to run in response to a particular event. For example, the Workflow below executes when either a push or pull request is made for the <code>main</code> branch.</p>
+<pre class="yaml"><code>on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]</code></pre>
+</div>
+<div id="set-environment-variables" class="section level3">
+<h3>2. Set Environment variables</h3>
+<pre class="yaml"><code>env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+  S3_BUCKET_NAME: player-data-season
+  AWS_DEFAULT_REGION: us-west-2
+  SEASON_YEAR: 2021   </code></pre>
+<p>Environment variables are available to every step in your workflow. A common use-case is to store sensitive information, like passwords or API keys, as a secret within the repository and then make this information available to your workflow as an environment variable. In this example, we write output from our workflow to S3. To access our S3 Bucket, we need the <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code>. We don’t want to store keys in the source code, so we add them to the environment and securely access them.</p>
+<p>Another use-case for environment variables is when you have “static” or “constant” data - things that will change infrequently. For instance, <code>SEASON_YEAR</code> indicates which season of data we want to collect. I want to reuse all of this logic for next year’s season, and storing this information in a configuration file makes it easier to change in the future relative to keeping it in the source code.</p>
+</div>
+<div id="set-up-python-and-install-dependencies" class="section level3">
+<h3>3. Set up Python and Install Dependencies</h3>
+<pre class="yaml"><code>steps:
+  # check-out the repository &lt;stat-scrape&gt; so job can access all your code
+  - uses: actions/checkout@v2
+  # create a python environment 
+  - name: Set up Python 3.8
+    uses: actions/setup-python@v2
+    with: 
+      python-version: 3.8.3
+  # install poetry 
+  - name: Install Poetry
+    uses: snok/install-poetry@v1
+    with:
+      virtualenvs-create: true
+      virtualenvs-in-project: true
+      installer-parallel: true
+  # if an environment already exists, load it; otherwise create a new one 
+  - name: Load Cached Virtual Environment
+    id: cached-poetry-dependencies
+    uses: actions/cache@v2
+    with:
+      path: .venv
+      key: venv-${{ runner.os }}-${{ hashFiles(&#39;**/poetry.lock&#39;) }}
+  - name: Install dependencies
+    if: steps.cached-poetry-dependencies.outputs.cache-hit != &#39;true&#39;
+  # if no cache exists, install packages 
+    run: poetry install --no-interaction --no-root</code></pre>
+<p>This section is a bit more involved, so let’s break it down into digestible sections:</p>
+<ul>
+<li>Install Python version 3.8.3.</li>
+<li>Install <code>poetry</code>. Note the <code>with</code> keyword, which provides additional input parameters to the step</li>
+<li>Check if we’ve installed the packages outlined in the <code>.lock</code> file before. Github won’t have to download packages and re-install them if we have. Instead, we can use the cached dependencies for our job, which leads to a faster run-time and reduced cost (assuming you are paying for the time).</li>
+<li>The initial run will take the longest, as none of the dependencies a cached.</li>
+</ul>
+<p>At this point, we have most of the critical dependencies in our environment, and the remaining steps are straightforward.</p>
+</div>
+<div id="collect-player-data-and-save-to-s3" class="section level3">
+<h3>4. Collect Player Data and Save to S3</h3>
+<pre class="yaml"><code># scrape data and save to s3
+- name: Collect + Load Raw Player Stats Data to S3 
+  run: |
+    source .venv/bin/activate
+    python statsscrape/statsscrape.py --s3_bucket &quot;$S3_BUCKET_NAME&quot; --year $SEASON_YEAR
+# install AWS command line interface
+- name: Install AWS CLI
+  uses: unfor19/install-aws-cli-action@v1
+  with:
+    version: 2 
+    verbose: false 
+# save log file to S3 bucket
+- name: Save Log File to S3
+  run: aws s3 cp &quot;player-stats-$(date +&#39;%Y-%m-%d&#39;).log&quot; &quot;s3://$S3_BUCKET_NAME/logs/&quot;    </code></pre>
+<p>Again, let’s go line-by-line and understand what’s happening in our workflow:</p>
+<ul>
+<li>Activate our virtual environment. The <code>|</code> symbol executes multiple commands within a step.<br />
+</li>
+<li>Execute the <code>statscrape.py</code> script. We’ll also pass in two arguments – the name of the S3 bucket where we want to save our <code>.csv</code> file and the year of the season.</li>
+<li>Install the AWS Command Line Interface (CLI).</li>
+<li>Copy the log file from the Github machine executing our workflow to S3. Assuming our workflow completes successfully, the log file helps us diagnose any unexpected results.</li>
+</ul>
+<p>The entire process is repeated each Wednesday during the season, so a new <code>.csv</code> and <code>.log</code> file will be added to S3 each week.</p>
+</div>
+<div id="wrapping-up" class="section level3">
+<h3>Wrapping Up</h3>
+<p>That’s it! Hopefully, this has been a helpful overview of using Github Actions as a scheduler for simple workflows. As always, please comment below if you have suggestions or feedback!</p>
+</div>
